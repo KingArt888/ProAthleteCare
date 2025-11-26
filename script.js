@@ -2,7 +2,7 @@
 let dailyScores = JSON.parse(localStorage.getItem('athleteWellnessScores')) || [];
 
 /**
- * Рендерить один маленький лінійний графік для заданої метрики. (Логіка без змін)
+ * Рендерить один маленький лінійний графік для заданої метрики.
  */
 function renderSmallChart(metricKey, canvasId, chartColor, labelText) {
     const chartCanvas = document.getElementById(canvasId);
@@ -13,7 +13,7 @@ function renderSmallChart(metricKey, canvasId, chartColor, labelText) {
         window[canvasId].destroy();
     }
 
-    // Якщо менше двох точок даних, графік не малюємо, просто виходимо
+    // Якщо менше двох точок даних, графік приховується
     if (dailyScores.length < 2) {
         chartCanvas.style.display = 'none';
         return;
@@ -34,8 +34,8 @@ function renderSmallChart(metricKey, canvasId, chartColor, labelText) {
                 label: labelText,
                 data: dataPoints,
                 borderColor: chartColor,
-                backgroundColor: chartColor.replace('1)', '0.2)'), // Напівпрозорий фон
-                tension: 0.4, // Згладжування лінії
+                backgroundColor: chartColor.replace('1)', '0.2)'),
+                tension: 0.4, 
                 fill: true,
                 pointRadius: 3,
                 pointBackgroundColor: chartColor
@@ -51,11 +51,11 @@ function renderSmallChart(metricKey, canvasId, chartColor, labelText) {
                 y: {
                     beginAtZero: true,
                     max: 10,
-                    display: false, // Приховати вісь Y
+                    display: false, 
                     grid: { display: false }
                 },
                 x: {
-                    display: false, // Приховати вісь X
+                    display: false, 
                     grid: { display: false }
                 }
             },
@@ -85,10 +85,10 @@ function updateAverageDisplay(scores) {
  * Загальна функція для рендерингу всіх графіків та оновлення показників.
  */
 function renderAllCharts(scores) {
-    // 1. Оновлюємо показник середнього балу
+    // 1. Оновлюємо показник середнього балу (лівий блок, знизу)
     updateAverageDisplay(scores);
 
-    // 2. Рендеримо всі 6 малих графіків
+    // 2. Рендеримо всі 6 малих графіків (правий блок)
     const metrics = [
         { key: 'sleep', id: 'chart-sleep', color: 'rgba(255, 199, 44, 1)', label: 'Сон' },
         { key: 'soreness', id: 'chart-soreness', color: 'rgba(218, 62, 82, 1)', label: 'Біль/Втома' },
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let sum = 0;
             let count = 0;
 
-            // Збираємо дані та перевіряємо, чи всі 6 показників заповнені
+            // Збираємо дані
             for (const [key, value] of formData.entries()) {
                 const numericValue = parseInt(value);
                 data[key] = numericValue;
@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 2. Оновлюємо всі графіки та блокуємо форму
             renderAllCharts(dailyScores);
-            checkDailySubmission(); // Блокуємо кнопку після успішного подання
+            checkDailySubmission(); 
             
             alert(`Дані записано! Середній показник Wellness: ${data.average.toFixed(1)}`);
         });
