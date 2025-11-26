@@ -18,7 +18,7 @@ header {
 .logo {
     height: 70px;
     margin-right: 15px;
-    border-radius: 50%;
+    border-radius: 50%; /* Робимо логотип круглим, якщо він квадратний */
 }
 
 .project-title {
@@ -63,13 +63,12 @@ header {
     border-left: 2px solid transparent;
 }
 
-/* Стилі для ТЕКСТУ "АК" у меню */
-.menu-ak {
-    color: #FFC72C; /* Жовтий колір */
-    font-weight: bold;
-    margin-left: auto; /* Зміщує "АК" вправо */
-    min-width: 24px;
-    text-align: right;
+/* Стилі для маленької КАРТИНКИ "АК" у меню */
+.menu-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin-left: auto; /* ЗМІЩУЄ ІКОНКУ ВПРАВО */
 }
 
 .sidebar a:hover {
