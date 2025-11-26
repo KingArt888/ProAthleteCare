@@ -103,23 +103,22 @@
     border-left: 2px solid #000000;
 }.sidebar a.active img {
     filter: none; 
-}/* Контейнер для форми та графіка */.dashboard-container {
+}/* Контейнер для вмісту */.dashboard-container {
     display: flex;
     gap: 30px;
     margin-top: 20px;
     flex-wrap: wrap; 
-}/* Картки для форми та графіка */.form-card, .chart-card {
+    /* Тепер container має лише форму, тому flex може бути непотрібний,
+       але залишимо, щоб підтримати загальну структуру */
+}/* Картка для форми */.form-card {
     background-color: #0d0d0d;
     border: 1px solid #1a1a1a;
     border-radius: 10px;
     padding: 25px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-}.form-card {
-    width: 35%; 
-    min-width: 350px;
-}.chart-card {
-    flex-grow: 1; 
-}.form-card h3, .chart-card h3 {
+    width: 100%; /* Форма тепер займає всю доступну ширину */
+    min-width: unset; 
+}.form-card h3 {
     color: #FFC72C;
     margin-top: 0;
     border-bottom: 1px solid #333333;
@@ -148,22 +147,28 @@
     background-color: #333333 !important;
     color: #999999 !important;
     cursor: not-allowed !important;
-}/* Місце для графіка */.chart-area {
-    min-height: 350px; /* Збільшено для кращого вигляду основного графіка */
-    background-color: #000000;
-    border: 1px solid #333333;
-    border-radius: 5px;
+}/* Стиль для відображення середнього значення (В САМОМУ НИЗУ) */.average-score-card {
+    margin-top: 30px;
+    padding: 15px 20px;
+    background-color: #1a1a1a;
+    border-radius: 8px;
+    border-left: 5px solid #FFC72C;
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
-}.placeholder-text {
-    color: #888888;
-    font-style: italic;
     font-size: 1.2em;
+}.average-score-card .label {
+    color: #CCCCCC;
+    font-weight: normal;
+}.average-score-card .score {
+    color: #FFC72C;
+    font-size: 1.6em;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(255, 199, 44, 0.5);
 }/* --- НОВІ СТИЛІ ДЛЯ МАЛИХ ГРАФІКІВ У ФОРМІ --- */.small-chart-container {
-    height: 60px; /* Фіксована висота для міні-графіка (подібно до питання) */
+    height: 60px; 
     width: 100%;
-    margin-top: -10px; /* Зменшуємо відступ від рейтингу */
+    margin-top: -10px; 
     margin-bottom: 20px;
     padding: 5px;
     background-color: #000000;
