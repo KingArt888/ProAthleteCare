@@ -1,141 +1,284 @@
-// Зберігатимемо дані у LocalStorage
-let dailyScores = JSON.parse(localStorage.getItem('athleteWellnessScores')) || [];
+// Ключ для зберігання даних у localStorage
+const STORAGE_KEY = 'athleteWellnessScores';
 
-function renderChart(scores) {
-    // Отримуємо контекст для малювання
-    const chartCanvas = document.getElementById('wellnessChart');
-    if (!chartCanvas) return; // Запобігання помилці, якщо елемент не знайдено
+// Визначення показників (для графіків та форми)
+const INDICATORS = [
+    { key: 'sleep', title: 'Якість сну', color: 'rgb(255, 199, 44)', chartId: 'chart-sleep', inverse: false },
+    { key: 'soreness', title: 'Біль / Втома', color: 'rgb(218, 62, 82)', chartId: 'chart-soreness', inverse: true },
+    { key: 'mood', title: 'Настрій / Енергія', color: 'rgb(75, 192, 192)', chartId: 'chart-mood', inverse: false },
+    { key: 'water', title: 'Рівень гідратації', color: 'rgb(54, 162, 235)', chartId: 'chart-water', inverse: false },
+    { key: 'stress', title: 'Психологічний стрес', color: 'rgb(255, 99, 132)', chartId: 'chart-stress', inverse: true },
+    { key: 'ready', title: 'Готовність', color: 'rgb(153, 102, 255)', chartId: 'chart-ready', inverse: false }
+];
 
-    const chartArea = chartCanvas.getContext('2d');
-    
-    // Якщо графік вже існує, знищити його, щоб намалювати новий
-    if (window.myWellnessChart) {
-        window.myWellnessChart.destroy();
+let dailyScores = [];
+let chartInstances = {};
+
+/**
+ * 1. Утиліти для роботи з даними
+ */
+
+function getTodayDate() {
+    // Формат YYYY-MM-DD для коректного порівняння та сортування
+    return new Date().toISOString().split('T')[0];
+}
+
+// Функція генерації фіктивних даних (для першого запуску)
+function generateMockData() {
+    const data = [];
+    for (let i = 14; i >= 1; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateString = date.toISOString().split('T')[0];
+        
+        // Мокування даних
+        const mockEntry = {
+            date: dateString,
+            sleep: Math.floor(Math.random() * 3) + 7, 
+            soreness: Math.floor(Math.random() * 4) + 1, 
+            mood: Math.floor(Math.random() * 3) + 7, 
+            water: Math.floor(Math.random() * 3) + 7, 
+            stress: Math.floor(Math.random() * 4) + 1, 
+            ready: Math.floor(Math.random() * 3) + 7 
+        };
+        const sum = INDICATORS.reduce((acc, ind) => acc + mockEntry[ind.key], 0);
+        mockEntry.average = sum / INDICATORS.length;
+        data.push(mockEntry);
     }
+    return data;
+}
 
-    // Останній запис (сьогоднішній)
-    const latestData = scores[scores.length - 1];
-
-    if (!latestData) {
-        chartCanvas.style.display = 'none'; // Сховати, якщо немає даних
-        return;
+function loadData() {
+    let data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (!data || data.length === 0) {
+        data = generateMockData();
     }
-    chartCanvas.style.display = 'block';
+    // Обмежуємо дані останніми 14 записами для чистоти графіків
+    if (data.length > 14) {
+        data = data.slice(data.length - 14);
+    }
+    return data;
+}
 
-    // Мітки для 6 показників
-    const labels = [
-        'Сон (1-10)', 
-        'Біль/Втома (1-10)', 
-        'Енергія/Настрій (1-10)', 
-        'Гідратація (1-10)', 
-        'Стрес (1-10)', 
-        'Готовність (1-10)'
-    ];
+/**
+ * 2. Функції для роботи з графіками
+ */
 
-    // Значення з останнього запису
-    const dataValues = [
-        latestData.sleep, 
-        latestData.soreness, 
-        latestData.mood, 
-        latestData.water, 
-        latestData.stress, 
-        latestData.ready
-    ];
+// Функція для відображення індивідуальної динаміки (міні-графіки біля питань)
+function renderLineCharts(data) {
+    INDICATORS.forEach(indicator => {
+        const ctx = document.getElementById(indicator.chartId);
+        if (!ctx) return;
 
-    window.myWellnessChart = new Chart(chartArea, {
-        type: 'bar', // Використовуємо стовпчасту діаграму для 6 показників
+        // Показуємо лише MM-DD для хронології
+        const labels = data.map(entry => entry.date.substring(5)); 
+        const scores = data.map(entry => entry[indicator.key] || 0);
+
+        const config = {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: indicator.title,
+                    data: scores,
+                    borderColor: indicator.color,
+                    backgroundColor: indicator.color.replace('rgb', 'rgba').replace(')', ', 0.2)'),
+                    borderWidth: 2,
+                    tension: 0.2, 
+                    pointRadius: 3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        display: false, // Приховуємо вісь Y
+                        min: 1,
+                        max: 10
+                    },
+                    x: {
+                        display: false // Приховуємо вісь X
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: true } 
+                }
+            }
+        };
+
+        if (chartInstances[indicator.key]) {
+            chartInstances[indicator.key].data = config.data;
+            chartInstances[indicator.key].update();
+        } else {
+            chartInstances[indicator.key] = new Chart(ctx, config);
+        }
+    });
+}
+
+// Функція для відображення Зведеної Радарної діаграми (нижній блок)
+function renderRadarChart(latestData) {
+    const ctx = document.getElementById('wellnessRadarChart');
+    if (!ctx) return;
+
+    const labels = INDICATORS.map(ind => ind.title);
+    const dataValues = INDICATORS.map(ind => latestData[ind.key] || 0);
+    const averageScore = latestData.average ? latestData.average.toFixed(1) : (dataValues.reduce((a, b) => a + b, 0) / dataValues.length).toFixed(1);
+
+    document.getElementById('main-chart-title').innerHTML = 
+        `Wellness Snapshot: ${latestData.date} | Середній рівень: <span style="color: #FFC72C; font-weight: bold;">${averageScore}</span>`;
+
+    const config = {
+        type: 'radar',
         data: {
             labels: labels,
             datasets: [{
-                label: `Дані за ${latestData.date}`,
+                label: 'Показники стану',
                 data: dataValues,
-                backgroundColor: [
-                    'rgba(255, 199, 44, 0.8)', // Gold (Сон)
-                    'rgba(218, 62, 82, 0.8)',  // Red (Біль)
-                    'rgba(75, 192, 192, 0.8)', // Teal (Енергія)
-                    'rgba(54, 162, 235, 0.8)', // Blue (Гідратація)
-                    'rgba(255, 99, 132, 0.8)', // Pink (Стрес)
-                    'rgba(153, 102, 255, 0.8)' // Purple (Готовність)
-                ],
+                backgroundColor: 'rgba(255, 199, 44, 0.3)',
                 borderColor: '#FFC72C',
-                borderWidth: 1
+                pointBackgroundColor: '#FFC72C',
+                borderWidth: 2
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false, // Дозволяє краще керувати розміром
+            maintainAspectRatio: false,
             scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 10,
-                    title: {
-                        display: true,
-                        text: 'Рівень (1-10)',
-                        color: '#CCCCCC'
-                    },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    },
+                r: {
+                    angleLines: { color: 'rgba(255, 255, 255, 0.2)' },
+                    grid: { color: 'rgba(255, 255, 255, 0.2)' },
+                    pointLabels: { color: '#CCCCCC' },
+                    suggestedMin: 1,
+                    suggestedMax: 10,
                     ticks: {
-                        color: '#CCCCCC'
-                    }
-                },
-                x: {
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    },
-                    ticks: {
+                        stepSize: 1,
+                        backdropColor: 'rgba(0, 0, 0, 0.5)',
                         color: '#CCCCCC'
                     }
                 }
             },
             plugins: {
-                legend: {
-                    display: false
-                }
+                legend: { display: false }
             }
         }
+    };
+    
+    if (chartInstances['radar']) {
+        chartInstances['radar'].data = config.data;
+        chartInstances['radar'].update();
+    } else {
+        chartInstances['radar'] = new Chart(ctx, config);
+    }
+}
+
+/**
+ * 3. Логіка "Один раз на день"
+ */
+
+function checkDailyEntry() {
+    const today = getTodayDate();
+    const isSubmitted = dailyScores.some(entry => entry.date === today);
+    const form = document.getElementById('wellness-form');
+    const statusHeader = document.getElementById('daily-entry-status');
+    const submitButton = document.getElementById('submit-button');
+
+    if (isSubmitted) {
+        // Якщо дані за сьогодні вже є, деактивуємо форму
+        form.querySelectorAll('input[type="radio"]').forEach(input => input.disabled = true);
+        submitButton.disabled = true;
+        submitButton.textContent = "Дані за сьогодні вже записано";
+        submitButton.style.backgroundColor = '#4CAF50'; 
+        statusHeader.textContent = "Щоденне опитування: Дані записано! ✅";
+    } else {
+        // Активуємо форму
+        form.querySelectorAll('input[type="radio"]').forEach(input => input.disabled = false);
+        submitButton.disabled = false;
+        submitButton.textContent = "Записати дані за сьогодні";
+        submitButton.style.backgroundColor = '#FFC72C'; 
+        statusHeader.textContent = "Щоденне опитування: Введіть дані";
+    }
+}
+
+function handleFormSubmit(event) {
+    event.preventDefault();
+
+    const form = event.target;
+    const today = getTodayDate();
+    
+    // Повторна перевірка
+    if (dailyScores.some(entry => entry.date === today)) {
+        alert("Ви можете залишити оцінку лише один раз на день.");
+        return;
+    }
+
+    const formData = new FormData(form);
+    const newEntry = { date: today };
+    let sum = 0;
+    let allFieldsFilled = true;
+
+    INDICATORS.forEach(indicator => {
+        const value = formData.get(indicator.key);
+        if (value) {
+            const numericValue = parseInt(value);
+            newEntry[indicator.key] = numericValue;
+            sum += numericValue;
+        } else {
+            allFieldsFilled = false;
+        }
     });
+
+    if (!allFieldsFilled) {
+        alert("Будь ласка, заповніть усі 6 показників.");
+        return;
+    }
+
+    newEntry.average = sum / INDICATORS.length;
+
+    // Збереження нового запису
+    dailyScores.push(newEntry);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dailyScores));
+
+    // Оновлення всіх графіків та статусу форми
+    renderAllCharts();
+    checkDailyEntry(); // Вимикаємо форму після збереження
+    
+    alert(`Дані за ${today} успішно записано! Середній рівень: ${newEntry.average.toFixed(1)}`);
+}
+
+/**
+ * 4. Ініціалізація
+ */
+
+function renderAllCharts() {
+    const radarContainer = document.getElementById('radar-container');
+    
+    if (dailyScores.length > 0) {
+        const latestData = dailyScores[dailyScores.length - 1];
+        renderLineCharts(dailyScores);
+        renderRadarChart(latestData);
+        if (radarContainer) radarContainer.style.display = 'block';
+    } else {
+        document.getElementById('main-chart-title').innerHTML = 'Wellness Snapshot: Дані відсутні';
+        if (radarContainer) radarContainer.style.display = 'none'; 
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const wellnessForm = document.getElementById('wellness-form');
+    // 1. Завантажуємо дані
+    dailyScores = loadData();
+    
+    // 2. Рендеримо всі графіки
+    renderAllCharts();
 
-    if (wellnessForm) {
-        wellnessForm.addEventListener('submit', function(event) {
-            event.preventDefault(); 
-            
-            const formData = new FormData(wellnessForm);
-            const data = { date: new Date().toLocaleDateString('uk-UA') };
-            let sum = 0;
-
-            // Збираємо дані (усі 1-10)
-            for (const [key, value] of formData.entries()) {
-                const numericValue = parseInt(value);
-                data[key] = numericValue;
-                sum += numericValue;
-            }
-
-            // Розрахунок середнього рівня Wellness (на шкалі 1-10)
-            data.average = sum / 6;
-
-            // 1. Зберігаємо новий запис
-            dailyScores.push(data);
-            localStorage.setItem('athleteWellnessScores', JSON.stringify(dailyScores));
-
-            // 2. Оновлюємо графік
-            renderChart(dailyScores);
-            
-            // Оновлюємо заголовок, щоб показати середній показник
-            document.querySelector('.chart-card h3').innerHTML = `Індивідуальна динаміка Wellness (Середнє: ${data.average.toFixed(1)})`;
-        });
+    // 3. Додаємо обробник подій для форми
+    const form = document.getElementById('wellness-form');
+    if (form) {
+        form.addEventListener('submit', handleFormSubmit);
     }
-
-    // Завантажуємо графік при завантаженні сторінки (якщо є дані)
-    if (dailyScores.length > 0) {
-        renderChart(dailyScores);
-    } else {
-        // Якщо даних немає, показуємо заглушку
-        document.querySelector('.chart-area').innerHTML = '<p class="placeholder-text">Заповніть форму, щоб побачити графік динаміки стану.</p>';
-    }
+    
+    // 4. Перевіряємо, чи можна сьогодні вводити дані
+    checkDailyEntry();
 });
