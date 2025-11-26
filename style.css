@@ -238,8 +238,10 @@ header {
     padding-top: 15px;
 }
 
+/* Важливо для виправлення "злету" графіків */
 .small-line-chart {
-    height: 100px !important; /* Примусове застосування висоти для canvas */
+    height: 100% !important; 
+    width: 100% !important;
 }
 
 /* Футер */
