@@ -37,7 +37,7 @@ header {
 /* Обгортка для вмісту та меню */
 .content-wrapper {
     display: flex;
-    min-height: calc(100vh - 84px - 40px);
+    min-height: calc(100vh - 100px); /* Висота мінус хедер (70+15*2) та футер (10*2) */
 }
 
 /* Бічне меню (Sidebar) */
@@ -48,16 +48,27 @@ header {
     box-shadow: 2px 0 10px rgba(255, 199, 44, 0.2); /* Золота тінь */
 }
 
+/* Стилі для кожного пункту меню (КРИТИЧНО для розміщення іконки) */
 .sidebar a {
-    display: block;
+    display: flex; /* Вмикаємо flexbox */
+    justify-content: space-between; /* Розтягуємо текст та іконку по краях */
+    align-items: center; /* Вирівнюємо по центру вертикально */
     color: #CCCCCC;
     text-decoration: none;
     padding: 15px 10px;
     margin-bottom: 10px;
     background-color: #1a1a1a;
     border-radius: 8px;
-    transition: background-color 0.3s, transform 0.1s;
+    transition: background-color 0.3s, border-left 0.3s, color 0.3s;
     border-left: 2px solid transparent;
+}
+
+/* Стилі для маленького логотипу "АК" всередині меню */
+.menu-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin-left: 10px;
 }
 
 .sidebar a:hover {
@@ -71,6 +82,14 @@ header {
     flex-grow: 1;
     padding: 30px;
     background-color: #000000;
+}
+
+.hero-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
 }
 
 /* Стилі для заголовків та абзаців */
