@@ -20,7 +20,11 @@
             <a href="wellness.html" class="active">Wellness Control <img src="AK_logo.png" class="menu-icon" alt="АК"></a>
             <a href="#">Injury Story <img src="AK_logo.png" class="menu-icon" alt="АК"></a>
             <a href="#">Load Season <img src="AK_logo.png" class="menu-icon" alt="АК"></a>
-            </nav>
+            <a href="#">Daily Individual <img src="AK_logo.png" class="menu-icon" alt="АК"></a>
+            <a href="#">Weekly Individual <img src="AK_logo.png" class="menu-icon" alt="АК"></a>
+            <a href="#">Weight Control <img src="AK_logo.png" class="menu-icon" alt="АК"></a>
+            <a href="#">Velocity Control <img src="AK_logo.png" class="menu-icon" alt="АК"></a>
+        </nav>
         
         <main class="main-content">
             
@@ -122,4 +126,73 @@
                                         <input type="radio" id="water-r1" name="water" value="1" /><label for="water-r1" title="1"></label>
                                     </div>
                                 </div>
-                                <div class="chart-
+                                <div class="chart-column">
+                                    <canvas id="chart-water" class="small-line-chart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <div class="question-row">
+                                <div class="rating-column">
+                                    <label>5. Психологічний стрес (1-10, 10 - максимальний):</label>
+                                    <div class="rating-group stress-group">
+                                        <input type="radio" id="stress-r10" name="stress" value="10" /><label for="stress-r10" title="10"></label>
+                                        <input type="radio" id="stress-r9" name="stress" value="9" /><label for="stress-r9" title="9"></label>
+                                        <input type="radio" id="stress-r8" name="stress" value="8" /><label for="stress-r8" title="8"></label>
+                                        <input type="radio" id="stress-r7" name="stress" value="7" /><label for="stress-r7" title="7"></label>
+                                        <input type="radio" id="stress-r6" name="stress" value="6" /><label for="stress-r6" title="6"></label>
+                                        <input type="radio" id="stress-r5" name="stress" value="5" /><label for="stress-r5" title="5"></label>
+                                        <input type="radio" id="stress-r4" name="stress" value="4" /><label for="stress-r4" title="4"></label>
+                                        <input type="radio" id="stress-r3" name="stress" value="3" /><label for="stress-r3" title="3"></label>
+                                        <input type="radio" id="stress-r2" name="stress" value="2" /><label for="stress-r2" title="2"></label>
+                                        <input type="radio" id="stress-r1" name="stress" value="1" /><label for="stress-r1" title="1"></label>
+                                    </div>
+                                </div>
+                                <div class="chart-column">
+                                    <canvas id="chart-stress" class="small-line-chart"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="question-row">
+                                <div class="rating-column">
+                                    <label>6. Суб'єктивна готовність до тренування (1-10, 10 - повна готовність):</label>
+                                    <div class="rating-group ready-group">
+                                        <input type="radio" id="ready-r10" name="ready" value="10" /><label for="ready-r10" title="10"></label>
+                                        <input type="radio" id="ready-r9" name="ready" value="9" /><label for="ready-r9" title="9"></label>
+                                        <input type="radio" id="ready-r8" name="ready" value="8" /><label for="ready-r8" title="8"></label>
+                                        <input type="radio" id="ready-r7" name="ready" value="7" /><label for="ready-r7" title="7"></label>
+                                        <input type="radio" id="ready-r6" name="ready" value="6" /><label for="ready-r6" title="6"></label>
+                                        <input type="radio" id="ready-r5" name="ready" value="5" /><label for="ready-r5" title="5"></label>
+                                        <input type="radio" id="ready-r4" name="ready" value="4" /><label for="ready-r4" title="4"></label>
+                                        <input type="radio" id="ready-r3" name="ready" value="3" /><label for="ready-r3" title="3"></label>
+                                        <input type="radio" id="ready-r2" name="ready" value="2" /><label for="ready-r2" title="2"></label>
+                                        <input type="radio" id="ready-r1" name="ready" value="1" /><label for="ready-r1" title="1"></label>
+                                    </div>
+                                </div>
+                                <div class="chart-column">
+                                    <canvas id="chart-ready" class="small-line-chart"></canvas>
+                                </div>
+                            </div>
+                            
+                        </div> 
+
+                        <button type="submit" class="gold-button" id="submit-button">Записати дані за сьогодні</button>
+                    </form>
+                </div>
+                
+                <div class="chart-card full-width-card" id="radar-container">
+                    <h3 id="main-chart-title">Wellness Snapshot: Знімок стану атлета</h3>
+                    <div style="height: 400px; display: flex; justify-content: center;">
+                        <canvas id="wellnessRadarChart"></canvas>
+                    </div>
+                </div>
+                
+            </div>
+        </main>
+    </div>
+    
+    <footer>
+        &copy; 2025 ProAthleteCare. Створено з Gemini.
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>
