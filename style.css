@@ -233,12 +233,12 @@ header {
 
 .chart-column {
     flex: 0 0 40%; 
-    height: 100px; /* Фіксована висота для графіка */
+    height: 100px; /* Фіксована висота контейнера графіка */
     position: relative;
     padding-top: 15px;
 }
 
-/* Важливо для виправлення "злету" графіків */
+/* **КРИТИЧНО:** Забезпечуємо повну висоту Canvas */
 .small-line-chart {
     height: 100% !important; 
     width: 100% !important;
