@@ -75,13 +75,44 @@ function initCharts() {
                 },
                 scales: {
                     r: {
-                        angleLines: { display: false },
+                        // === ЗМІНИ ПОЧИНАЮТЬСЯ ТУТ ===
+                        
+                        // 1. СІТКА (GRID)
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.8)', // Біла сітка з прозорістю
+                        },
+                        // 2. ЛІНІЇ КУТІВ (ANGLE LINES)
+                        angleLines: {
+                            display: true, // Вмикаємо їх, якщо вони потрібні для розділення секторів
+                            color: 'rgba(255, 255, 255, 0.5)' // Білі лінії кутів
+                        },
+                        // 3. ПІДПИСИ МАРКЕРІВ (Сон, Біль, Настрій...)
+                        pointLabels: {
+                            color: 'white', // Білий колір тексту
+                            font: { size: 12 }
+                        },
+                        // 4. ПІДПИСИ ОСЕЙ (ЧИСЛА 1-10)
+                        ticks: {
+                            color: 'white', // Білий колір чисел
+                            backdropColor: 'rgba(0, 0, 0, 0)', // Прозорий фон для чисел
+                            stepSize: 1,
+                            min: 0,
+                            max: 10,
+                        },
+                        
                         suggestedMin: 1,
                         suggestedMax: 10
+                        // === ЗМІНИ ЗАКІНЧУЮТЬСЯ ТУТ ===
                     }
                 },
                 plugins: {
-                    legend: { display: true, position: 'top' },
+                    legend: { 
+                        display: true, 
+                        position: 'top',
+                        labels: {
+                            color: 'white' // Білий колір для легенди
+                        }
+                    },
                     title: { display: false }
                 }
             }
@@ -104,9 +135,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Якщо поточна сторінка - index.html і вона не має активного посилання в меню, 
-    // ми просто не виділяємо жоден пункт, відповідно до запиту.
-    
     // Ініціалізація графіків, якщо ми на сторінці Wellness Control
     if (currentPath === 'wellness.html') {
         initCharts();
