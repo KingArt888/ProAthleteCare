@@ -235,3 +235,21 @@
     color: #888888;
     border-top: 1px solid #1a1a1a;
 }
+/* --- СТИЛІ ДЛЯ СТОРІНКИ INJURY STORY --- */
+
+/* Контейнер для зображення силуету, щоб позиціонувати маркери */
+.body-map-container {
+    position: relative; 
+    width: 100%;
+    max-width: 250px; /* Зменшено для меншого розміру силуету */
+    margin: 15px auto;
+}
+
+.body-map-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+    cursor: crosshair; /* Курсор для кліку на місце травми */
+    filter: invert(10%); /* Зробимо силует темнішим на темному фоні */
+}
+/* ... решта CSS залишається без змін ... */
