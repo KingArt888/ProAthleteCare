@@ -11,15 +11,20 @@ function getTodayDateString() {
 
 // 1. КОД ДЛЯ ГРАФІКІВ (ТІЛЬКИ ДЛЯ wellness.html)
 function initCharts() {
-    // --- КОЛЬОРОВІ КОНСТАНТИ ---
+    // --- КОЛЬОРОВІ КОНСТАНТИ ДЛЯ МІНІ-ГРАФІКІВ ---
     const GOLD_COLOR = 'rgb(255, 215, 0)';
     const GOLD_AREA = 'rgba(255, 215, 0, 0.4)';
     const RED_COLOR = 'rgb(255, 99, 132)'; 
     const RED_AREA = 'rgba(255, 99, 132, 0.4)';
     const ORANGE_COLOR = 'rgb(255, 159, 64)';
     const ORANGE_AREA = 'rgba(255, 159, 64, 0.4)';
+    const GREY_GRID = '#CCCCCC'; 
+    
+    // --- НОВІ БЛАКИТНІ КОНСТАНТИ ---
+    const BLUE_COLOR = 'rgb(0, 191, 255)'; // Яскраво-блакитний
+    const BLUE_AREA = 'rgba(0, 191, 255, 0.4)'; // Блакитний з прозорістю
 
-    // Шаблон для лінійного графіка (Використовуємо Золотий за замовчуванням)
+    // Шаблон даних для міні-графіків (За замовчуванням Золотий)
     const dataTemplate = {
         labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'],
         datasets: [{
@@ -51,17 +56,28 @@ function initCharts() {
         }
     };
 
-    // Створення маленьких графіків
+    // Створення маленьких графіків з індивідуальними кольорами
     const charts = [
         // Золотий
         { id: 'chart-sleep', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [7, 8, 7, 6, 8, 9, 7], label: 'Сон' }] } },
-        // Червоний
+        // Червоний (Біль)
         { id: 'chart-soreness', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [4, 5, 3, 6, 5, 2, 4], label: 'Біль', borderColor: RED_COLOR, backgroundColor: RED_AREA }] } },
         // Золотий
         { id: 'chart-mood', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [9, 8, 9, 7, 8, 10, 9], label: 'Настрій' }] } },
-        // Золотий
-        { id: 'chart-water', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [8, 9, 7, 8, 9, 9, 8], label: 'Гідратація' }] } },
-        // Помаранчевий
+        
+        // БЛАКИТНИЙ (Гідратація) <--- ЗМІНА ТУТ
+        { id: 'chart-water', data: { 
+            ...dataTemplate, 
+            datasets: [{ 
+                ...dataTemplate.datasets[0], 
+                data: [8, 9, 7, 8, 9, 9, 8], 
+                label: 'Гідратація',
+                borderColor: BLUE_COLOR, 
+                backgroundColor: BLUE_AREA 
+            }] 
+        } },
+        
+        // Помаранчевий (Стрес)
         { id: 'chart-stress', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [3, 4, 5, 5, 4, 2, 3], label: 'Стрес', borderColor: ORANGE_COLOR, backgroundColor: ORANGE_AREA }] } },
         // Золотий
         { id: 'chart-ready', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [9, 8, 8, 7, 9, 10, 9], label: 'Готовність' }] } },
@@ -82,7 +98,7 @@ function initCharts() {
                 datasets: [{
                     label: 'Поточний стан (середній бал)',
                     data: [7.5, 4.5, 8.5, 8.3, 3.8, 8.8], 
-                    backgroundColor: GOLD_AREA, // Золотий
+                    backgroundColor: GOLD_AREA, 
                     borderColor: 'rgb(51, 51, 51)',
                     pointBackgroundColor: 'rgb(51, 51, 51)',
                     pointBorderColor: '#fff',
@@ -100,11 +116,11 @@ function initCharts() {
                     r: {
                         // СІТКА ТА ОСІ ЗІ СВІТЛО-СІРИМ КОЛЬОРОМ
                         grid: {
-                            color: '#CCCCCC', 
+                            color: GREY_GRID, 
                         },
                         angleLines: {
                             display: true,
-                            color: '#CCCCCC'
+                            color: GREY_GRID
                         },
                         pointLabels: {
                             color: 'white', 
@@ -173,7 +189,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const currentPath = window.location.pathname.split('/').pop();
     const sidebarLinks = document.querySelectorAll('.sidebar a');
 
-    // Логіка підсвічування активного пункту меню
     sidebarLinks.forEach(link => {
         link.classList.remove('active'); 
         if (link.getAttribute('href') === currentPath) {
@@ -181,11 +196,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Ініціалізація графіків та обмежень, якщо ми на сторінці Wellness Control
     if (currentPath === 'wellness.html') {
         initCharts();
         
-        // Перевірка обмеження при завантаженні сторінки
         checkDailyRestriction(); 
 
         const form = document.getElementById('wellness-form');
@@ -211,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     return; 
                 }
                 
-                // --- СИМУЛЯЦІЯ ЗБЕРЕЖЕННЯ ---
+                // --- ЛОГІКА ЗБЕРЕЖЕННЯ ---
                 
                 const submissionData = {};
                 form.querySelectorAll('input[type="radio"]:checked').forEach(input => {
