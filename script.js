@@ -14,21 +14,15 @@ function initCharts() {
     // --- КОЛЬОРОВІ КОНСТАНТИ ДЛЯ МІНІ-ГРАФІКІВ ---
     const GOLD_COLOR = 'rgb(255, 215, 0)';
     const GOLD_AREA = 'rgba(255, 215, 0, 0.4)';
-    const RED_COLOR = 'rgb(255, 99, 132)'; // Біль
+    const RED_COLOR = 'rgb(255, 99, 132)'; 
     const RED_AREA = 'rgba(255, 99, 132, 0.4)';
-    const ORANGE_COLOR = 'rgb(255, 159, 64)'; // Стрес
+    const ORANGE_COLOR = 'rgb(255, 159, 64)';
     const ORANGE_AREA = 'rgba(255, 159, 64, 0.4)';
-    
-    const BLUE_COLOR = 'rgb(0, 191, 255)'; // Блакитний для Гідратації
-    const BLUE_AREA = 'rgba(0, 191, 255, 0.4)'; 
-    
-    const PURPLE_COLOR = 'rgb(147, 112, 219)'; // Фіолетовий для Настрою
-    const PURPLE_AREA = 'rgba(147, 112, 219, 0.4)'; 
-    
-    const LIME_COLOR = 'rgb(50, 205, 50)'; // Салатовий для Готовності
-    const LIME_AREA = 'rgba(50, 205, 50, 0.4)';
-
     const GREY_GRID = '#CCCCCC'; 
+    
+    // --- НОВІ БЛАКИТНІ КОНСТАНТИ ---
+    const BLUE_COLOR = 'rgb(0, 191, 255)'; // Яскраво-блакитний
+    const BLUE_AREA = 'rgba(0, 191, 255, 0.4)'; // Блакитний з прозорістю
 
     // Шаблон даних для міні-графіків (За замовчуванням Золотий)
     const dataTemplate = {
@@ -64,16 +58,14 @@ function initCharts() {
 
     // Створення маленьких графіків з індивідуальними кольорами
     const charts = [
-        // Золотий (Сон) - Використовує GOLD_COLOR за шаблоном
+        // Золотий
         { id: 'chart-sleep', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [7, 8, 7, 6, 8, 9, 7], label: 'Сон' }] } },
-        
         // Червоний (Біль)
         { id: 'chart-soreness', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [4, 5, 3, 6, 5, 2, 4], label: 'Біль', borderColor: RED_COLOR, backgroundColor: RED_AREA }] } },
+        // Золотий
+        { id: 'chart-mood', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [9, 8, 9, 7, 8, 10, 9], label: 'Настрій' }] } },
         
-        // ФІОЛЕТОВИЙ (Настрій)
-        { id: 'chart-mood', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [9, 8, 9, 7, 8, 10, 9], label: 'Настрій', borderColor: PURPLE_COLOR, backgroundColor: PURPLE_AREA }] } },
-        
-        // БЛАКИТНИЙ (Гідратація)
+        // БЛАКИТНИЙ (Гідратація) <--- ЗМІНА ТУТ
         { id: 'chart-water', data: { 
             ...dataTemplate, 
             datasets: [{ 
@@ -87,9 +79,8 @@ function initCharts() {
         
         // Помаранчевий (Стрес)
         { id: 'chart-stress', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [3, 4, 5, 5, 4, 2, 3], label: 'Стрес', borderColor: ORANGE_COLOR, backgroundColor: ORANGE_AREA }] } },
-        
-        // САЛАТОВИЙ (Готовність)
-        { id: 'chart-ready', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [9, 8, 8, 7, 9, 10, 9], label: 'Готовність', borderColor: LIME_COLOR, backgroundColor: LIME_AREA }] } },
+        // Золотий
+        { id: 'chart-ready', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [9, 8, 8, 7, 9, 10, 9], label: 'Готовність' }] } },
     ];
 
     charts.forEach(chart => {
@@ -198,7 +189,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const currentPath = window.location.pathname.split('/').pop();
     const sidebarLinks = document.querySelectorAll('.sidebar a');
 
-    // Логіка підсвічування активного пункту меню
     sidebarLinks.forEach(link => {
         link.classList.remove('active'); 
         if (link.getAttribute('href') === currentPath) {
@@ -206,7 +196,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Ініціалізація графіків та обмежень, якщо ми на сторінці Wellness Control
     if (currentPath === 'wellness.html') {
         initCharts();
         
