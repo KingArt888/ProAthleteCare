@@ -20,9 +20,15 @@ function initCharts() {
     const ORANGE_AREA = 'rgba(255, 159, 64, 0.4)';
     const GREY_GRID = '#CCCCCC'; 
     
-    // --- НОВІ БЛАКИТНІ КОНСТАНТИ ---
-    const BLUE_COLOR = 'rgb(0, 191, 255)'; // Яскраво-блакитний
-    const BLUE_AREA = 'rgba(0, 191, 255, 0.4)'; // Блакитний з прозорістю
+    // --- НОВІ КОНСТАНТИ ---
+    const BLUE_COLOR = 'rgb(0, 191, 255)'; // Блакитний для Гідратації
+    const BLUE_AREA = 'rgba(0, 191, 255, 0.4)'; 
+    
+    const PURPLE_COLOR = 'rgb(147, 112, 219)'; // Фіолетовий для Настрою <--- НОВИЙ КОЛІР
+    const PURPLE_AREA = 'rgba(147, 112, 219, 0.4)'; 
+    
+    const LIME_COLOR = 'rgb(50, 205, 50)'; // Салатовий для Готовності <--- НОВИЙ КОЛІР
+    const LIME_AREA = 'rgba(50, 205, 50, 0.4)';
 
     // Шаблон даних для міні-графіків (За замовчуванням Золотий)
     const dataTemplate = {
@@ -58,14 +64,15 @@ function initCharts() {
 
     // Створення маленьких графіків з індивідуальними кольорами
     const charts = [
-        // Золотий
+        // Золотий (Сон)
         { id: 'chart-sleep', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [7, 8, 7, 6, 8, 9, 7], label: 'Сон' }] } },
         // Червоний (Біль)
         { id: 'chart-soreness', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [4, 5, 3, 6, 5, 2, 4], label: 'Біль', borderColor: RED_COLOR, backgroundColor: RED_AREA }] } },
-        // Золотий
-        { id: 'chart-mood', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [9, 8, 9, 7, 8, 10, 9], label: 'Настрій' }] } },
         
-        // БЛАКИТНИЙ (Гідратація) <--- ЗМІНА ТУТ
+        // ФІОЛЕТОВИЙ (Настрій) <--- ЗАСТОСОВАНО
+        { id: 'chart-mood', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [9, 8, 9, 7, 8, 10, 9], label: 'Настрій', borderColor: PURPLE_COLOR, backgroundColor: PURPLE_AREA }] } },
+        
+        // БЛАКИТНИЙ (Гідратація)
         { id: 'chart-water', data: { 
             ...dataTemplate, 
             datasets: [{ 
@@ -79,8 +86,9 @@ function initCharts() {
         
         // Помаранчевий (Стрес)
         { id: 'chart-stress', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [3, 4, 5, 5, 4, 2, 3], label: 'Стрес', borderColor: ORANGE_COLOR, backgroundColor: ORANGE_AREA }] } },
-        // Золотий
-        { id: 'chart-ready', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [9, 8, 8, 7, 9, 10, 9], label: 'Готовність' }] } },
+        
+        // САЛАТОВИЙ (Готовність) <--- ЗАСТОСОВАНО
+        { id: 'chart-ready', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [9, 8, 8, 7, 9, 10, 9], label: 'Готовність', borderColor: LIME_COLOR, backgroundColor: LIME_AREA }] } },
     ];
 
     charts.forEach(chart => {
@@ -189,58 +197,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const currentPath = window.location.pathname.split('/').pop();
     const sidebarLinks = document.querySelectorAll('.sidebar a');
 
+    // Логіка підсвічування активного пункту меню
     sidebarLinks.forEach(link => {
         link.classList.remove('active'); 
         if (link.getAttribute('href') === currentPath) {
-            link.classList.add('active');
-        }
-    });
-
-    if (currentPath === 'wellness.html') {
-        initCharts();
-        
-        checkDailyRestriction(); 
-
-        const form = document.getElementById('wellness-form');
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                if (checkDailyRestriction()) {
-                    return;
-                }
-                
-                // --- ПРОСТА ВАЛІДАЦІЯ ---
-                const requiredRatings = form.querySelectorAll('.rating-group');
-                let allChecked = true;
-                requiredRatings.forEach(group => {
-                    if (!group.querySelector('input:checked')) {
-                        allChecked = false;
-                    }
-                });
-
-                if (!allChecked) {
-                    alert("Будь ласка, заповніть усі 6 точок даних перед відправкою.");
-                    return; 
-                }
-                
-                // --- ЛОГІКА ЗБЕРЕЖЕННЯ ---
-                
-                const submissionData = {};
-                form.querySelectorAll('input[type="radio"]:checked').forEach(input => {
-                    submissionData[input.name] = input.value;
-                });
-                console.log("Дані для відправки:", submissionData);
-
-
-                // 1. Збереження дати відправки в localStorage
-                localStorage.setItem('lastWellnessSubmissionDate', getTodayDateString());
-                
-                // 2. Застосування обмеження (вимикаємо форму)
-                checkDailyRestriction(); 
-                
-                alert("Ваші дані Wellness успішно записані!");
-            });
-        }
-    }
-});
+            link.classList
