@@ -192,3 +192,11 @@ textarea {
     display: none;
 }
 /* Контейнер для зображення силуету
+}/* Футер */footer {
+    text-align: center;
+    padding: 10px;
+    background-color: #0d0d0d;
+    font-size: 0.8em;
+    color: #888888;
+    border-top: 1px solid #1a1a1a;
+}
