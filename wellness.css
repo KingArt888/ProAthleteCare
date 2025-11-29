@@ -17,7 +17,7 @@
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }.form-card {
     width: 35%; 
-    min-width: 350px;
+    max-width: 350px;
 }.chart-card {
     flex-grow: 1; 
     max-width: 500px; /* <--- ДОДАТИ: Обмежити максимальну ширину */
