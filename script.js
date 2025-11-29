@@ -555,3 +555,403 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
 });
+/* ========================================================== */
+/* ЛОГІКА ДЛЯ СТОРІНКИ LOAD SEASON                  */
+/* Використовує Chart.js та дані з localStorage     */
+/* ========================================================== */
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Переконайтеся, що Chart.js завантажено
+    if (typeof Chart === 'undefined') {
+        console.error("Chart.js не завантажено. Перевірте підключення бібліотеки.");
+        return;
+    }
+    
+    // Константи
+    const STORAGE_KEY = 'proathletecare_load_data';
+    const ACWR_OPTIMAL_MIN = 0.8;
+    const ACWR_OPTIMAL_MAX = 1.3;
+    const ACWR_HIGH_RISK = 1.5;
+    const ACWR_LOW_RISK = 0.5;
+
+    // Елементи DOM
+    const loadForm = document.getElementById('load-form');
+    const submitLoadBtn = document.getElementById('submit-load-btn');
+    const acwrRpeValue = document.getElementById('acwr-rpe-value');
+    const riskStatusCard = document.getElementById('risk-status-card');
+
+    // Екземпляри графіків
+    let acwrChartInstance;
+    let loadTrendChartInstance;
+    let distanceChartInstance;
+
+    // --- Data Storage & Loading ---
+
+    function loadData() {
+        try {
+            const json = localStorage.getItem(STORAGE_KEY);
+            // Сортування даних за датою для коректних розрахунків
+            return json ? JSON.parse(json).sort((a, b) => new Date(a.date) - new Date(b.date)) : [];
+        } catch (e) {
+            console.error("Помилка завантаження даних:", e);
+            return [];
+        }
+    }
+
+    function saveData(data) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    // --- ACWR & Load Calculation ---
+
+    function calculateACWR(data, type = 'rpe') {
+        const results = [];
+        if (data.length === 0) return results;
+
+        const loadMap = new Map();
+        data.forEach(d => {
+            if (type === 'rpe') {
+                loadMap.set(d.date, d.duration * d.rpe); // RPE-Load
+            } else if (type === 'distance') {
+                loadMap.set(d.date, d.distance); // Distance Load
+            }
+        });
+
+        const sortedDates = data.map(d => new Date(d.date));
+        const startDate = sortedDates[0];
+        const endDate = sortedDates[sortedDates.length - 1];
+
+        // Починаємо розрахунок на 27 днів раніше, щоб мати хронічне навантаження
+        const effectiveStartDate = new Date(startDate);
+        effectiveStartDate.setDate(startDate.getDate() - 27);
+
+        for (let current = new Date(effectiveStartDate); current <= endDate; current.setDate(current.getDate() + 1)) {
+            const currentDateStr = current.toISOString().split('T')[0];
+            
+            // --- Acute Load (7 days Sum) ---
+            let acuteLoadSum = 0;
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(current);
+                date.setDate(current.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                acuteLoadSum += (loadMap.get(dateStr) || 0);
+            }
+            const acute = acuteLoadSum;
+
+            // --- Chronic Load (28 days Average) ---
+            let chronicLoadSum = 0;
+            for (let i = 0; i < 28; i++) {
+                const date = new Date(current);
+                date.setDate(current.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                chronicLoadSum += (loadMap.get(dateStr) || 0);
+            }
+            const chronicAvg = chronicLoadSum / 28;
+            
+            let acwr = null;
+            if (chronicAvg > 0) {
+                acwr = acute / chronicAvg;
+            }
+
+            // Додаємо дані лише з оригінального діапазону
+            if (current >= startDate) {
+                results.push({
+                    date: currentDateStr,
+                    acwr: acwr,
+                    acute: acute,
+                    chronic: chronicAvg * 7, // Для графіків, щоб візуально порівнювати
+                    dailyLoad: (loadMap.get(currentDateStr) || 0)
+                });
+            }
+        }
+        return results;
+    }
+
+    // --- Form Submission ---
+
+    loadForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const data = new FormData(loadForm);
+        const date = data.get('date');
+        const duration = parseInt(data.get('duration'));
+        const distance = parseInt(data.get('distance'));
+        const rpe = parseInt(data.get('rpe'));
+
+        if (!date || isNaN(duration) || isNaN(distance) || isNaN(rpe)) {
+            alert('Будь ласка, заповніть усі поля форми.');
+            return;
+        }
+
+        const allData = loadData();
+        const dailyLoad = duration * rpe;
+
+        // Перевірка на дублікат даних (якщо сьогодні вже зафіксовано)
+        const existingIndex = allData.findIndex(item => item.date === date);
+        if (existingIndex !== -1) {
+            if (!confirm(`Дані за ${date} вже існують. Ви хочете їх оновити?`)) {
+                return;
+            }
+            allData[existingIndex] = { date, duration, distance, rpe, load: dailyLoad };
+        } else {
+            allData.push({ date, duration, distance, rpe, load: dailyLoad });
+        }
+        
+        saveData(allData);
+        alert('Дані про тренування успішно зафіксовано!');
+        loadForm.reset();
+        document.getElementById('load-date').value = new Date().toISOString().split('T')[0];
+        updateDashboard();
+    });
+
+    // --- Dashboard Update ---
+
+    function updateDashboard() {
+        const allData = loadData();
+        
+        if (allData.length === 0) {
+            // Ініціалізація, коли немає даних
+            acwrRpeValue.textContent = "N/A";
+            submitLoadBtn.className = 'gold-button status-grey';
+            riskStatusCard.className = 'chart-card status-grey';
+            riskStatusCard.innerHTML = `<p style="font-size: 1.1em; color: #999; font-weight: bold; margin: 0;">Недостатньо даних</p>`;
+            return;
+        }
+
+        const acwrRpeResults = calculateACWR(allData, 'rpe');
+        const acwrDistanceResults = calculateACWR(allData, 'distance');
+
+        // Оновлення картки ACWR (RPE) та кнопки
+        const latestRpeResult = acwrRpeResults[acwrRpeResults.length - 1];
+        let latestACWR = null;
+        
+        if (latestRpeResult && latestRpeResult.acwr !== null) {
+            latestACWR = parseFloat(latestRpeResult.acwr.toFixed(2));
+            acwrRpeValue.textContent = latestACWR;
+
+            let statusText = '';
+            let statusClass = '';
+            let buttonClass = '';
+
+            if (latestACWR >= ACWR_HIGH_RISK) {
+                statusText = 'Високий Ризик Травми';
+                statusClass = 'status-danger';
+                buttonClass = 'status-red';
+            } else if (latestACWR >= ACWR_OPTIMAL_MAX) {
+                statusText = 'Підвищений Ризик (Увага)';
+                statusClass = 'status-warning';
+                buttonClass = 'status-orange';
+            } else if (latestACWR >= ACWR_OPTIMAL_MIN) {
+                statusText = 'Оптимальна Зона';
+                statusClass = 'status-optimal';
+                buttonClass = 'status-green';
+            } else if (latestACWR >= ACWR_LOW_RISK) {
+                statusText = 'Недостатній Обсяг (Увага)';
+                statusClass = 'status-warning';
+                buttonClass = 'status-orange';
+            } else {
+                statusText = 'Низький Обсяг (Детренування)';
+                statusClass = 'status-danger';
+                buttonClass = 'status-red';
+            }
+            
+            // Оновлення картки статусу
+            riskStatusCard.className = `chart-card ${statusClass}`;
+            riskStatusCard.innerHTML = `
+                <p style="font-size: 1.1em; color: ${statusClass === 'status-danger' ? '#DA3E52' : statusClass === 'status-warning' ? '#FF9800' : '#4CAF50'}; font-weight: bold; margin: 0;">
+                    <span style="font-size: 1.5em; margin-right: 5px;">${statusClass === 'status-danger' ? '🔴' : statusClass === 'status-warning' ? '⚠️' : '✅'}</span> ${statusText}
+                </p>
+                <p style="font-size: 0.8em; color: #999; margin: 5px 0 0 0;">$0.8 \text{ — } 1.3 \text{ (Optimal)}$</p>
+            `;
+            
+            // Оновлення кнопки
+            submitLoadBtn.className = 'gold-button ' + buttonClass;
+        } else {
+            acwrRpeValue.textContent = "N/A";
+            submitLoadBtn.className = 'gold-button status-grey';
+        }
+
+        // Рендер графіків
+        renderACWRChart(acwrRpeResults);
+        renderLoadTrendChart(acwrRpeResults);
+        renderDistanceChart(acwrDistanceResults);
+    }
+
+    // --- Chart.js Rendering Functions ---
+
+    // Базові опції для темних графіків
+    const baseChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { labels: { color: '#BBBBBB' } },
+            tooltip: { backgroundColor: 'rgba(13, 13, 13, 0.9)', titleColor: '#FFC72C', bodyColor: '#CCCCCC', borderColor: '#333', borderWidth: 1 }
+        },
+        scales: {
+            x: { grid: { color: '#1a1a1a' }, ticks: { color: '#BBBBBB' } },
+            y: { grid: { color: '#1a1a1a' }, ticks: { color: '#BBBBBB' } }
+        }
+    };
+
+    // 1. Графік Динаміки Ризику (ACWR)
+    function renderACWRChart(results) {
+        const ctx = document.getElementById('acwrChart').getContext('2d');
+        if (acwrChartInstance) acwrChartInstance.destroy();
+
+        const labels = results.map(r => r.date);
+        const acwrData = results.map(r => r.acwr);
+
+        acwrChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'ACWR',
+                    data: acwrData,
+                    borderColor: '#FFC72C', // Золотий
+                    backgroundColor: 'rgba(255, 199, 44, 0.2)',
+                    tension: 0.4,
+                    pointRadius: 3,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                ...baseChartOptions,
+                plugins: {
+                    ...baseChartOptions.plugins,
+                    annotation: {
+                        annotations: {
+                            optimalMax: {
+                                type: 'line',
+                                yMin: ACWR_OPTIMAL_MAX,
+                                yMax: ACWR_OPTIMAL_MAX,
+                                borderColor: '#FF9800',
+                                borderWidth: 1,
+                                borderDash: [5, 5],
+                                label: { content: 'Ризик (1.3)', enabled: true, position: 'end', color: '#FF9800' }
+                            },
+                            highRisk: {
+                                type: 'line',
+                                yMin: ACWR_HIGH_RISK,
+                                yMax: ACWR_HIGH_RISK,
+                                borderColor: '#DA3E52',
+                                borderWidth: 2,
+                                label: { content: 'Високий Ризик (1.5)', enabled: true, position: 'end', color: '#DA3E52' }
+                            },
+                            optimalMin: {
+                                type: 'line',
+                                yMin: ACWR_OPTIMAL_MIN,
+                                yMax: ACWR_OPTIMAL_MIN,
+                                borderColor: '#4CAF50',
+                                borderWidth: 1,
+                                borderDash: [5, 5],
+                                label: { content: 'Оптимально (0.8)', enabled: true, position: 'start', color: '#4CAF50' }
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: baseChartOptions.scales.x,
+                    y: {
+                        ...baseChartOptions.scales.y,
+                        min: 0,
+                        max: 2.0,
+                        title: { display: true, text: 'ACWR', color: '#BBBBBB' }
+                    }
+                }
+            }
+        });
+    }
+
+    // 2. Графік Тренувального Навантаження (Acute & Chronic Load)
+    function renderLoadTrendChart(results) {
+        const ctx = document.getElementById('loadTrendChart').getContext('2d');
+        if (loadTrendChartInstance) loadTrendChartInstance.destroy();
+
+        const labels = results.map(r => r.date);
+        const acuteLoad = results.map(r => r.acute);
+        const chronicLoad = results.map(r => r.chronic);
+
+        loadTrendChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Гостре Навантаження (7 дн)',
+                        data: acuteLoad,
+                        backgroundColor: '#FFC72C', // Золотий
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Хронічне Навантаження (28 дн)',
+                        data: chronicLoad,
+                        type: 'line',
+                        borderColor: '#CCCCCC', // Світло-сірий для тренду
+                        borderWidth: 2,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        fill: false,
+                        yAxisID: 'y'
+                    }
+                ]
+            },
+            options: {
+                ...baseChartOptions,
+                scales: {
+                    x: baseChartOptions.scales.x,
+                    y: {
+                        ...baseChartOptions.scales.y,
+                        title: { display: true, text: 'RPE Навантаження', color: '#BBBBBB' }
+                    }
+                }
+            }
+        });
+    }
+
+    // 3. Графік Кілометражу (Distance Trend)
+    function renderDistanceChart(results) {
+        const ctx = document.getElementById('distanceChart').getContext('2d');
+        if (distanceChartInstance) distanceChartInstance.destroy();
+
+        const labels = results.map(r => r.date);
+        const distanceData = results.map(r => r.dailyLoad);
+
+        distanceChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Кілометраж (м)',
+                    data: distanceData,
+                    borderColor: '#4CAF50', // Можна використати зелений для цього графіка, як стандарт для "кілометражу"
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    fill: 'origin',
+                    tension: 0.3,
+                    pointRadius: 2,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                ...baseChartOptions,
+                scales: {
+                    x: {
+                        ...baseChartOptions.scales.x,
+                        display: false // Приховуємо вісь X для мінімалізму
+                    },
+                    y: {
+                        ...baseChartOptions.scales.y,
+                        display: false // Приховуємо вісь Y
+                    }
+                },
+                plugins: {
+                    ...baseChartOptions.plugins,
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // Ініціалізація дашборду при завантаженні сторінки
+    updateDashboard();
+});
