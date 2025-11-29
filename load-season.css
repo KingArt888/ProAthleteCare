@@ -1,21 +1,26 @@
 /* --- СТИЛІ ДЛЯ СТОРІНКИ LOAD SEASON (УНІКАЛЬНІ + КОМПОНЕНТИ) --- */
 
 /* ============================================== */
-/* 1. СТИЛІ МАКЕТА ТА КАРТОК (Базові, скопійовані з injury.css) */
+/* 1. СТИЛІ МАКЕТА ТА КАРТОК (Базові) */
 /* ============================================== */
 
-/* Контейнер для форми та графіка (робить картки поряд) */
 .dashboard-container {
     display: flex;
     gap: 30px;
     margin-top: 20px;
     flex-wrap: wrap;
-    /* Вирівнюємо елементи зверху вниз */
-    align-items: flex-start; 
+    align-items: flex-start;
 }
 
-/* Картки для форми та графіка (базовий вигляд) */
-.form-card, .card { /* .card використовуємо для всіх візуалізаційних блоків */
+.visualization-area {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    flex-grow: 1;
+    min-width: 400px;
+}
+
+.card {
     background-color: #0d0d0d;
     border: 1px solid #1a1a1a;
     border-radius: 10px;
@@ -23,31 +28,11 @@
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
-/* Розміри карток Load Season */
-.form-card {
-    width: 35%;
-    min-width: 350px;
-    max-width: 450px;
-    flex-grow: 0;
-    flex-shrink: 0;
-}
-
-/* Область для графіків */
-.visualization-area {
-    display: flex;
-    flex-direction: column; /* Графіки розташовані один під одним */
-    gap: 20px;
-    flex-grow: 1;
-    min-width: 400px;
-}
-
 .chart-card {
-    /* Робимо висоту фіксованою для гармонії */
-    height: 350px; 
-    padding: 15px; /* Трохи менший падинг для графіків */
+    height: 350px;
+    padding: 15px;
 }
 
-/* Заголовки всередині карток */
 .form-card h3, .card h3 {
     color: #FFC72C;
     margin-top: 0;
@@ -56,23 +41,8 @@
     margin-bottom: 20px;
 }
 
-/* Стилі для полів вводу (додано для Distance) */
-input[type="date"],
-input[type="number"], /* Додано для Duration та Distance */
-input[type="text"] {
-    width: 100%;
-    padding: 8px;
-    margin-bottom: 15px;
-    background-color: #1a1a1a;
-    border: 1px solid #333;
-    color: #CCCCCC;
-    border-radius: 5px;
-    box-sizing: border-box; 
-}
-
-/* Стилі для кнопки */
 .gold-button {
-    background-color: #50C878; /* Зелений для збереження */
+    background-color: #50C878;
     color: #000000;
     border: none;
     padding: 12px 25px;
@@ -87,7 +57,6 @@ input[type="text"] {
     background-color: #4CAF50;
 }
 
-/* Стилі для placeholder-тексту */
 .placeholder-text {
     color: #888888;
     font-style: italic;
@@ -97,48 +66,67 @@ input[type="text"] {
 }
 
 /* ============================================== */
-/* 2. УНІКАЛЬНІ СТИЛІ RPE (Rating Group) */
+/* 2. УНІКАЛЬНІ СТИЛІ RPE (Rating Group) - ВИПРАВЛЕНО */
 /* ============================================== */
 
-/* Загальний стиль для рейтингів RPE */
 .rating-group {
     display: flex;
-    flex-direction: row-reverse; /* Щоб 10 була справа */
+    flex-direction: row-reverse; 
     justify-content: flex-end;
     direction: ltr;
-    font-size: 1.5em;
+    font-size: 1.4em;
     margin: 10px 0 20px 0;
 }
 .rating-group input {
     display: none;
 }
 .rating-group label {
-    color: #333;
+    color: #333333;
     cursor: pointer;
     transition: color 0.2s;
+    font-weight: bold;
+    padding: 0 5px;
 }
-
-/* RPE: Використовуємо круги */
 .pain-group label:before {
-    content: '●'; /* Створюємо круги */
-    margin-right: 3px;
-    margin-left: 3px;
-    font-size: 0.8em;
+    content: none;
 }
 
-/* Колір RPE від 1 до 10 */
-.pain-group input:nth-child(2):checked ~ label:before,
-.pain-group input:nth-child(2) ~ label:hover:before,
-.pain-group input:nth-child(2) ~ label:hover ~ label:before,
-.pain-group input:nth-child(2):checked ~ label { color: #50C878; } /* 1-2 Green */
-.pain-group input:nth-child(4):checked ~ label:before,
-.pain-group input:nth-child(4) ~ label:hover:before,
-.pain-group input:nth-child(4) ~ label:hover ~ label:before,
-.pain-group input:nth-child(4):checked ~ label { color: #FFC72C; } /* 3-7 Yellow */
-.pain-group input:nth-child(10):checked ~ label:before,
-.pain-group input:nth-child(10) ~ label:hover:before,
-.pain-group input:nth-child(10) ~ label:hover ~ label:before,
-.pain-group input:nth-child(10):checked ~ label { color: #DA3E52; } /* 8-10 Red */
+/* 1. ЛОГІКА ВИДІЛЕННЯ (ПРАЦЮЄ: ВИБРАНИЙ + УСІ ПОПЕРЕДНІ) */
+.pain-group label:hover,
+.pain-group label:hover ~ label {
+    color: #FFC72C; /* Дефолтний колір наведення */
+}
+.pain-group input:checked ~ label {
+    color: #FFC72C;
+}
+/* Щоб поточний вибраний елемент також був виділений */
+.pain-group input:checked + label {
+    color: #FFC72C;
+}
+
+/* 2. ЛОГІКА КОЛЬОРОВИХ ЗОН RPE */
+
+/* RPE 8-10 (Червоний) */
+.pain-group input:checked[value="10"] ~ label, .pain-group input:checked[value="10"] + label,
+.pain-group input:checked[value="9"] ~ label, .pain-group input:checked[value="9"] + label,
+.pain-group input:checked[value="8"] ~ label, .pain-group input:checked[value="8"] + label {
+    color: #DA3E52; /* Червоний */
+}
+
+/* RPE 3-7 (Золотий) */
+.pain-group input:checked[value="7"] ~ label, .pain-group input:checked[value="7"] + label,
+.pain-group input:checked[value="6"] ~ label, .pain-group input:checked[value="6"] + label,
+.pain-group input:checked[value="5"] ~ label, .pain-group input:checked[value="5"] + label,
+.pain-group input:checked[value="4"] ~ label, .pain-group input:checked[value="4"] + label,
+.pain-group input:checked[value="3"] ~ label, .pain-group input:checked[value="3"] + label {
+    color: #FFC72C; /* Золотий */
+}
+
+/* RPE 1-2 (Зелений) */
+.pain-group input:checked[value="2"] ~ label, .pain-group input:checked[value="2"] + label,
+.pain-group input:checked[value="1"] ~ label, .pain-group input:checked[value="1"] + label {
+    color: #50C878; /* Зелений */
+}
 
 
 /* ============================================== */
@@ -153,11 +141,13 @@ input[type="text"] {
 
 #acwr-status {
     padding: 10px;
-    /* Візуалізація статусу */
     font-size: 1.2em;
 }
 
-/* Медіа-запити для адаптивності */
+/* ============================================== */
+/* 4. АДАПТИВНІСТЬ */
+/* ============================================== */
+
 @media (max-width: 992px) {
     .dashboard-container {
         flex-direction: column;
