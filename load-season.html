@@ -25,99 +25,104 @@
             <a href="load-season.html" class="active">Load Season <img src="AK_logo.png" class="menu-icon" alt="АК"></a> 
             
             <a href="daily-individual.html">Daily Individual <img src="AK_logo.png" class="menu-icon" alt="АК"></a>
-            <a href="weekly-individual.html">Weekly Individual <img src="AK_logo.png" class="menu-icon" alt="АК"></a>
+            <a href="weekly-individual.html">Weekly Individual <img src="AK_logo.html" class="menu-icon" alt="АК"></a>
             <a href="weight-control.html">Weight Control <img src="AK_logo.png" class="menu-icon" alt="АК"></a>
             <a href="velocity-control.html">Velocity Control <img src="AK_logo.png" class="menu-icon" alt="АК"></a>
         </nav>
         
        <div class="main-content">
-    <h2 style="color: #FFC72C;">📊 Load Season: Контроль тренувального навантаження</h2>
+            <h2 style="color: #FFC72C;">📊 Load Season: Контроль тренувального навантаження</h2>
 
-    <div class="dashboard-container">
-        
-        <div class="form-card" style="width: 400px; min-width: 380px;">
-            <h3>Щоденне тренування (Session-RPE)</h3>
-            <form id="load-form">
+            <div class="dashboard-container">
                 
-                <label for="load-date">Дата тренування:</label>
-                <input type="date" id="load-date" name="date" required style="width: calc(100% - 20px); padding: 10px; background-color: #1a1a1a; border: 1px solid #333; color: #CCCCCC; border-radius: 5px; margin-bottom: 15px;">
-                
-                <label for="load-duration">Тривалість (хвилин):</label>
-                <input type="number" id="load-duration" name="duration" min="1" value="60" required style="width: calc(100% - 20px); padding: 10px; background-color: #1a1a1a; border: 1px solid #333; color: #CCCCCC; border-radius: 5px; margin-bottom: 15px;">
+                <div class="form-card" style="width: 400px; min-width: 380px;">
+                    <h3>Щоденне тренування (Session-RPE)</h3>
+                    <form id="load-form">
+                        
+                        <label for="load-date">Дата тренування:</label>
+                        <input type="date" id="load-date" name="date" required style="width: calc(100% - 20px); padding: 10px; background-color: #1a1a1a; border: 1px solid #333; color: #CCCCCC; border-radius: 5px; margin-bottom: 15px;">
+                        
+                        <label for="load-duration">Тривалість (хвилин):</label>
+                        <input type="number" id="load-duration" name="duration" min="1" value="60" required style="width: calc(100% - 20px); padding: 10px; background-color: #1a1a1a; border: 1px solid #333; color: #CCCCCC; border-radius: 5px; margin-bottom: 15px;">
 
-                <label for="load-distance">Кілометраж (м):</label>
-                <input type="number" id="load-distance" name="distance" min="0" value="5500" step="100" style="width: calc(100% - 20px); padding: 10px; background-color: #1a1a1a; border: 1px solid #333; color: #CCCCCC; border-radius: 5px; margin-bottom: 15px;">
+                        <label for="load-distance">Кілометраж (м):</label>
+                        <input type="number" id="load-distance" name="distance" min="0" value="5500" step="100" style="width: calc(100% - 20px); padding: 10px; background-color: #1a1a1a; border: 1px solid #333; color: #CCCCCC; border-radius: 5px; margin-bottom: 15px;">
 
-                <label style="margin-top: 20px;">Суб'єктивне навантаження (RPE, 1-10):</label>
-                <div class="rating-group rpe-group" id="rpe-rating-group" style="font-size: 1.2em; justify-content: space-between;">
-                    <input type="radio" id="rpe10" name="rpe" value="10"><label for="rpe10" title="10 (Макс)">10</label>
-                    <input type="radio" id="rpe9" name="rpe" value="9"><label for="rpe9" title="9">9</label>
-                    <input type="radio" id="rpe8" name="rpe" value="8"><label for="rpe8" title="8 (Дуже важко)">8</label>
-                    <input type="radio" id="rpe7" name="rpe" value="7"><label for="rpe7" title="7 (Важко)">7</label>
-                    <input type="radio" id="rpe6" name="rpe" value="6"><label for="rpe6" title="6">6</label>
-                    <input type="radio" id="rpe5" name="rpe" value="5"><label for="rpe5" title="5 (Помірно)">5</label>
-                    <input type="radio" id="rpe4" name="rpe" value="4"><label for="rpe4" title="4">4</label>
-                    <input type="radio" id="rpe3" name="rpe" value="3"><label for="rpe3" title="3 (Легко)">3</label>
-                    <input type="radio" id="rpe2" name="rpe" value="2"><label for="rpe2" title="2">2</label>
-                    <input type="radio" id="rpe1" name="rpe" value="1"><label for="rpe1" title="1 (Дуже легко)">1</label>
+                        <label style="margin-top: 20px;">Суб'єктивне навантаження (RPE, 1-10):</label>
+                        <div class="rating-group rpe-group" id="rpe-rating-group" style="font-size: 1.2em; justify-content: space-between;">
+                            <input type="radio" id="rpe10" name="rpe" value="10"><label for="rpe10" title="10 (Макс)">10</label>
+                            <input type="radio" id="rpe9" name="rpe" value="9"><label for="rpe9" title="9">9</label>
+                            <input type="radio" id="rpe8" name="rpe" value="8"><label for="rpe8" title="8 (Дуже важко)">8</label>
+                            <input type="radio" id="rpe7" name="rpe" value="7"><label for="rpe7" title="7 (Важко)">7</label>
+                            <input type="radio" id="rpe6" name="rpe" value="6"><label for="rpe6" title="6">6</label>
+                            <input type="radio" id="rpe5" name="rpe" value="5"><label for="rpe5" title="5 (Помірно)">5</label>
+                            <input type="radio" id="rpe4" name="rpe" value="4"><label for="rpe4" title="4">4</label>
+                            <input type="radio" id="rpe3" name="rpe" value="3"><label for="rpe3" title="3 (Легко)">3</label>
+                            <input type="radio" id="rpe2" name="rpe" value="2"><label for="rpe2" title="2">2</label>
+                            <input type="radio" id="rpe1" name="rpe" value="1"><label for="rpe1" title="1 (Дуже легко)">1</label>
+                        </div>
+                        
+                        <button type="submit" id="submit-load-btn" class="gold-button" style="width: 100%;">
+                            Зафіксувати Навантаження
+                        </button>
+                    </form>
                 </div>
-                
-                <button type="submit" id="submit-load-btn" class="gold-button" style="width: 100%;">
-                    Зафіксувати Навантаження
-                </button>
-            </form>
-        </div>
 
-        
-        <div class="chart-section" style="flex-grow: 1;">
+                
+                <div class="chart-section" style="flex-grow: 1;">
+                    
+                    <div style="display: flex; gap: 25px; margin-bottom: 25px;">
+                        <div class="chart-card" style="flex: 1; text-align: center; background-color: #1a1a1a; border: 1px solid #FFC72C;">
+                            <p style="color: #999999; margin: 0; font-size: 0.9em;">Поточний ACWR (RPE)</p>
+                            <h3 id="acwr-rpe-value" style="font-size: 2.5em; color: #FFC72C; margin: 5px 0 0px 0;">1.25</h3>
+                            <div style="font-size: 0.8em; color: #CCCCCC;">
+                                <span id="acwr-rpe-trend-icon" style="color: #4CAF50;">▲</span> Норма
+                            </div>
+                        </div>
+
+                        <div id="risk-status-card" class="chart-card status-optimal" style="flex: 1; text-align: center; background-color: #383838; border: 1px solid #FFC72C;">
+                            <p style="font-size: 1.1em; color: #FFC72C; font-weight: bold; margin: 0;"><span style="font-size: 1.5em; margin-right: 5px;">✅</span> Оптимальна Зона</p>
+                            <p style="font-size: 0.8em; color: #999; margin: 5px 0 0 0;">$0.8 \text{ — } 1.3$</p>
+                        </div>
+                    </div>
+
+                    <div class="chart-card" style="margin-top: -15px;">
+                        <h3>Динаміка Кілометражу (External Load Trend)</h3>
+                        <div class="chart-area" style="min-height: 200px; padding: 10px;">
+                            <canvas id="distanceChart"></canvas>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
             
-            <div style="display: flex; gap: 25px; margin-bottom: 25px;">
-                <div class="chart-card" style="flex: 1; text-align: center; background-color: #1a1a1a; border: 1px solid #FFC72C;">
-                    <p style="color: #999999; margin: 0; font-size: 0.9em;">Поточний ACWR (RPE)</p>
-                    <h3 id="acwr-rpe-value" style="font-size: 2.5em; color: #FFC72C; margin: 5px 0 0px 0;">1.25</h3>
-                    <div style="font-size: 0.8em; color: #CCCCCC;">
-                        <span id="acwr-rpe-trend-icon" style="color: #4CAF50;">▲</span> Норма
+            <div style="display: flex; gap: 30px; margin-top: 30px;">
+                <div class="chart-card" style="flex: 1;">
+                    <h3>Ризик Травми (ACWR Trend)</h3>
+                    <div class="chart-area" style="min-height: 250px; padding: 10px;">
+                        <canvas id="acwrChart"></canvas>
                     </div>
                 </div>
 
-                <div id="risk-status-card" class="chart-card status-optimal" style="flex: 1; text-align: center; background-color: #383838; border: 1px solid #FFC72C;">
-                    <p style="font-size: 1.1em; color: #FFC72C; font-weight: bold; margin: 0;"><span style="font-size: 1.5em; margin-right: 5px;">✅</span> Оптимальна Зона</p>
-                    <p style="font-size: 0.8em; color: #999; margin: 5px 0 0 0;">$0.8 \text{ — } 1.3$</p>
+                <div class="chart-card" style="flex: 1;">
+                    <h3>Тренувальне Навантаження (Acute & Chronic Load)</h3>
+                    <div class="chart-area" style="min-height: 250px; padding: 10px;">
+                        <canvas id="loadTrendChart"></canvas>
+                    </div>
                 </div>
             </div>
 
-            <div class="chart-card" style="margin-top: -15px;">
-                <h3>Динаміка Кілометражу (External Load Trend)</h3>
-                <div class="chart-area" style="min-height: 200px; padding: 10px;">
-                    <canvas id="distanceChart"></canvas>
-                </div>
-            </div>
-            
         </div>
+
     </div>
+
+    <footer>
+        <p>&copy; 2025 ProAthleteCare. Всі права захищені.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1/dist/chartjs-plugin-annotation.min.js"></script>
     
-    <div style="display: flex; gap: 30px; margin-top: 30px;">
-        <div class="chart-card" style="flex: 1;">
-            <h3>Ризик Травми (ACWR Trend)</h3>
-            <div class="chart-area" style="min-height: 250px; padding: 10px;">
-                <canvas id="acwrChart"></canvas>
-            </div>
-        </div>
+    <script src="load-season.js"></script> 
 
-        <div class="chart-card" style="flex: 1;">
-            <h3>Тренувальне Навантаження (Acute & Chronic Load)</h3>
-            <div class="chart-area" style="min-height: 250px; padding: 10px;">
-                <canvas id="loadTrendChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1/dist/chartjs-plugin-annotation.min.js"></script>
-<script>
-    // Тут буде JavaScript для розрахунків, який я надавав раніше
-    // та який буде адаптовано під ваші стилі та розмітку.
-    // Зокрема, адаптація кольорів Chart.js (grid, ticks, line colors)
-</script>
+</body>
+</html>
