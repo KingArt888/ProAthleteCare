@@ -3,225 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Load Season Control | ProAthleteCare</title>
-    
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #1a1a1a; /* Дуже темний фон */
-            color: #CCCCCC;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        h2, h3 {
-            color: #EEEEEE; /* Світліший заголовок */
-            margin-top: 0;
-            margin-bottom: 15px;
-        }
-        .chart-card {
-            background-color: #242424; /* Фон карток */
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-            margin-bottom: 20px;
-        }
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        /* Стилі для форми */
-        .form-group { margin-bottom: 10px; }
-        label { display: block; margin-bottom: 3px; color: #BBBBBB; font-size: 0.9em; }
-        input[type="number"], input[type="date"] {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #3a3a3a;
-            border-radius: 4px;
-            background-color: #333333;
-            color: #FFFFFF;
-            box-sizing: border-box;
-        }
-        /* Стилі кнопок та акцентів (як на макеті - зелений) */
-        .green-button {
-            background-color: #4CAF50; /* Зелений */
-            color: #121212;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1em;
-            font-weight: bold;
-            transition: background-color 0.3s;
-            width: 100%;
-            margin-top: 15px;
-        }
-        .green-button:hover { background-color: #45a049; }
-
-        /* Стилі для RPE Slider */
-        .rpe-slider {
-            display: flex;
-            gap: 5px;
-            margin-top: 5px;
-        }
-        .rpe-option {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7em;
-            cursor: pointer;
-            background-color: #555;
-            transition: background-color 0.2s;
-        }
-        .rpe-option input { display: none; }
-        .rpe-option input:checked + .rpe-label {
-            background-color: #FFC72C; /* Золотий для обраного */
-        }
-        .rpe-label {
-            display: block;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background-color: #555;
-        }
-
-        /* Стилі ACWR Картки */
-        .status-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            height: 100%;
-        }
-        .acwr-value-block {
-            display: flex;
-            flex-direction: column;
-        }
-        #acwr-rpe-value {
-            font-size: 3em;
-            font-weight: bold;
-            color: #4CAF50; /* Зелений для значення */
-        }
-        #risk-status-card {
-             display: flex;
-             flex-direction: column;
-             justify-content: center;
-             align-items: center;
-             text-align: center;
-             min-height: 80px;
-             padding: 10px 15px;
-             width: 45%;
-             box-sizing: border-box;
-             border-radius: 6px;
-             margin: 0;
-        }
-        .status-optimal { background-color: #4CAF50; color: #121212; }
-        .status-warning { background-color: #FF9800; color: #121212; }
-        .status-danger { background-color: #DA3E52; color: #FFFFFF; }
-        .status-grey { background-color: #6c757d; color: #FFFFFF; }
-        
-        #trend-mini-chart-container {
-            height: 80px;
-            margin-top: 20px;
-        }
-    </style>
-    
+    <title>Load Season | ProAthleteCare</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h2>Load Season Control (Контроль Тренувального Навантаження)</h2>
-        
-        <div class="dashboard-grid">
-            
-            <div class="chart-card">
-                <h3>Щоденне тренування (Session-RPE)</h3>
-                <form id="load-form">
-                    <div class="form-group">
-                        <label for="load-date">Дата</label>
-                        <input type="date" id="load-date" name="date" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="duration">Тривалість (хвилин)</label>
-                        <input type="number" id="duration" name="duration" min="1" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="distance">Кілометраж (метри)</label>
-                        <input type="number" id="distance" name="distance" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Суб'єктивне навантаження (RPE, 1-10)</label>
-                        <div class="rpe-slider">
-                            <div class="rpe-option"><input type="radio" id="rpe1" name="rpe" value="1"><label class="rpe-label" for="rpe1"></label></div>
-                            <div class="rpe-option"><input type="radio" id="rpe2" name="rpe" value="2"><label class="rpe-label" for="rpe2"></label></div>
-                            <div class="rpe-option"><input type="radio" id="rpe3" name="rpe" value="3"><label class="rpe-label" for="rpe3"></label></div>
-                            <div class="rpe-option"><input type="radio" id="rpe4" name="rpe" value="4"><label class="rpe-label" for="rpe4"></label></div>
-                            <div class="rpe-option"><input type="radio" id="rpe5" name="rpe" value="5"><label class="rpe-label" for="rpe5"></label></div>
-                            <div class="rpe-option"><input type="radio" id="rpe6" name="rpe" value="6"><label class="rpe-label" for="rpe6"></label></div>
-                            <div class="rpe-option"><input type="radio" id="rpe7" name="rpe" value="7"><label class="rpe-label" for="rpe7"></label></div>
-                            <div class="rpe-option"><input type="radio" id="rpe8" name="rpe" value="8"><label class="rpe-label" for="rpe8"></label></div>
-                            <div class="rpe-option"><input type="radio" id="rpe9" name="rpe" value="9"><label class="rpe-label" for="rpe9"></label></div>
-                            <div class="rpe-option"><input type="radio" id="rpe10" name="rpe" value="10"><label class="rpe-label" for="rpe10"></label></div>
-                        </div>
-                    </div>
-                    <button type="submit" id="submit-load-btn" class="green-button">
-                        Зафіксувати Навантаження
-                    </button>
-                </form>
-            </div>
-            
-            <div class="chart-card">
-                <h3>Поточний ACWR (RPE)</h3>
-                <div class="status-header">
-                    <div class="acwr-value-block">
-                        <span id="acwr-rpe-value">N/A</span>
-                        <span id="acwr-rpe-trend-icon" style="color: #BBBBBB; font-size: 0.8em;"></span>
-                    </div>
-                    <div id="risk-status-card" class="status-grey">
-                         <p style="font-size: 1.1em; font-weight: bold; margin: 0;">Збір даних</p>
-                         <p style="font-size: 0.8em; margin: 5px 0 0 0;">(Потрібно >7 дн. для ACWR)</p>
-                    </div>
-                </div>
 
-                <div id="trend-mini-chart-container">
-                    <canvas id="miniLoadTrendChart"></canvas> 
-                </div>
-
-            </div>
-        </div>
-
-        <div class="chart-card">
-            <h3>Тренувальне Навантання (Session-RPE Trend)</h3>
-            <div style="height: 350px;">
-                <canvas id="loadTrendChart"></canvas>
-            </div>
-        </div>
-
-        <div class="chart-card">
-            <h3>Динаміка Ризику Травми (ACWR)</h3>
-            <div style="height: 350px;">
-                <canvas id="acwrChart"></canvas>
-            </div>
-        </div>
-        
-        <div class="chart-card">
-            <h3>Накопичена Дистанція (Trend)</h3>
-            <div style="height: 300px;">
-                <canvas id="distanceChart"></canvas>
-            </div>
-        </div>
-
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <header>
+        <a href="index.html" class="logo-link">
+            <img src="AK_logo.png" alt="ProAthleteCare Logo" class="logo">
+        </a>
+        <h1 class="project-title">ProAthleteCare</h1>
+        <p class="tagline">Онлайн-тренінг та професійний супровід атлетів</p>
+    </header>
     
-    <script src="load-season.js"></script>
-</body>
-</html>
+    <div class="content-wrapper">
+        <nav class="sidebar">
+            <a href="wellness.html">Wellness Control <img src="AK_logo.png" class="menu-icon" alt="АК"></a>
+            <a href="injury.html">Injury Story <img src="AK_logo.png" class="menu-icon" alt="АК"></a>
+            
+            <a href="load-season.html" class="active">Load Season <img src="AK_logo.png" class="menu-icon" alt="АК"></a> 
+            
+            <a href="daily-individual.html">Daily Individual <img src="AK_logo.png" class="menu-icon" alt="АК"></a>
+            <a href="weekly-individual.html">Weekly Individual <img src="AK_logo.png" class="menu-icon" alt="АК"></a>
+            <a href="weight-control.html">Weight Control <img src="AK_logo.png" class="menu-icon" alt="АК"></a>
+            <a href="velocity-control.html">Velocity Control <img src="AK_logo.png" class="menu-icon" alt="АК"></a>
+        </nav>
+        
+        <main class="main-content">
+            <h2 style="color: #4CAF50;">📈 Load Season: Контроль тренувального навантаження</h2>
+            
+            <div class="dashboard-container">
+                
+                <div class="form-card" style="width: 40%; min-width: 350px;">
+                    <h3>Щоденне тренування (Session-RPE)</h3>
+                    <form id="load-form">
+                        
+                        <label for="load-date">Дата тренування:</label>
+                        <input type="date" id="load-date" name="date" required style="width: 100%; padding: 8px; margin-bottom: 15px; background-color: #1a1a1a; border: 1px solid #333; color: #CCCCCC;">
+                        
+                        <label for="load-duration">Тривалість (хвилин):</label>
+                        <input type="number" id="load-duration" name="duration" min="1" value="60" required style="width: 100%; padding: 8px; margin-bottom: 15px; background-color: #1a1a1a; border: 1px solid #333; color: #CCCCCC;">
+
+                        <label>Суб'єктивне навантаження (RPE, 1-10):</label>
+                        <div class="rating-group pain-group" id="rpe-rating-group">
+                            <input type="radio" id="rpe10" name="rpe" value="10"><label for="rpe10" title="10 (Максимально важко)"></label>
+                            <input type="radio" id="rpe9" name="rpe" value="9"><label for="rpe9" title="9"></label>
+                            <input type="radio" id="rpe8" name="rpe" value="8"><label for="rpe8" title="8 (Дуже важко)"></label>
+                            <input type="radio" id="rpe7" name="rpe" value="7"><label for="rpe7" title="7"></label>
+                            <input type="radio" id="rpe6" name="rpe" value="6
