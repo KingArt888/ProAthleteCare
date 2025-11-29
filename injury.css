@@ -4,7 +4,7 @@
 .body-map-container {
     position: relative; 
     width: 100%;
-    max-width: 400px; /* Контроль розміру зображення */
+    max-width: 200px; /* Контроль розміру зображення */
     margin: 15px auto;
 }
 
