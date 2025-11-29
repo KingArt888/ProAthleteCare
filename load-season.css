@@ -1,62 +1,101 @@
-/* --- СТИЛІ ДЛЯ СТОРІНКИ LOAD SEASON (УНІКАЛЬНІ + КОМПОНЕНТИ) --- */
+/* --- СТИЛІ ДЛЯ СТОРІНКИ LOAD SEASON (ОНОВЛЕНО: TOP DESIGN) --- */
 
 /* ============================================== */
-/* 1. СТИЛІ МАКЕТА ТА КАРТОК (Базові) */
+/* 1. СТИЛІ МАКЕТА ТА КАРТОК */
 /* ============================================== */
 
+/* Контейнер для форми та графіків */
 .dashboard-container {
     display: flex;
     gap: 30px;
     margin-top: 20px;
     flex-wrap: wrap;
-    align-items: flex-start;
+    align-items: stretch; /* Вирівнюємо картки по висоті */
 }
 
-.visualization-area {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    flex-grow: 1;
-    min-width: 400px;
-}
-
-.card {
+/* Картки для відображення */
+.card, .form-card {
     background-color: #0d0d0d;
     border: 1px solid #1a1a1a;
     border-radius: 10px;
     padding: 25px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6); /* Більш глибока тінь */
+}
+
+/* Розміри карток Load Season */
+.form-card {
+    width: 35%;
+    min-width: 350px;
+    max-width: 450px;
+    flex-shrink: 0;
+}
+
+/* Область для графіків */
+.visualization-area {
+    display: flex;
+    flex-direction: column; 
+    gap: 20px;
+    flex-grow: 1;
+    min-width: 450px; /* Достатній мінімум для графіків */
 }
 
 .chart-card {
-    height: 350px;
-    padding: 15px;
+    padding: 15px; /* Менший внутрішній відступ для графіків */
+    height: 350px; 
 }
 
+/* Заголовки всередині карток */
 .form-card h3, .card h3 {
-    color: #FFC72C;
+    color: #FFC72C; /* Золотий акцент */
     margin-top: 0;
     border-bottom: 1px solid #333333;
     padding-bottom: 10px;
     margin-bottom: 20px;
+    font-size: 1.3em;
 }
 
+/* Стилі для полів вводу */
+input[type="date"],
+input[type="number"] {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 18px;
+    background-color: #1a1a1a;
+    border: 1px solid #333;
+    color: #CCCCCC;
+    border-radius: 5px;
+    box-sizing: border-box; 
+    transition: border-color 0.3s;
+}
+input:focus {
+    border-color: #4CAF50; /* Зелений фокус на полях вводу */
+    outline: none;
+}
+
+
+/* ============================================== */
+/* 2. СТИЛІ КНОПКИ ТА PLACEHOLDER */
+/* ============================================== */
+
+/* Кнопка Зберегти */
 .gold-button {
-    background-color: #50C878;
+    background-color: #50C878; /* Свіжий зелений для дії "Зберегти" */
     color: #000000;
     border: none;
     padding: 12px 25px;
     border-radius: 5px;
-    margin-top: 30px;
+    margin-top: 25px;
     cursor: pointer;
     font-size: 1.1em;
     font-weight: bold;
-    transition: background-color 0.3s;
+    transition: background-color 0.3s, transform 0.1s;
 }
 .gold-button:hover {
-    background-color: #4CAF50;
+    background-color: #43A047;
+    transform: translateY(-1px);
 }
 
+/* Стилі для placeholder-тексту, коли даних недостатньо */
 .placeholder-text {
     color: #888888;
     font-style: italic;
@@ -66,7 +105,7 @@
 }
 
 /* ============================================== */
-/* 2. УНІКАЛЬНІ СТИЛІ RPE (Rating Group) - ВИПРАВЛЕНО */
+/* 3. УНІКАЛЬНІ СТИЛІ RPE (Rating Group) - ФІНАЛЬНА ВЕРСІЯ */
 /* ============================================== */
 
 .rating-group {
@@ -83,69 +122,81 @@
 .rating-group label {
     color: #333333;
     cursor: pointer;
-    transition: color 0.2s;
+    transition: color 0.2s, transform 0.1s;
     font-weight: bold;
     padding: 0 5px;
 }
-.pain-group label:before {
-    content: none;
+.rating-group label:hover {
+    transform: scale(1.1);
 }
 
-/* 1. ЛОГІКА ВИДІЛЕННЯ (ПРАЦЮЄ: ВИБРАНИЙ + УСІ ПОПЕРЕДНІ) */
+/* ЛОГІКА ВИДІЛЕННЯ */
 .pain-group label:hover,
 .pain-group label:hover ~ label {
-    color: #FFC72C; /* Дефолтний колір наведення */
+    color: #FFC72C; 
 }
-.pain-group input:checked ~ label {
-    color: #FFC72C;
-}
-/* Щоб поточний вибраний елемент також був виділений */
+.pain-group input:checked ~ label,
 .pain-group input:checked + label {
     color: #FFC72C;
 }
 
-/* 2. ЛОГІКА КОЛЬОРОВИХ ЗОН RPE */
+/* ЛОГІКА КОЛЬОРОВИХ ЗОН (RPE) - для кращої візуалізації */
 
-/* RPE 8-10 (Червоний) */
+/* RPE 8-10 (Червоний - Високе навантаження) */
 .pain-group input:checked[value="10"] ~ label, .pain-group input:checked[value="10"] + label,
 .pain-group input:checked[value="9"] ~ label, .pain-group input:checked[value="9"] + label,
 .pain-group input:checked[value="8"] ~ label, .pain-group input:checked[value="8"] + label {
-    color: #DA3E52; /* Червоний */
+    color: #DA3E52; 
 }
 
-/* RPE 3-7 (Золотий) */
+/* RPE 3-7 (Золотий - Середнє навантаження) */
 .pain-group input:checked[value="7"] ~ label, .pain-group input:checked[value="7"] + label,
 .pain-group input:checked[value="6"] ~ label, .pain-group input:checked[value="6"] + label,
 .pain-group input:checked[value="5"] ~ label, .pain-group input:checked[value="5"] + label,
 .pain-group input:checked[value="4"] ~ label, .pain-group input:checked[value="4"] + label,
 .pain-group input:checked[value="3"] ~ label, .pain-group input:checked[value="3"] + label {
-    color: #FFC72C; /* Золотий */
+    color: #FFC72C; 
 }
 
-/* RPE 1-2 (Зелений) */
+/* RPE 1-2 (Зелений - Низьке навантаження) */
 .pain-group input:checked[value="2"] ~ label, .pain-group input:checked[value="2"] + label,
 .pain-group input:checked[value="1"] ~ label, .pain-group input:checked[value="1"] + label {
-    color: #50C878; /* Зелений */
+    color: #50C878; 
 }
 
-
 /* ============================================== */
-/* 3. СТИЛІ ACWR ТА РИЗИКУ */
+/* 4. СТИЛІ ACWR ТА РИЗИКУ (ОНОВЛЕНО) */
 /* ============================================== */
 
-.risk-card h3 {
-    border-bottom: none;
-    padding-bottom: 0;
-    margin-bottom: 5px;
+.risk-card {
+    /* Фон для ACWR виділяємо, щоб він не зливався з іншими картками */
+    background-color: #1a1a1a; 
+    border-left: 5px solid #FFC72C; /* Акцентна смуга */
+    padding: 20px 25px;
 }
 
+/* Велике значення ACWR */
+#acwr-value {
+    font-size: 2.2em;
+    font-weight: 700;
+    margin-right: 20px;
+    line-height: 1;
+}
+
+/* Статус ризику */
 #acwr-status {
-    padding: 10px;
-    font-size: 1.2em;
+    border-radius: 4px; 
+    padding: 6px 15px; 
+    font-size: 1em;
+    font-weight: bold;
+    min-width: 220px;
+    text-align: center;
+    text-transform: uppercase;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 /* ============================================== */
-/* 4. АДАПТИВНІСТЬ */
+/* 5. АДАПТИВНІСТЬ */
 /* ============================================== */
 
 @media (max-width: 992px) {
