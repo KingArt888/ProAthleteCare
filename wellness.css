@@ -65,7 +65,7 @@
     font-style: italic;
     font-size: 1.2em;
 }/* --- НОВІ СТИЛІ ДЛЯ МАЛИХ ГРАФІКІВ У ФОРМІ --- */.small-chart-container {
-    height: 70px; /* Фіксована висота для міні-графіка (подібно до питання) */
+    height: 80px; /* Фіксована висота для міні-графіка (подібно до питання) */
     width: 100%;
     margin-top: -10px; /* Зменшуємо відступ від рейтингу */
     margin-bottom: 20px;
@@ -87,14 +87,14 @@
     transition: color 0.2s;
 }/* Зірки (Сон) */.star-group label:before {
     content: '★'; 
-    margin-right: 18px;
+    margin-right: 19px;
 }.star-group input:checked ~ label:before,
 .star-group label:hover:before,
 .star-group label:hover ~ label:before {
     color: #FFC72C; 
 }/* Хрестики (Біль/Втома) */.pain-group label:before {
     content: '✖'; 
-    margin-right: 18px;
+    margin-right: 19px;
 }.pain-group input:checked ~ label:before,
 .pain-group label:hover:before,
 .pain-group label:hover ~ label:before {
