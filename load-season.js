@@ -4,7 +4,7 @@
 let loadData = []; // Початкові дані будуть заповнені тестовими або з localStorage
 let currentRollingChart = null;
 let currentWeeklyChart = null;
-let currentGaugeChart = null; // 👈 НОВА ЗМІННА ДЛЯ СПІДОМЕТРА
+let currentGaugeChart = null; 
 
 // Тестові дані, що імітують 28 днів S-RPE Load
 // Це дозволить ACWR одразу працювати при першому запуску
@@ -259,7 +259,7 @@ function calculateWeeklyMetrics(data) {
 
 
 // ----------------------------------------------------------
-// ФУНКЦІЇ СПІДОМЕТРА (GAUGE CHART) 💡 НОВИЙ БЛОК
+// ФУНКЦІЇ СПІДОМЕТРА (GAUGE CHART) 
 // ----------------------------------------------------------
 
 // Функція, яка готує дані та кольори для спідометра
@@ -301,7 +301,10 @@ function getAcwrGaugeData(acwr) {
     };
 }
 
-// Функція для малювання спідометра
+/**
+ * 💡 ОНОВЛЕНА ФУНКЦІЯ: Зроблено спідометр компактним та мінімалістичним 
+ * (тонша стрілка, менший cutout)
+ */
 function renderGaugeChart(gaugeData) {
     const ctx = document.getElementById('acwrGaugeChart');
     if (!ctx) return;
@@ -310,10 +313,9 @@ function renderGaugeChart(gaugeData) {
     // Готуємо дані для відображення стрілки
     const maxVal = 2.0;
     const value = gaugeData.pointer;
-    // 270 - 90 = 180 градусів (півколо). 270 (початок) + (180 * (value/max))
-    const angle = (value / maxVal) * 180;
+    const angle = (value / maxVal) * 180; // 180 градусів для півкола
     
-    // Реєструємо плагін для відображення стрілки
+    // 💡 Плагін для відображення стрілки (оновлено)
     const gaugePointer = {
         id: 'gaugePointer',
         afterDatasetsDraw(chart, args, options) {
@@ -325,17 +327,17 @@ function renderGaugeChart(gaugeData) {
             
             // 1. Малюємо центр (коло)
             ctx.beginPath();
-            ctx.arc(xCenter, yCenter, 8, 0, 2 * Math.PI);
+            ctx.arc(xCenter, yCenter, 4, 0, 2 * Math.PI); // Менший центр
             ctx.fillStyle = gaugeData.pointerColor;
             ctx.fill();
             
             // 2. Малюємо стрілку
             ctx.translate(xCenter, yCenter);
-            ctx.rotate(Math.PI + (angle * Math.PI / 180)); // Повертаємо на 180 + кут
+            ctx.rotate(Math.PI + (angle * Math.PI / 180));
             ctx.beginPath();
             ctx.moveTo(0, 0);
-            ctx.lineTo(0, -60); // Довжина стрілки
-            ctx.lineWidth = 3;
+            ctx.lineTo(0, -50); // Довжина стрілки зменшена (було -60)
+            ctx.lineWidth = 2; // Тонша стрілка (було 3)
             ctx.strokeStyle = gaugeData.pointerColor;
             ctx.lineCap = 'round';
             ctx.stroke();
@@ -358,14 +360,14 @@ function renderGaugeChart(gaugeData) {
         options: {
             responsive: true,
             maintainAspectRatio: true,
-            cutout: '60%', 
+            cutout: '75%', // Товщина дуги зменшена для мінімалізму (було 60%)
             plugins: {
                 legend: { display: false },
                 tooltip: { enabled: false },
             },
             layout: {
                 padding: {
-                    bottom: 10 // Додатковий відступ знизу
+                    bottom: 10
                 }
             }
         },
@@ -404,6 +406,7 @@ function displayACWR(acwrValue, acuteLoad, chronicLoad) {
     if (acwr > 1.5) {
         riskStatus = 'КРИТИЧНИЙ РИЗИК 🚨';
         bgColor = '#DA3E52'; 
+        textColor = '#FFFFFF';
     } else if (acwr > 1.3) {
         riskStatus = 'ВИСОКИЙ РИЗИК 🔥';
         bgColor = '#FFC72C'; 
@@ -413,7 +416,7 @@ function displayACWR(acwrValue, acuteLoad, chronicLoad) {
     } else { // ACWR < 0.8
         riskStatus = 'НИЗЬКИЙ СТИМУЛ 📉';
         bgColor = '#00BFFF';
-        textColor = '#000000'; // Синій колір для тексту (або чорний, якщо фон світлий)
+        textColor = '#000000'; 
     }
 
     valueEl.textContent = acwrValue;
@@ -488,6 +491,7 @@ function renderRollingLoadChart(rollingData) {
             plugins: {
                 title: { display: false },
                 legend: { labels: { color: '#CCCCCC' } },
+                // 💡 Chart.js Annotation Plugin повинен бути підключений окремо!
                 annotation: {
                     annotations: {
                         line1: {
@@ -554,7 +558,7 @@ function renderWeeklyLoadChart(weeklyData) {
     const distanceData = weeklyData.map(d => d.distance);
     
     currentWeeklyChart = new Chart(ctx, {
-        type: 'line', // 💡 Змінено на LINE
+        type: 'line', 
         data: {
             labels: labels,
             datasets: [
@@ -563,8 +567,8 @@ function renderWeeklyLoadChart(weeklyData) {
                     data: loadData,
                     borderColor: '#00BFFF',
                     backgroundColor: 'rgba(0, 191, 255, 0.3)',
-                    fill: 'origin', // Заповнення під лінією
-                    tension: 0.3, // Плавні підйоми та спади
+                    fill: 'origin', 
+                    tension: 0.3, 
                     yAxisID: 'load'
                 },
                 {
