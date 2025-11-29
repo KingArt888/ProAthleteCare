@@ -159,7 +159,7 @@ textarea {
     transition: background-color 0.2s;
     z-index: 100;
     /* Початкове розміщення поза екраном, поки не клікнули */
-    left: -100px;
+    left: -200px;
     top: -100px;
 }
 
