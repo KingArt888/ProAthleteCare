@@ -32,75 +32,68 @@
             <a href="velocity-control.html">Velocity Control <img src="AK_logo.png" class="menu-icon" alt="АК"></a>
         </nav>
         
-        <main class="main-content">
-            <h2 style="color: #4CAF50;">📈 Load Season: Контроль тренувального навантаження</h2>
+       <main class="main-content">
+    <h2 style="color: #4CAF50;">📈 Load Season: Контроль тренувального навантаження</h2>
+
+    <div class="dashboard-container">
+
+        <div class="form-card form-container">
+            <h3>Щоденне тренування (Session-RPE)</h3>
             
-            <div class="dashboard-container">
+            <form id="load-form">
+                
+                <label for="date">Дата тренування:</label>
+                <input type="date" id="date" name="date" required>
+                
+                <label for="duration">Тривалість (хв):</label>
+                <input type="number" id="duration" name="duration" min="1" required>
+                
+                <label for="distance">Кілометраж (км):</label>
+                <input type="number" id="distance" name="distance" min="0" step="0.1" value="0.0" required>
 
-                <div class="form-card form-container">
-                    <h3>Щоденне тренування (Session-RPE)</h3>
-                    
-                    <form id="load-form">
-                        
-                        <label for="date">Дата тренування:</label>
-                        <input type="date" id="date" name="date" required>
-                        
-                        <label for="duration">Тривалість (хв):</label>
-                        <input type="number" id="duration" name="duration" min="1" required>
-                        
-                        <label for="distance">Кілометраж (км):</label>
-                        <input type="number" id="distance" name="distance" min="0" step="0.1" value="0.0" required>
-
-                        <label>RPE (Суб'єктивна оцінка):</label>
-                        <div class="rpe-group">
-                            <input type="radio" id="rpe10" name="rpe" value="10" required><label for="rpe10" data-rpe="10"></label>
-                            <input type="radio" id="rpe9" name="rpe" value="9"><label for="rpe9" data-rpe="9"></label>
-                            <input type="radio" id="rpe8" name="rpe" value="8"><label for="rpe8" data-rpe="8"></label>
-                            <input type="radio" id="rpe7" name="rpe" value="7"><label for="rpe7" data-rpe="7"></label>
-                            <input type="radio" id="rpe6" name="rpe" value="6"><label for="rpe6" data-rpe="6"></label>
-                            <input type="radio" id="rpe5" name="rpe" value="5"><label for="rpe5" data-rpe="5"></label>
-                            <input type="radio" id="rpe4" name="rpe" value="4"><label for="rpe4" data-rpe="4"></label>
-                            <input type="radio" id="rpe3" name="rpe" value="3"><label for="rpe3" data-rpe="3"></label>
-                            <input type="radio" id="rpe2" name="rpe" value="2"><label for="rpe2" data-rpe="2"></label>
-                            <input type="radio" id="rpe1" name="rpe" value="1"><label for="rpe1" data-rpe="1"></label>
-                        </div>
-
-                        <button type="submit" class="submit-button">Зберегти навантаження</button>
-                    </form>
-                    <div id="form-status" class="status-message"></div>
+                <label>RPE (Суб'єктивна оцінка):</label>
+                <div class="rpe-group">
+                    <input type="radio" id="rpe10" name="rpe" value="10" required><label for="rpe10" data-rpe="10"></label>
+                    <input type="radio" id="rpe9" name="rpe" value="9"><label for="rpe9" data-rpe="9"></label>
+                    <input type="radio" id="rpe8" name="rpe" value="8"><label for="rpe8" data-rpe="8"></label>
+                    <input type="radio" id="rpe7" name="rpe" value="7"><label for="rpe7" data-rpe="7"></label>
+                    <input type="radio" id="rpe6" name="rpe" value="6"><label for="rpe6" data-rpe="6"></label>
+                    <input type="radio" id="rpe5" name="rpe" value="5"><label for="rpe5" data-rpe="5"></label>
+                    <input type="radio" id="rpe4" name="rpe" value="4"><label for="rpe4" data-rpe="4"></label>
+                    <input type="radio" id="rpe3" name="rpe" value="3"><label for="rpe3" data-rpe="3"></label>
+                    <input type="radio" id="rpe2" name="rpe" value="2"><label for="rpe2" data-rpe="2"></label>
+                    <input type="radio" id="rpe1" name="rpe" value="1"><label for="rpe1" data-rpe="1"></label>
                 </div>
 
-                <div class="stats-container stats-card">
-                    <h3>Коефіцієнт Гострого:Хронічного Навантаження (ACWR)</h3>
+                <button type="submit" class="submit-button">Зберегти навантаження</button>
+            </form>
+            <div id="form-status" class="status-message"></div>
+        </div>
 
-                    <div class="speedometer-widget">
-                        <div class="gauge-display">
-                            <div class="gauge-arc"></div> 
-                            
-                            <div class="gauge-needle" id="acwr-needle"></div> 
-                            
-                            <div class="gauge-needle-pivot"></div>
-                            
-                            <div class="gauge-value-text">
-                                <span id="acwr-value">N/A</span>
-                                <span class="acwr-label">ACWR</span>
-                            </div>
-                        </div>
-                        
-                        <div class="gauge-status-box" id="acwr-status">Статус: Очікування даних</div> 
+        <div class="stats-container stats-card">
+            <h3>Коефіцієнт Гострого:Хронічного Навантаження (ACWR)</h3>
+
+            <div class="speedometer-widget">
+                <div class="gauge-display">
+                    <div class="gauge-arc"></div> 
+                    <div class="gauge-needle" id="acwr-needle"></div> 
+                    <div class="gauge-needle-pivot"></div>
+                    
+                    <div class="gauge-value-text">
+                        <span id="acwr-value">N/A</span>
+                        <span class="acwr-label">ACWR</span>
                     </div>
                 </div>
+                
+                <div class="gauge-status-box" id="acwr-status">Статус: Очікування даних</div> 
+            </div>
+        </div>
 
-                <div class="chart-card chart-full-width">
-                    <h4>Динаміка Щоденного Навантаження</h4>
-                    <canvas id="loadChart" style="max-height: 400px;"></canvas>
-                </div>
+    </div> ---
 
-                </div>
-        </main>
+    <div class="chart-card chart-full-width" style="margin-top: 20px;">
+        <h4>Динаміка Щоденного Навантаження</h4>
+        <canvas id="loadChart" style="max-height: 400px;"></canvas>
     </div>
     
-    <script src="load-season.js"></script>
-
-</body>
-</html>
+    </main>
