@@ -133,55 +133,30 @@ input[type="date"]:focus, input[type="number"]:focus {
     margin: 0; 
     text-align: center;
     transition: color 0.3s, transform 0.2s;
-    color: transparent; /* Робимо колір контейнера прозорим, щоб контролювати колір через ::before */
+    
+    /* НОВЕ: Колір неактивної іконки - темно-зелений */
+    color: #456545; 
 }
 
-/* --- СТИЛІ САМОЇ ІКОНКИ БЛИСКАВКИ --- */
+/* Стиль самої іконки (зменшуємо проміжок) */
 .rpe-group label::before {
     content: '⚡'; 
     padding: 0 1px;
-    
-    /* ФІЛЬТР ДЛЯ ЗЕЛЕНОГО КОЛЬОРУ (НЕАКТИВНИЙ СТАН) */
-    filter: grayscale(100%) brightness(0.9) sepia(100%) hue-rotate(60deg) saturate(300%); 
-    transition: filter 0.3s;
-    display: block; /* Важливо для застосування фільтра */
+    display: block;
 }
 
 /* --- КОЛЬОРОВА ЛОГІКА RPE (АКТИВНИЙ СТАН) --- */
 
-/* 1. БАЗОВИЙ КОЛІР: 1-5 (ЗЕЛЕНИЙ) */
-.rpe-group input[value="1"]:checked ~ label::before,
-.rpe-group input[value="2"]:checked ~ label::before,
-.rpe-group input[value="3"]:checked ~ label::before,
-.rpe-group input[value="4"]:checked ~ label::before,
-.rpe-group input[value="5"]:checked ~ label::before {
-    filter: none; /* Скидаємо фільтр */
-    color: #5cb85c; /* Green */
+/* При наведенні (Hover) робимо зеленою */
+.rpe-group label:hover {
+    color: #5cb85c; 
+}
+.rpe-group input:checked ~ label:hover {
+    color: inherit; /* Не змінюємо колір при ховері, якщо вже вибрано */
 }
 
-/* 2. ПІДСВІЧУВАННЯ 6-8 (ОРАНЖЕВИЙ) */
-.rpe-group input[value="6"]:checked ~ label::before,
-.rpe-group input[value="7"]:checked ~ label::before,
-.rpe-group input[value="8"]:checked ~ label::before {
-    filter: none;
-    color: #f0ad4e; /* Orange */
-}
 
-/* 3. ПІДСВІЧУВАННЯ 9-10 (ЧЕРВОНИЙ) */
-.rpe-group input[value="9"]:checked ~ label::before,
-.rpe-group input[value="10"]:checked ~ label::before {
-    filter: none;
-    color: #d9534f; /* Red */
-}
-
-/* 4. ЕФЕКТНИЙ ВІЗУАЛ (Застосовуємо до ::before) */
-.rpe-group input:checked + label::before {
-    transform: scale(1.15); 
-    filter: drop-shadow(0 0 5px currentColor); /* Створюємо тінь кольору іконки */
-}
-/* --- КОЛЬОРОВА ЛОГІКА RPE (ЗНИЗУ ВГОРУ) --- */
-
-/* 1. БАЗОВИЙ КОЛІР: 1-5 (ЗЕЛЕНИЙ) */
+/* 1. БАЗОВИЙ КОЛІР: 1-5 (ЯСКРАВО-ЗЕЛЕНИЙ) */
 .rpe-group input[value="1"]:checked ~ label,
 .rpe-group input[value="2"]:checked ~ label,
 .rpe-group input[value="3"]:checked ~ label,
@@ -203,10 +178,10 @@ input[type="date"]:focus, input[type="number"]:focus {
     color: #d9534f; /* Red */
 }
 
-/* 4. Спеціальне підсвічування для самого вибраного елемента (ЕФЕКТНИЙ ВІЗУАЛ) */
+/* 4. ЕФЕКТНИЙ ВІЗУАЛ (Застосовуємо до вибраної мітки) */
 .rpe-group input:checked + label {
-    transform: scale(1.15); /* Трохи збільшуємо вибраний елемент */
-    text-shadow: 0 0 5px currentColor; /* Додаємо м'яку тінь кольору */
+    transform: scale(1.15); 
+    text-shadow: 0 0 5px currentColor; /* Додаємо тінь кольору іконки */
 }
 
 /* =========================================================================
