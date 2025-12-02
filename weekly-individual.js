@@ -1,5 +1,5 @@
 // =========================================================
-// weekly_plan_logic.js - ЛОГІКА КАЛЕНДАРЯ МІКРОЦИКЛУ
+// weekly_plan_logic.js - ФІНАЛЬНА ВИПРАВЛЕНА ЛОГІКА
 // =========================================================
 
 // МАПА КОЛЬОРІВ ТА СТАТУСІВ MD+X / MD-X
@@ -7,7 +7,7 @@ const COLOR_MAP = {
     'MD': { status: 'MD', colorClass: 'color-red' },
     'MD+1': { status: 'MD+1', colorClass: 'color-dark-green' }, 
     'MD+2': { status: 'MD+2', colorClass: 'color-green' }, 
-    'MD+3': { status: 'MD+3', colorClass: 'color-neutral' }, 
+    'MD+3': { status: 'MD+3', colorClass: 'color-neutral' }, // Виходить за межі 7-денного MD-4 - MD+2
     
     'MD-1': { status: 'MD-1', colorClass: 'color-yellow' }, 
     'MD-2': { status: 'MD-2', colorClass: 'color-deep-green' }, 
@@ -32,11 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // === 2. ФУНКЦІЯ ДЛЯ ДЕТАЛЕЙ МАТЧУ ===
-    
+    // === 2. ФУНКЦІЯ ДЛЯ ДЕТАЛЕЙ МАТЧУ (без змін) ===
     function updateMatchDetails(dayIndex, activityType) {
         const existingBlock = dynamicMatchFields.querySelector(`.match-detail-block[data-day-index="${dayIndex}"]`);
-        
         const dayNames = ['Понеділок', 'Вівторок', 'Середа', 'Четвер', 'П’ятниця', 'Субота', 'Неділя'];
         const dayName = dayNames[dayIndex];
 
@@ -56,14 +54,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
             dynamicMatchFields.insertAdjacentHTML('beforeend', detailsHTML);
-            
         } else if (activityType !== 'MATCH' && existingBlock) {
             existingBlock.remove();
         }
     }
 
 
-    // === 3. ОСНОВНА ЛОГІКА РОЗРАХУНКУ MD+X/MD-X та КОЛЬОРІВ ===
+    // === 3. ОСНОВНА ВИПРАВЛЕНА ЛОГІКА РОЗРАХУНКУ MD+X/MD-X та КОЛЬОРІВ ===
 
     function updateCycleColors() {
         const matchDays = [];
@@ -79,37 +76,50 @@ document.addEventListener('DOMContentLoaded', () => {
             let statusKey = 'REST'; 
 
             if (matchDays.includes(index)) {
+                // Це день матчу
                 statusKey = 'MD';
             } else if (matchDays.length > 0) {
-                let minDistance = 7; 
-                let isPostMatch = false; 
-
+                
+                let bestMatchDay = -1;
+                let minOffset = 7;
+                let isPostMatch = false; // Визначає, чи є це MD+X (True) чи MD-X (False)
+                
+                // Проходимо по всіх MD, щоб знайти найближчий MD та його фазу
                 matchDays.forEach(mdIndex => {
-                    let distance = (index - mdIndex + 7) % 7; 
-
-                    if (distance > 0) { 
-                        if (distance <= 3) { 
-                            if (distance < minDistance) {
-                                minDistance = distance;
-                                isPostMatch = true;
-                            }
-                        } else if (distance >= 4) { 
-                            let daysToMatch = 7 - distance; 
-                            if (daysToMatch < minDistance) {
-                                minDistance = daysToMatch;
+                    
+                    // Обчислення відстані вперед (MD+X)
+                    const offsetForward = (index - mdIndex + 7) % 7;
+                    
+                    // Обчислення відстані назад (MD-X)
+                    const offsetBackward = (mdIndex - index + 7) % 7; 
+                    
+                    // 1. Пріоритет MD+X (Відновлення йде відразу після матчу)
+                    if (offsetForward > 0 && offsetForward <= 3) { // MD+1, MD+2, MD+3
+                        if (offsetForward < minOffset) {
+                            minOffset = offsetForward;
+                            isPostMatch = true;
+                        }
+                    } 
+                    
+                    // 2. Якщо це не MD+X, перевіряємо MD-X (Підготовка до наступного матчу)
+                    else if (offsetBackward > 0 && offsetBackward < 7) { // MD-1, MD-2, MD-3, MD-4...
+                        if (offsetBackward <= 4) { // Обмежуємо MD-4
+                            if (offsetBackward < minOffset) {
+                                minOffset = offsetBackward;
                                 isPostMatch = false;
                             }
                         }
                     }
                 });
 
-                if (minDistance <= 4) { 
-                    statusKey = isPostMatch ? `MD+${minDistance}` : `MD-${minDistance}`;
+                // Призначаємо статус MD+X/MD-X
+                if (minOffset <= 4 && minOffset > 0) { 
+                    statusKey = isPostMatch ? `MD+${minOffset}` : `MD-${minOffset}`;
                 }
             }
 
-            // 3.2. ЗАСТОСУВАННЯ СТИЛІВ (КРИТИЧНА ДІЛЯНКА)
-            const style = COLOR_MAP[statusKey];
+            // 3.2. ЗАСТОСУВАННЯ СТИЛІВ (Фінальне виправлення)
+            const style = COLOR_MAP[statusKey] || COLOR_MAP['REST']; // Захист від undefined
             mdStatusElement.textContent = style.status;
             
             // Видаляємо всі класи кольорів, що існують, з SPAN
