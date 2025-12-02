@@ -1,12 +1,11 @@
 // =========================================================
-// weekly_plan_logic.js - ФІНАЛЬНА ВЕРСІЯ: ВИПРАВЛЕНА ЛОГІКА ЦИКЛУ
+// weekly_plan_logic.js - ФІНАЛЬНА ВЕРСІЯ: ВИМКНЕННЯ ПОЛІВ ПРИ "ВІДПОЧИНКУ"
 // =========================================================
 
 const COLOR_MAP = {
     'MD': { status: 'MD', colorClass: 'color-red' },
     'MD+1': { status: 'MD+1', colorClass: 'color-dark-green' }, 
     'MD+2': { status: 'MD+2', colorClass: 'color-green' }, 
-    // MD+3 тепер не буде використовуватися завдяки змінам в логіці
     'MD+3': { status: 'MD+3', colorClass: 'color-neutral' }, 
     'MD-1': { status: 'MD-1', colorClass: 'color-yellow' }, 
     'MD-2': { status: 'MD-2', colorClass: 'color-deep-green' }, 
@@ -20,16 +19,59 @@ document.addEventListener('DOMContentLoaded', () => {
     const activitySelects = document.querySelectorAll('.activity-type-select');
     const dynamicMatchFields = document.getElementById('dynamic-match-fields');
     const dayCells = document.querySelectorAll('#md-colors-row .cycle-day');
+    const microcycleTable = document.querySelector('.microcycle-table'); // Додано для пошуку інших полів
 
     activitySelects.forEach(select => {
         select.addEventListener('change', (event) => {
+            const dayIndex = event.target.closest('td').dataset.dayIndex;
+            const activityType = event.target.value;
+            
             console.log('--- Зміна активності виявлена! ---');
+            
             updateCycleColors(); 
-            updateMatchDetails(event.target.closest('td').dataset.dayIndex, event.target.value); 
+            updateMatchDetails(dayIndex, activityType); 
+            
+            // === НОВА ФУНКЦІЯ: ВИМКНЕННЯ/УВІМКНЕННЯ ПОЛІВ ===
+            toggleDayInputs(dayIndex, activityType);
         });
     });
 
-    // ... Функція updateMatchDetails (без змін) ...
+    // =========================================================
+    // НОВА ФУНКЦІЯ: ВИМКНЕННЯ ПОЛІВ
+    // =========================================================
+
+    function toggleDayInputs(dayIndex, activityType) {
+        // Знаходимо всі комірки (<td>) у таблиці, які відповідають цьому дню
+        const dayColumns = microcycleTable.querySelectorAll(`td[data-day-index="${dayIndex}"]`);
+        
+        // Визначаємо, чи потрібно вимкнути поля (якщо обрано REST)
+        const isDisabled = activityType === 'REST';
+
+        dayColumns.forEach(td => {
+            // Шукаємо всі input, select, textarea у цій колонці
+            const controllableElements = td.querySelectorAll('input, select, textarea');
+            
+            controllableElements.forEach(element => {
+                // НЕ ВИМИКАЄМО САМ СЕЛЕКТОР АКТИВНОСТІ, інакше його не можна буде змінити
+                if (element.classList.contains('activity-type-select')) {
+                    return; 
+                }
+                
+                element.disabled = isDisabled;
+                
+                // Додаємо клас для візуального відображення, що поле неактивне (потрібно додати стилі в CSS)
+                if (isDisabled) {
+                    element.classList.add('day-disabled');
+                } else {
+                    element.classList.remove('day-disabled');
+                }
+            });
+        });
+    }
+
+    // =========================================================
+    // Функція updateMatchDetails (без змін)
+    // =========================================================
     function updateMatchDetails(dayIndex, activityType) {
         const existingBlock = dynamicMatchFields.querySelector(`.match-detail-block[data-day-index="${dayIndex}"]`);
         const dayNames = ['Понеділок', 'Вівторок', 'Середа', 'Четвер', 'П’ятниця', 'Субота', 'Неділя'];
@@ -57,8 +99,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // === 3. ОСНОВНА ВИПРАВЛЕНА ЛОГІКА РОЗРАХУНКУ MD+X/MD-X та КОЛЬОРІВ ===
-
+    // =========================================================
+    // ЛОГІКА РОЗРАХУНКУ MD+X/MD-X (виправлена)
+    // =========================================================
     function updateCycleColors() {
         let matchDays = [];
         activitySelects.forEach((select, index) => {
@@ -68,7 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         // --- ВИПРАВЛЕННЯ СТАРТОВОГО СТАНУ ---
-        // Якщо жодного MD не обрано, встановлюємо СУБОТУ (індекс 5) як MD за замовчуванням
         if (matchDays.length === 0) {
             matchDays = [5]; // Субота (індекс 5)
         }
@@ -123,7 +165,13 @@ document.addEventListener('DOMContentLoaded', () => {
             mdStatusElement.classList.add(style.colorClass); 
 
             cell.title = `Фаза: ${style.status}`; 
-            console.log(`День ${index}: Статус: ${style.status}, Клас: ${style.colorClass}`); 
+            // Викликаємо функцію вимкнення при початковому завантаженні для днів, які встановлено на REST
+            const currentActivity = activitySelects[index].value;
+            if (currentActivity === 'REST') {
+                toggleDayInputs(index, 'REST');
+            } else {
+                toggleDayInputs(index, currentActivity);
+            }
         });
     }
 
