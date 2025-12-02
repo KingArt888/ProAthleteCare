@@ -1,5 +1,5 @@
 // =========================================================
-// weekly-individual.js - ФІНАЛЬНА ВЕРСІЯ: ПОВНИЙ КОНТРОЛЬ
+// weekly-individual.js - ФІНАЛЬНА ВЕРСІЯ: З ГАРАНТІЄЮ РОБОТИ
 // =========================================================
 
 const COLOR_MAP = {
@@ -14,10 +14,11 @@ const COLOR_MAP = {
     'REST': { status: 'REST', colorClass: 'color-neutral' }, 
 };
 
+// ВЕСЬ ВИКОНУВАНИЙ КОД ПОВИНЕН БУТИ ВСЕРЕДИНІ ЦЬОГО БЛОКУ!
 document.addEventListener('DOMContentLoaded', () => {
     
-    // === ВИЗНАЧЕННЯ ВСІХ КРИТИЧНИХ ЗМІННИХ ===
-    const activitySelects = document.querySelectorAll('.activity-type-select');
+    // === ВИЗНАЧЕННЯ ВСІХ КРИТИЧНИХ ЗМІННИХ (РЯДКИ 24-27) ===
+    const activitySelects = document.querySelectorAll('.activity-type-select'); // Визначаємо тут
     const dynamicMatchFields = document.getElementById('dynamic-match-fields');
     const dayCells = document.querySelectorAll('#md-colors-row .cycle-day');
     const weeklyPlanForm = document.getElementById('weekly-plan-form'); 
@@ -25,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // =========================================================
     // НАЙБІЛЬШ НАДІЙНА ФУНКЦІЯ: ВИМКНЕННЯ ПОЛІВ
-    // Вона перевіряє всі поля форми на відповідність індексу дня
     // =========================================================
 
     function toggleDayInputs(dayIndex, activityType, isPlanActive) {
@@ -45,18 +45,15 @@ document.addEventListener('DOMContentLoaded', () => {
             let shouldBeDisabled = false;
             
             // 1. Визначаємо, чи поле стосується поточного дня
-            // Приклад: name="load_0" або name="tasks_md_plus_2" (для індексу 6)
             const isFieldRelatedToCurrentDay = elementName.includes(`_${currentDayIndexStr}`) || 
                                                (dayIndex === 6 && elementName.includes('md_plus_2')); 
             
             
             // 2. Встановлюємо стан disabled
             
-            // Умова A: Вимкнути все, якщо не обрано жодного MD
             if (isDisabledOverall) {
                 shouldBeDisabled = true;
             } 
-            // Умова B: Якщо план активний, застосовуємо day-specific правила
             else if (isFieldRelatedToCurrentDay) {
                 
                 // Правило I: Вимкнути для "Відпочинку" (REST)
@@ -65,16 +62,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 } 
                 
                 // Правило II: Вимкнути деталі матчу, якщо це не день матчу
-                // Перевіряємо, чи належить поле до динамічного блоку деталей матчу
                 else if (activityType !== 'MATCH' && element.closest(`.match-detail-block[data-day-index="${dayIndex}"]`)) {
                      shouldBeDisabled = true;
                 }
             }
             
-            // Застосовуємо атрибут
             element.disabled = shouldBeDisabled;
             
-            // Застосовуємо візуальний клас
             if (shouldBeDisabled) {
                 element.classList.add('day-disabled');
             } else {
@@ -118,6 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function updateCycleColors() {
         let matchDays = [];
+        // ВІДПРАЦЬОВУЄ ТІЛЬКИ ПІСЛЯ ВИЗНАЧЕННЯ activitySelects
         activitySelects.forEach((select, index) => {
             if (select.value === 'MATCH') {
                 matchDays.push(index); 
