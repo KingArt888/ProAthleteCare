@@ -1,5 +1,5 @@
 // =========================================================
-// weekly_plan_logic.js - ФІНАЛЬНА ВЕРСІЯ: ВИМКНЕННЯ ВСІХ ПОВ'ЯЗАНИХ ПОЛІВ
+// weekly_plan_logic.js - ФІНАЛЬНА ВЕРСІЯ: ВСІ ПОМИЛКИ ВИПРАВЛЕНО
 // =========================================================
 
 const COLOR_MAP = {
@@ -16,95 +16,100 @@ const COLOR_MAP = {
 
 document.addEventListener('DOMContentLoaded', () => {
     
+    // === ВИЗНАЧЕННЯ ВСІХ КРИТИЧНИХ ЗМІННИХ НА ПОЧАТКУ ===
     const activitySelects = document.querySelectorAll('.activity-type-select');
     const dynamicMatchFields = document.getElementById('dynamic-match-fields');
     const dayCells = document.querySelectorAll('#md-colors-row .cycle-day');
     const microcycleTable = document.querySelector('.microcycle-table'); 
-    const weeklyPlanForm = document.getElementById('weekly-plan-form'); // Знайдемо всю форму
+    const weeklyPlanForm = document.getElementById('weekly-plan-form'); 
+    // ====================================================
 
-    activitySelects.forEach(select => {
-        select.addEventListener('change', (event) => {
-            const dayIndex = event.target.closest('td').dataset.dayIndex;
-            const activityType = event.target.value;
-            
-            console.log('--- Зміна активності виявлена! ---');
-            
-            updateCycleColors(); 
-            updateMatchDetails(dayIndex, activityType); 
-        });
-    });
-
-    // =========================================================
-    // МОДИФІКОВАНА ФУНКЦІЯ: ВИМКНЕННЯ ПОЛІВ
-    // Вмикає/вимикає поля, що знаходяться поза таблицею, але пов'язані з MD/REST
-    // =========================================================
-
+    // === ФУНКЦІЯ: ВИМКНЕННЯ ПОЛІВ (НАЙБІЛЬШ НАДІЙНА ВЕРСІЯ) ===
     function toggleDayInputs(dayIndex, activityType, isPlanActive) {
-        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        const currentDayName = dayNames[dayIndex];
         
-        // Вимикаємо ВСІ поля, якщо план не активний (не обрано жодного MD)
-        // АБО якщо для цього дня обрано "Відпочинок"
-        const isDisabled = !isPlanActive || activityType === 'REST';
+        const isDisabledOverall = !isPlanActive;
 
-        // 1. Обробка полів усередині сітки (activity-row)
-        const dayColumn = microcycleTable.querySelector(`td[data-day-index="${dayIndex}"]`);
-        if (dayColumn) {
-            const controllableElements = dayColumn.querySelectorAll('input, select, textarea');
-            controllableElements.forEach(element => {
-                if (element.classList.contains('activity-type-select')) {
-                    return; 
+        // Обробка всіх input/select/textarea у формі
+        const allFormElements = weeklyPlanForm.querySelectorAll('input, select, textarea');
+        
+        allFormElements.forEach(element => {
+            const elementName = element.name || '';
+            const elementIsActivitySelect = element.classList.contains('activity-type-select');
+
+            // Ігноруємо сам селектор активності
+            if (elementIsActivitySelect) {
+                return; 
+            }
+
+            let shouldBeDisabled = false;
+            
+            // Визначаємо, чи елемент пов'язаний з поточним днем (за індексом)
+            const isFieldRelatedToCurrentDay = elementName.includes(`_${dayIndex}`) || (dayIndex === 6 && elementName.includes('md_plus_2'));
+
+            // Умова 1: Якщо план неактивний, вимикаємо все.
+            if (isDisabledOverall) {
+                shouldBeDisabled = true;
+            } 
+            // Умова 2: Якщо план активний, перевіряємо, чи потрібно вимкнути день REST.
+            else {
+                // Вимикаємо поле ТІЛЬКИ, якщо воно пов'язане з поточним днем, І цей день REST
+                if (isFieldRelatedToCurrentDay && activityType === 'REST') {
+                    shouldBeDisabled = true; 
                 }
-                element.disabled = isDisabled;
-                if (isDisabled) {
-                    element.classList.add('day-disabled');
-                } else {
-                    element.classList.remove('day-disabled');
-                }
-            });
-        }
-        
-        // 2. Обробка полів у розділі Деталі Матчу/Відновлення (якщо вони існують)
-        // Шукаємо поля за ім'ям, що містить індекс або назву дня
-        const fieldsToToggle = weeklyPlanForm.querySelectorAll(`input[name*="_${dayIndex}"], select[name*="_${dayIndex}"]`);
-        
-        // Спеціальний випадок для MD+2 (НД) - індекс 6
-        if (dayIndex == 6) {
-             const recoveryFields = weeklyPlanForm.querySelectorAll('input[name*="md_plus_2"]');
-             recoveryFields.forEach(field => {
-                 field.disabled = isDisabled;
-                 if (isDisabled) {
-                    field.classList.add('day-disabled');
-                 } else {
-                    field.classList.remove('day-disabled');
-                 }
-             });
-        }
-
-
-        // 3. Обробляємо всі інші поля, пов'язані з індексом дня
-        fieldsToToggle.forEach(element => {
-            // Якщо поле входить до динамічного блоку деталей матчу
-            if (element.closest(`.match-detail-block[data-day-index="${dayIndex}"]`)) {
-                // Вмикаємо/Вимикаємо, але ТІЛЬКИ якщо це не MD (MATCH) і план активний
-                element.disabled = !isPlanActive || activityType !== 'MATCH';
                 
-                if (element.disabled) {
-                    element.classList.add('day-disabled');
-                } else {
-                    element.classList.remove('day-disabled');
+                // Обробка деталей матчу (динамічні блоки)
+                if (element.closest(`.match-detail-block[data-day-index="${dayIndex}"]`)) {
+                    if (activityType !== 'MATCH') {
+                        shouldBeDisabled = true;
+                    }
                 }
+            }
+            
+            // Встановлюємо disabled
+            element.disabled = shouldBeDisabled;
+            
+            if (shouldBeDisabled) {
+                element.classList.add('day-disabled');
+            } else {
+                element.classList.remove('day-disabled');
             }
         });
     }
 
-    // ... Функції updateMatchDetails, updateCycleColors залишаються, але з одним виправленням:
-    // Потрібно переконатися, що toggleDayInputs викликається з трьома аргументами у updateCycleColors
-    
     // =========================================================
-    // MODIFIED LOGIC: updateCycleColors (ВИКЛИК ФУНКЦІЇ)
+    // ФУНКЦІЇ updateMatchDetails (без змін) та updateCycleColors (виправлено MD-цикл)
     // =========================================================
 
+    function updateMatchDetails(dayIndex, activityType) {
+        const existingBlock = dynamicMatchFields.querySelector(`.match-detail-block[data-day-index="${dayIndex}"]`);
+        const dayNames = ['Понеділок', 'Вівторок', 'Середа', 'Четвер', 'П’ятниця', 'Субота', 'Неділя'];
+        const dayName = dayNames[dayIndex];
+
+        if (activityType === 'MATCH' && !existingBlock) {
+            const detailsHTML = `
+                <div class="match-detail-block" data-day-index="${dayIndex}">
+                    <h4>День ${dayIndex * 1 + 1}: ${dayName} (Матч)</h4>
+                    <label>Суперник:</label>
+                    <input type="text" name="opponent_${dayIndex}" required>
+                    <label>Місце проведення:</label>
+                    <select name="venue_${dayIndex}">
+                        <option value="Home">Вдома</option>
+                        <option value="Away">На виїзді</option>
+                    </select>
+                    <label>Відстань поїздки (км):</label>
+                    <input type="number" name="travel_km_${dayIndex}" value="0" min="0">
+                </div>
+            `;
+            dynamicMatchFields.insertAdjacentHTML('beforeend', detailsHTML);
+        } else if (activityType !== 'MATCH' && existingBlock) {
+            existingBlock.remove();
+        }
+        
+        // Викликаємо toggleDayInputs після зміни деталей матчу
+        const isPlanActive = document.querySelectorAll('.activity-type-select[value="MATCH"]').length > 0;
+        toggleDayInputs(dayIndex, activityType, isPlanActive);
+    }
+    
     function updateCycleColors() {
         let matchDays = [];
         activitySelects.forEach((select, index) => {
@@ -172,38 +177,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ... Функції updateMatchDetails (без змін)
-    function updateMatchDetails(dayIndex, activityType) {
-        const existingBlock = dynamicMatchFields.querySelector(`.match-detail-block[data-day-index="${dayIndex}"]`);
-        const dayNames = ['Понеділок', 'Вівторок', 'Середа', 'Четвер', 'П’ятниця', 'Субота', 'Неділя'];
-        const dayName = dayNames[dayIndex];
+    // === ДОДАВАННЯ ОБРОБНИКА ПОДІЙ З ВИКОРИСТАННЯМ НОВИХ ЗМІННИХ ===
+    activitySelects.forEach(select => {
+        select.addEventListener('change', (event) => {
+            const dayIndex = event.target.closest('td').dataset.dayIndex;
+            const activityType = event.target.value;
+            
+            console.log('--- Зміна активності виявлена! ---');
+            
+            updateCycleColors(); 
+            updateMatchDetails(dayIndex, activityType); 
+        });
+    });
+    // ===============================================================
 
-        if (activityType === 'MATCH' && !existingBlock) {
-            const detailsHTML = `
-                <div class="match-detail-block" data-day-index="${dayIndex}">
-                    <h4>День ${dayIndex * 1 + 1}: ${dayName} (Матч)</h4>
-                    <label>Суперник:</label>
-                    <input type="text" name="opponent_${dayIndex}" required>
-                    <label>Місце проведення:</label>
-                    <select name="venue_${dayIndex}">
-                        <option value="Home">Вдома</option>
-                        <option value="Away">На виїзді</option>
-                    </select>
-                    <label>Відстань поїздки (км):</label>
-                    <input type="number" name="travel_km_${dayIndex}" value="0" min="0">
-                </div>
-            `;
-            dynamicMatchFields.insertAdjacentHTML('beforeend', detailsHTML);
-        } else if (activityType !== 'MATCH' && existingBlock) {
-            existingBlock.remove();
-        }
-        // Після додавання/видалення деталей матчу, перевіряємо стан active/disabled
-        // Це забезпечить коректне відображення disabled, якщо план неактивний або день REST
-        const isPlanActive = document.querySelectorAll('.activity-type-select[value="MATCH"]').length > 0;
-        toggleDayInputs(dayIndex, activityType, isPlanActive);
-    }
-    // ...
-    
     console.log('--- Сторінка завантажена, початковий розрахунок ---');
     updateCycleColors(); 
 });
