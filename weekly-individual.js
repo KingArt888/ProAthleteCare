@@ -1,12 +1,12 @@
 // =========================================================
-// weekly_plan_logic.js - ФІНАЛЬНА ВЕРСІЯ З ФІКСОМ SCOPE
+// weekly_plan_logic.js - ФІНАЛЬНА ВЕРСІЯ: ВИПРАВЛЕНА ЛОГІКА ЦИКЛУ
 // =========================================================
 
-// МАПА КОЛЬОРІВ ТА СТАТУСІВ MD+X / MD-X (Оголошена глобально)
 const COLOR_MAP = {
     'MD': { status: 'MD', colorClass: 'color-red' },
     'MD+1': { status: 'MD+1', colorClass: 'color-dark-green' }, 
     'MD+2': { status: 'MD+2', colorClass: 'color-green' }, 
+    // MD+3 тепер не буде використовуватися завдяки змінам в логіці
     'MD+3': { status: 'MD+3', colorClass: 'color-neutral' }, 
     'MD-1': { status: 'MD-1', colorClass: 'color-yellow' }, 
     'MD-2': { status: 'MD-2', colorClass: 'color-deep-green' }, 
@@ -15,18 +15,11 @@ const COLOR_MAP = {
     'REST': { status: 'REST', colorClass: 'color-neutral' }, 
 };
 
-// =========================================================
-// ОСНОВНИЙ КОД: ВСЕ ВСЕРЕДИНІ DOMContentLoaded
-// =========================================================
 document.addEventListener('DOMContentLoaded', () => {
     
-    // === 1. ОГОЛОШЕННЯ ЗМІННИХ (activitySelects, dayCells) ===
-    // ЦЕ КРИТИЧНО: ЗМІННІ ДОСТУПНІ ТІЛЬКИ ТУТ
     const activitySelects = document.querySelectorAll('.activity-type-select');
     const dynamicMatchFields = document.getElementById('dynamic-match-fields');
     const dayCells = document.querySelectorAll('#md-colors-row .cycle-day');
-
-    // === 2. ОБРОБНИКИ ПОДІЙ ===
 
     activitySelects.forEach(select => {
         select.addEventListener('change', (event) => {
@@ -36,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // === 3. ФУНКЦІЯ ДЛЯ ДЕТАЛЕЙ МАТЧУ (винесена для чистоти) ===
+    // ... Функція updateMatchDetails (без змін) ...
     function updateMatchDetails(dayIndex, activityType) {
         const existingBlock = dynamicMatchFields.querySelector(`.match-detail-block[data-day-index="${dayIndex}"]`);
         const dayNames = ['Понеділок', 'Вівторок', 'Середа', 'Четвер', 'П’ятниця', 'Субота', 'Неділя'];
@@ -64,16 +57,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // === 4. ЛОГІКА РОЗРАХУНКУ MD+X/MD-X та КОЛЬОРІВ (винесена для чистоти) ===
+    // === 3. ОСНОВНА ВИПРАВЛЕНА ЛОГІКА РОЗРАХУНКУ MD+X/MD-X та КОЛЬОРІВ ===
 
     function updateCycleColors() {
-        const matchDays = [];
+        let matchDays = [];
         activitySelects.forEach((select, index) => {
             if (select.value === 'MATCH') {
                 matchDays.push(index); 
             }
         });
         
+        // --- ВИПРАВЛЕННЯ СТАРТОВОГО СТАНУ ---
+        // Якщо жодного MD не обрано, встановлюємо СУБОТУ (індекс 5) як MD за замовчуванням
+        if (matchDays.length === 0) {
+            matchDays = [5]; // Субота (індекс 5)
+        }
+        // ------------------------------------
+
         console.log('Дні матчів (Індекси):', matchDays); 
 
         dayCells.forEach((cell, index) => {
@@ -91,12 +91,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     const offsetForward = (index - mdIndex + 7) % 7;
                     const offsetBackward = (mdIndex - index + 7) % 7; 
                     
-                    if (offsetForward > 0 && offsetForward <= 3) { 
+                    // === КРИТИЧНЕ ВИПРАВЛЕННЯ: ОБМЕЖУЄМО MD+ ТІЛЬКИ ДО +2 ===
+                    if (offsetForward > 0 && offsetForward <= 2) { 
                         if (offsetForward < minOffset) {
                             minOffset = offsetForward;
                             isPostMatch = true;
                         }
-                    } else if (offsetBackward > 0 && offsetBackward < 7) { 
+                    } 
+                    
+                    // MD-X може йти до MD-4
+                    else if (offsetBackward > 0 && offsetBackward < 7) { 
                         if (offsetBackward <= 4) { 
                             if (offsetBackward < minOffset) {
                                 minOffset = offsetBackward;
@@ -125,4 +129,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     console.log('--- Сторінка завантажена, початковий розрахунок ---');
     updateCycleColors(); 
-}); // <--- ЗАКРИВАЮЧА ДУЖКА ДЛЯ DOMContentLoaded
+});
