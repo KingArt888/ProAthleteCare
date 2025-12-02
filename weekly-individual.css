@@ -1,3 +1,6 @@
+/* ========================================= */
+/* 1. ЗАГАЛЬНІ СТИЛІ ТА МАКЕТ */
+/* ========================================= */
 .content-area {
     flex-grow: 1; 
     padding: 20px;
@@ -14,9 +17,13 @@ h2 {
     padding-bottom: 10px;
     margin-bottom: 20px;
 }
+p.subtitle {
+    color: #888888;
+    margin-bottom: 25px;
+}
 
 /* ========================================= */
-/* 2. СТИЛІ ТАБЛИЦІ МІКРОЦИКЛУ (КОМПАКТНІСТЬ) */
+/* 2. СТИЛІ ТАБЛИЦІ МІКРОЦИКЛУ */
 /* ========================================= */
 .microcycle-table {
     width: 100%; 
@@ -31,6 +38,7 @@ h2 {
     padding: 8px 5px; 
     border: 1px solid #333333;
     text-align: center;
+    vertical-align: top;
 }
 
 .microcycle-table thead th {
@@ -44,19 +52,49 @@ h2 {
     background-color: #222222; 
 }
 
-/* SPAN, який фарбується */
+/* ---- Рядок Активності (Select) ---- */
+#activity-row select {
+    width: 100%;
+    padding: 6px 2px;
+    box-sizing: border-box;
+    font-size: 13px;
+    border: 1px solid #FFD700;
+    background-color: #1A1A1A;
+    color: #FFD700;
+    border-radius: 4px;
+}
+
+/* ---- Рядок MD-СТАТУСУ (Кольори) ---- */
 .md-status {
     display: block;
     padding: 4px;
     border-radius: 4px;
     transition: background-color 0.3s;
-    /* Основний стиль тексту, який перебивається кольоровими класами */
     color: #FFFFFF; 
+    font-weight: bold;
+}
+
+/* ---- НОВИЙ РЯДОК: ВПРАВИ/ЗАВДАННЯ (TEXTAREA) ---- */
+.daily-tasks-row td {
+    padding: 4px;
+}
+
+.daily-tasks-row textarea {
+    width: 100%;
+    height: 90px; 
+    min-height: 90px;
+    padding: 4px;
+    box-sizing: border-box;
+    border: 1px solid #FFD700; /* Золота рамка */
+    border-radius: 4px;
+    font-size: 12px;
+    resize: vertical; 
+    background-color: #1A1A1A; 
+    color: #CCCCCC;
 }
 
 /* ========================================= */
-/* 3. КОЛЬОРИ СТАТУСІВ (MD+X) - з !important */
-/* Класи націлені на .md-status */
+/* 3. КОЛЬОРИ СТАТУСІВ (MD+X) */
 /* ========================================= */
 .cycle-day .md-status.color-red { background-color: #D9534F !important; color: white !important; }
 .cycle-day .md-status.color-dark-green { background-color: #1E8449 !important; color: white !important; }
@@ -69,7 +107,55 @@ h2 {
 
 
 /* ========================================= */
-/* 4. СТИЛІ ФОРМ ТА КНОПОК */
+/* 4. СТИЛІ ДЕТАЛЕЙ МАТЧУ ТА ШАБЛОНІВ */
+/* ========================================= */
+.details-section {
+    margin-top: 30px;
+    padding: 15px;
+    border: 1px solid #3A3A3A;
+    border-radius: 8px;
+    background-color: #1A1A1A;
+}
+
+.details-section h3 {
+    color: #FFD700;
+    border-bottom: 1px solid #333;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.cycle-task-block {
+    margin-top: 20px;
+    padding: 15px;
+    border-left: 5px solid #FFD700; /* Золотий акцент зліва */
+    background-color: #222222;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.cycle-task-block h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #EEEEEE;
+    font-size: 1.1em;
+}
+
+/* Стилі для textarea всередині блоків шаблонів */
+.cycle-task-block textarea {
+    width: 100%;
+    height: 70px; 
+    border: 1px solid #555555;
+    padding: 8px;
+    box-sizing: border-box;
+    resize: vertical;
+    font-size: 14px;
+    background-color: #1A1A1A; 
+    color: #FFD700; /* Текст шаблону золотий */
+}
+
+
+/* ========================================= */
+/* 5. СТИЛІ ФОРМ ТА КНОПОК */
 /* ========================================= */
 input[type="text"], input[type="number"], select {
     width: 100%;
@@ -79,58 +165,3 @@ input[type="text"], input[type="number"], select {
     background-color: #1A1A1A;
     color: #FFD700;
     box-sizing: border-box;
-}
-.save-button {
-    background-color: #FFD700; 
-    color: #1A1A1A;
-    padding: 10px 20px;
-    border: none;
-    cursor: pointer;
-    font-size: 1.1em;
-    font-weight: bold;
-    border-radius: 5px;
-    margin-top: 20px;
-    transition: background-color 0.2s;
-}
-.save-button:hover {
-    background-color: #E6C300;
-}
-/* ========================================= */
-/* 5. СТИЛІ ДЛЯ ВИМКНЕННЯ ПОЛІВ ("ВІДПОЧИНОК") */
-/* ========================================= */
-
-/* Стилізація всіх вимкнених елементів вводу */
-input[disabled], 
-select[disabled], 
-textarea[disabled] {
-    /* Робимо фон сірим/темним */
-    background-color: #333333 !important; 
-    /* Змінюємо колір тексту на тьмяний */
-    color: #888888 !important; 
-    opacity: 0.5; 
-    cursor: not-allowed; 
-    border: 1px solid #555555 !important;
-    box-shadow: none !important;
-}
-
-.day-disabled {
-    background-color: #333333; 
-    color: #888888;
-    opacity: 0.5;
-}
-
-/* Якщо JS додав клас, використовуємо його для додаткового контролю */
-.day-disabled {
-    /* Встановлюємо фон та колір тексту для вимкнених полів */
-    background-color: #333333; 
-    color: #888888;
-    opacity: 0.5;
-}
-
-/* Окремо для Select, щоб його вимкнений стан було видно краще */
-select[disabled] {
-    /* Деякі браузери можуть вимагати додаткового стилю для select */
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-}
