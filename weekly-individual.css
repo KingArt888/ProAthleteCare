@@ -103,18 +103,20 @@ input[type="text"], input[type="number"], select {
 input[disabled], 
 select[disabled], 
 textarea[disabled] {
-    /* Робимо фон сірим/темним, щоб показати неактивність */
+    /* Робимо фон сірим/темним */
     background-color: #333333 !important; 
     /* Змінюємо колір тексту на тьмяний */
     color: #888888 !important; 
-    /* Знижуємо прозорість для візуального ефекту */
     opacity: 0.5; 
-    /* Змінюємо курсор */
     cursor: not-allowed; 
-    /* Прибираємо золоту рамку, щоб поле не виглядало активним */
     border: 1px solid #555555 !important;
-    /* Прибираємо тінь, якщо вона була додана */
     box-shadow: none !important;
+}
+
+.day-disabled {
+    background-color: #333333; 
+    color: #888888;
+    opacity: 0.5;
 }
 
 /* Якщо JS додав клас, використовуємо його для додаткового контролю */
