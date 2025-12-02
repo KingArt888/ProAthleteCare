@@ -1,5 +1,5 @@
 // =========================================================
-// weekly-individual.js - ФІНАЛЬНА ВЕРСІЯ (V15.0: Виправлено автозаповнення)
+// weekly-individual.js - ФІНАЛЬНА ВЕРСІЯ (V16.0: Підтягує ВСІ MD-статуси)
 // =========================================================
 
 const COLOR_MAP = {
@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // ФУНКЦІЯ ОТРИМАННЯ ШАБЛОНУ: Отримує актуальний текст з textarea
     function getTemplateText(status) {
-        if (status === 'MD') return 'Матч: Сфокусуватися на розминці та відновленні після гри.';
+        if (status === 'MD') return 'Матч: Індивідуальна розминка/завершення гри';
         if (status === 'REST') return 'Повний відпочинок, відновлення, сон.';
         
         let fieldName = '';
@@ -34,13 +34,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const templateElement = document.querySelector(`textarea[name="${fieldName}"]`);
-        // Використовуємо .value, щоб отримати текст
+        // Використовуємо .value, щоб отримати актуальний текст
         return templateElement ? templateElement.value.trim() : ''; 
     }
 
     // =========================================================
     // ФУНКЦІЯ 1: ВИМКНЕННЯ ПОЛІВ
-    // (Код залишається, просто перенесено у фінальну версію)
+    // (Без змін)
     // =========================================================
 
     function toggleDayInputs(dayIndex, activityType, isPlanActive) {
@@ -183,117 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // =========================================================
-    // ФУНКЦІЯ 4: РОЗРАХУНОК КОЛЬОРУ ЦИКЛУ та АВТОЗАПОВНЕННЯ (V15.0)
+    // ФУНКЦІЯ 4: РОЗРАХУНОК КОЛЬОРУ ЦИКЛУ та АВТОЗАПОВНЕННЯ (V16.0)
     // =========================================================
     
     function updateCycleColors() {
-        let activityTypes = [];
-        let matchDays = [];
-
-        activitySelects.forEach((select, index) => {
-            activityTypes[index] = select.value;
-            if (select.value === 'MATCH') {
-                matchDays.push(index); 
-            }
-        });
-        
-        const isPlanActive = matchDays.length > 0;
-        let dayStatuses = new Array(7).fill('REST'); 
-
-        // 1. Стандартний розрахунок MD+X/MD-X
-        dayCells.forEach((cell, index) => {
-            if (matchDays.includes(index)) {
-                dayStatuses[index] = 'MD';
-            } else if (isPlanActive) { 
-                
-                let minOffset = 7;
-                let isPostMatch = false; 
-                
-                matchDays.forEach(mdIndex => {
-                    const offsetForward = (index - mdIndex + 7) % 7; 
-                    const offsetBackward = (mdIndex - index + 7) % 7; 
-                    
-                    if (offsetForward > 0 && offsetForward <= 2) { 
-                        if (offsetForward < minOffset) {
-                            minOffset = offsetForward;
-                            isPostMatch = true;
-                        }
-                    } 
-                    else if (offsetBackward > 0 && offsetBackward < 7) { 
-                        if (offsetBackward <= 4) { 
-                            if (offsetBackward < minOffset) {
-                                minOffset = offsetBackward;
-                                isPostMatch = false;
-                            }
-                        }
-                    }
-                });
-
-                if (minOffset <= 4 && minOffset > 0) { 
-                    dayStatuses[index] = isPostMatch ? `MD+${minOffset}` : `MD-${minOffset}`; 
-                }
-            }
-        });
-
-        // 2. ПЕРЕРИВАННЯ ЦИКЛУ
-        let finalStatuses = dayStatuses;
-
-        if (activityTypes.includes('REST') && isPlanActive) {
-            finalStatuses = resetCycleAfterRest(dayStatuses, activityTypes, matchDays);
-        }
-
-        // 3. ФІНАЛЬНЕ ОНОВЛЕННЯ КОЛЬОРІВ ТА АВТОЗАПОВНЕННЯ ПОЛІВ
-        dayCells.forEach((cell, index) => {
-            const mdStatusElement = cell.querySelector('.md-status');
-            
-            let statusKey = finalStatuses[index] || 'REST'; 
-            
-            // Якщо селектор - REST, колір має бути REST
-            if (activitySelects[index].value === 'REST') {
-                statusKey = 'REST'; 
-            }
-            
-            const style = COLOR_MAP[statusKey] || COLOR_MAP['REST'];
-            mdStatusElement.textContent = style.status;
-            
-            Object.values(COLOR_MAP).forEach(map => mdStatusElement.classList.remove(map.colorClass)); 
-            mdStatusElement.classList.add(style.colorClass); 
-
-            cell.title = `Фаза: ${style.status}`; 
-
-            const currentActivity = activitySelects[index].value;
-            toggleDayInputs(index, currentActivity, isPlanActive); 
-            
-            // АВТОЗАПОВНЕННЯ daily_task
-            const dailyTaskField = document.querySelector(`textarea[name="daily_task_${index}"]`);
-            
-            if (dailyTaskField) {
-                 const templateText = getTemplateText(statusKey);
-                 dailyTaskField.value = templateText;
-            }
-            
-        });
-    }
-
-
-    // === ІНІЦІАЛІЗАЦІЯ ОБРОБНИКІВ ===
-    activitySelects.forEach(select => {
-        select.addEventListener('change', (event) => {
-            const dayIndex = parseInt(event.target.closest('td').dataset.dayIndex); 
-            const activityType = event.target.value;
-            
-            updateCycleColors(); 
-            updateMatchDetails(dayIndex, activityType); 
-        });
-    });
-
-    // === ОБРОБНИКИ ДЛЯ ЗМІНИ ШАБЛОНІВ (Важливо!) ===
-    // Якщо користувач змінює текст у шаблоні, ми одразу оновлюємо Daily Tasks
-    document.querySelectorAll('#recovery-details-container textarea').forEach(textarea => {
-        textarea.addEventListener('input', updateCycleColors);
-        textarea.addEventListener('change', updateCycleColors); // Додамо обидва обробники
-    });
-    
-    // === ПОЧАТКОВИЙ ЗАПУСК ===
-    updateCycleColors(); 
-});
