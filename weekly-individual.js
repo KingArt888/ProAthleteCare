@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleDayInputs(dayIndex, activityType, isPlanActive) {
         
         const isDisabledOverall = !isPlanActive;
-        const allFormElements = weeklyPlanForm.querySelectorAll('input, select, textarea');
+        const allFormElements = document.body.querySelectorAll('input, select, textarea');
         const currentDayIndexStr = dayIndex.toString();
 
         allFormElements.forEach(element => {
