@@ -1,161 +1,237 @@
+/* Область контенту */
+.content-area {
+    flex-grow: 1; 
+    padding: 20px;
+    overflow-x: auto; /* Дозволяє горизонтальну прокрутку, якщо таблиця занадто широка */
+}
+
 .proatlet-container {
-    max-width: 1200px;
-    margin: 40px auto;
-    padding: 30px;
-    background-color: #1A1A1A;
+    max-width: 100%; /* Займає всю доступну ширину content-area */
+    margin: 0 auto;
+    padding: 0;
 }
 
 h2 {
-    color: #FFD700; /* Золоті заголовки */
-    border-bottom: 2px solid #FFD700;
+    color: #FFD700; 
+    border-bottom: 2px solid #3A3A3A;
     padding-bottom: 10px;
     margin-bottom: 20px;
 }
 
-/* -- СТИЛІ ТАБЛИЦІ МІКРОЦИКЛУ -- */
+/* ========================================= */
+/* 2. СТИЛІ ТАБЛИЦІ МІКРОЦИКЛУ (КОМПАКТНІСТЬ) */
+/* ========================================= */
 .microcycle-table {
-    width: 100%;
+    width: 100%; 
     border-collapse: collapse;
+    table-layout: fixed; /* Фіксуємо ширину для рівномірного розподілу */
     margin-bottom: 30px;
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.2); /* Золота тінь */
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.1); 
 }
 
-/* Заголовки днів (ПН, ВТ...) */
-.microcycle-table thead th {
-    background-color: #2A2A2A; /* Темно-сірий фон */
-    color: #FFD700; /* Золотий текст */
-    padding: 15px 10px;
-    font-size: 1.1em;
-    border: 1px solid #333333;
-}
-
-/* Стилі для всіх клітинок даних */
-.microcycle-table tbody td {
-    padding: 10px;
+.microcycle-table th,
+.microcycle-table td {
+    width: calc(100% / 7); /* Кожна клітинка займає 1/7 */
+    padding: 8px 5px; /* Зменшені відступи */
     border: 1px solid #333333;
     text-align: center;
-    background-color: #222222;
-    transition: background-color 0.3s;
 }
 
-/* Рядок 1: Статус MD+X та Кольори */
+.microcycle-table thead th {
+    background-color: #2A2A2A; 
+    color: #FFD700; 
+    font-size: 0.9em; /* Компактний шрифт */
+}
+.microcycle-table tbody td {
+    background-color: #222222;
+}
+
+/* Рядок MD+X */
 #md-colors-row .cycle-day {
-    padding: 15px 10px;
+    padding: 10px 5px; 
     font-weight: bold;
-    color: #1A1A1A; /* Текст на кольоровому фоні буде чорним */
 }
 
 .md-status {
     display: block;
-    padding: 5px;
+    padding: 4px;
     border-radius: 4px;
+    color: #1A1A1A !important; /* Чорний текст на кольоровому фоні */
 }
 
-/* Стилі для селекторів активності */
+/* Селектори */
 .activity-type-select {
     width: 100%;
-    padding: 8px;
-    border: 1px solid #FFD700; /* Золота рамка */
-    background-color: #2A2A2A;
+    padding: 5px;
+    font-size: 0.9em;
+    border: 1px solid #444444; 
+    background-color: #1A1A1A;
     color: #CCCCCC;
     border-radius: 4px;
-    appearance: none; /* Видаляємо стандартний вигляд */
-    cursor: pointer;
 }
+.activity-type-select option { color: #CCCCCC; background-color: #1A1A1A; }
 
-/* -- СТИЛІ КОНТРОЛЮ ФОРМИ -- */
 
-.details-section h3 {
-    color: #CCCCCC;
-    margin-top: 25px;
-    border-bottom: 1px dashed #333333;
-    padding-bottom: 5px;
-}
+/* ========================================= */
+/* 3. КОЛЬОРИ СТАТУСІВ (MD+X) */
+/* ========================================= */
+.color-red { background-color: #D9534F; color: white !important; } /* MD */
+.color-dark-green { background-color: #1E8449; color: white !important; } /* MD+1 (темно-зелений) */
+.color-green { background-color: #4CAF50; color: white !important; } /* MD+2 (зелений) */
+.color-yellow { background-color: #FFC107; color: black !important; } /* MD-1 (жовтий) */
+.color-deep-green { background-color: #008080; color: white !important; } /* MD-2 */
+.color-orange { background-color: #FF9800; color: white !important; } /* MD-3 */
+.color-blue { background-color: #007bff; color: white !important; } /* MD-4 */
+.color-neutral { background-color: #2A2A2A; color: #CCCCCC !important; } /* REST */
 
-.match-detail-block, .cycle-task-block {
-    background-color: #2A2A2A;
-    padding: 15px;
-    border-radius: 8px;
-    margin-top: 15px;
-    border: 1px solid #444444;
-}
 
-label {
-    display: block;
-    margin-top: 10px;
-    color: #CCCCCC;
-    font-size: 0.9em;
-}
+/* ========================================= */
+/* 4. СТИЛІ ФОРМ ТА КНОПОК */
+/* ========================================= */
+/* (Залиште, як було, для чорно-золотого стилю) */
 
 input[type="text"], input[type="number"], select {
-    width: 100%;
-    padding: 10px;
-    margin-top: 5px;
-    border: 1px solid #FFD700; /* Золота рамка */
+    /* ... стилі форм ... */
+    border: 1px solid #FFD700; 
     background-color: #1A1A1A;
     color: #FFD700;
-    border-radius: 4px;
 }
-
-/* Кнопка Зберегти */
 .save-button {
-    display: block;
-    width: 100%;
-    padding: 15px;
-    margin-top: 30px;
-    background-color: #FFD700; /* Золотий фон */
-    color: #1A1A1A; /* Чорний текст на золоті */
-    font-size: 1.2em;
-    font-weight: bold;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s, transform 0.1s;
+    background-color: #FFD700; 
+    color: #1A1A1A;
 }
+3. 🧠 weekly_plan_logic.js (Логіка MD+X/MD-X)
+Цей файл містить всю складну логіку обчислення мікроциклу та фарбування.
 
-.save-button:hover {
-    background-color: #E6C200;
-}
-/* -- КОЛЬОРИ СТАТУСІВ (Для функції updateCycleColors) -- */
+JavaScript
 
-/* MD - День матчу */
-.color-red {
-    background-color: #D9534F; /* Червоний */
-    color: white !important;
-}
+// =========================================================
+// weekly_plan_logic.js - ЛОГІКА КАЛЕНДАРЯ МІКРОЦИКЛУ
+// =========================================================
 
-/* MD+1 (Відновлення 1) */
-.color-dark-green {
-    background-color: #1E8449; /* Темно-зелений */
-    color: white !important;
-}
+// МАПА КОЛЬОРІВ ТА СТАТУСІВ MD+X / MD-X
+const COLOR_MAP = {
+    'MD': { status: 'MD', colorClass: 'color-red' },
+    'MD+1': { status: 'MD+1', colorClass: 'color-dark-green' }, 
+    'MD+2': { status: 'MD+2', colorClass: 'color-green' }, 
+    'MD+3': { status: 'MD+3', colorClass: 'color-neutral' }, // Виходить за межі циклу 7 днів
+    
+    'MD-1': { status: 'MD-1', colorClass: 'color-yellow' }, 
+    'MD-2': { status: 'MD-2', colorClass: 'color-deep-green' }, 
+    'MD-3': { status: 'MD-3', colorClass: 'color-orange' }, 
+    'MD-4': { status: 'MD-4', colorClass: 'color-blue' }, 
+    'REST': { status: 'REST', colorClass: 'color-neutral' }, 
+};
 
-/* MD+2 (Відновлення 2 / Вихідний) */
-.color-green {
-    background-color: #4CAF50; /* Зелений */
-    color: white !important;
-}
+document.addEventListener('DOMContentLoaded', () => {
+    const activitySelects = document.querySelectorAll('.activity-type-select');
+    const dynamicMatchFields = document.getElementById('dynamic-match-fields');
+    const dayCells = document.querySelectorAll('#md-colors-row .cycle-day');
 
-/* MD-1 (Передактивація) */
-.color-yellow {
-    background-color: #FFC107; /* Жовтий */
-    color: black !important;
-}
+    // === 1. ОБРОБНИКИ ПОДІЙ ===
 
-/* MD-2 (Сила/Висока інтенсивність) */
-.color-deep-green {
-    background-color: #008080; /* Глибокий зелений / Тілл */
-    color: white !important;
-}
+    activitySelects.forEach(select => {
+        select.addEventListener('change', (event) => {
+            const dayIndex = event.target.closest('td').dataset.dayIndex;
+            
+            updateCycleColors(); // Оновлення циклу
+            updateMatchDetails(dayIndex, event.target.value); // Динамічне поле для деталей матчу
+        });
+    });
 
-/* MD-3 (Середня інтенсивність) */
-.color-orange {
-    background-color: #FF9800; /* Оранжевий */
-    color: white !important;
-}
+    // === 2. ФУНКЦІЯ ДЛЯ ДЕТАЛЕЙ МАТЧУ ===
+    
+    function updateMatchDetails(dayIndex, activityType) {
+        const existingBlock = dynamicMatchFields.querySelector(`.match-detail-block[data-day-index="${dayIndex}"]`);
+        
+        // Визначення назви дня для заголовка
+        const dayName = dayCells[dayIndex].querySelector('.md-status').textContent.split(' ')[0]; 
 
-/* MD-4 (Об'єм/База) */
-.color-blue {
-    background-color: #007bff; /* Синій */
-    color: white !important;
-}
+        if (activityType === 'MATCH' && !existingBlock) {
+            const detailsHTML = `
+                <div class="match-detail-block" data-day-index="${dayIndex}">
+                    <h4>День ${dayIndex * 1 + 1}: ${dayName} (Матч)</h4>
+                    <label>Суперник:</label>
+                    <input type="text" name="opponent_${dayIndex}" required>
+                    <label>Місце проведення:</label>
+                    <select name="venue_${dayIndex}">
+                        <option value="Home">Вдома</option>
+                        <option value="Away">На виїзді</option>
+                    </select>
+                    <label>Відстань поїздки (км):</label>
+                    <input type="number" name="travel_km_${dayIndex}" value="0" min="0">
+                </div>
+            `;
+            // Додаємо новий блок деталей
+            dynamicMatchFields.insertAdjacentHTML('beforeend', detailsHTML);
+            
+        } else if (activityType !== 'MATCH' && existingBlock) {
+            // Видаляємо, якщо день більше не є матчем
+            existingBlock.remove();
+        }
+    }
+
+
+    // === 3. ОСНОВНА ЛОГІКА РОЗРАХУНКУ MD+X/MD-X та КОЛЬОРІВ ===
+
+    function updateCycleColors() {
+        const matchDays = [];
+        activitySelects.forEach((select, index) => {
+            if (select.value === 'MATCH') {
+                matchDays.push(index); 
+            }
+        });
+
+        // 3.1. Ітеруємо по кожному дню
+        dayCells.forEach((cell, index) => {
+            const mdStatusElement = cell.querySelector('.md-status');
+            let statusKey = 'REST'; 
+
+            if (matchDays.includes(index)) {
+                // Це день матчу
+                statusKey = 'MD';
+            } else if (matchDays.length > 0) {
+                // Знаходимо найближчий Match Day
+                let minDistance = 7; 
+                let isPostMatch = false; 
+
+                matchDays.forEach(mdIndex => {
+                    // Відстань в циклі: (Поточний день - День матчу + 7) % 7
+                    let distance = (index - mdIndex + 7) % 7; 
+
+                    if (distance > 0) { 
+                        if (distance <= 3) { // MD+1, MD+2, MD+3
+                            if (distance < minDistance) {
+                                minDistance = distance;
+                                isPostMatch = true;
+                            }
+                        } else if (distance >= 4) { // MD-3, MD-2, MD-1
+                            let daysToMatch = 7 - distance; 
+                            if (daysToMatch < minDistance) {
+                                minDistance = daysToMatch;
+                                isPostMatch = false;
+                            }
+                        }
+                    }
+                });
+
+                // Призначаємо статус MD+X/MD-X
+                if (minDistance <= 4) { // Обмежуємо цикл MD-4 до MD+3
+                    statusKey = isPostMatch ? `MD+${minDistance}` : `MD-${minDistance}`;
+                }
+            }
+
+            // 3.2. Застосування стилів
+            const style = COLOR_MAP[statusKey];
+            mdStatusElement.textContent = style.status;
+            
+            // Видаляємо всі попередні класи кольорів та додаємо новий
+            Object.values(COLOR_MAP).forEach(map => cell.classList.remove(map.colorClass));
+            cell.classList.add(style.colorClass);
+            cell.title = `Фаза: ${style.status}`; 
+        });
+    }
+
+    // Початковий запуск логіки при завантаженні
+    updateCycleColors(); 
+});
