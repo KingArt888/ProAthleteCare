@@ -1,5 +1,5 @@
 // =========================================================
-// weekly-individual.js - ФІНАЛЬНА РОБОЧА ВЕРСІЯ (V4.1: СИНТАКСИЧНИЙ ФІКС)
+// weekly-individual.js - ФІНАЛЬНА ВЕРСІЯ: ВИПРАВЛЕНО ВСІ ПОМИЛКИ
 // =========================================================
 
 const COLOR_MAP = {
@@ -17,20 +17,21 @@ const COLOR_MAP = {
 document.addEventListener('DOMContentLoaded', () => {
     
     // === ВИЗНАЧЕННЯ ВСІХ КРИТИЧНИХ ЗМІННИХ ===
+    // Цей блок ПОВИНЕН бути всередині DOMContentLoaded, щоб уникнути ReferenceError
     const activitySelects = document.querySelectorAll('.activity-type-select');
     const dynamicMatchFields = document.getElementById('dynamic-match-fields');
     const dayCells = document.querySelectorAll('#md-colors-row .cycle-day');
-    // ВИДАЛЕНО: const weeklyPlanForm = document.getElementById('weekly-plan-form'); для уникнення помилок
+    // const weeklyPlanForm = document.getElementById('weekly-plan-form'); - Видалено
     // ===========================================
 
     // =========================================================
-    // ФУНКЦІЯ 1: ВИМКНЕННЯ ПОЛІВ (ОСТАТОЧНА ВЕРСІЯ V4.0)
+    // ФУНКЦІЯ 1: ВИМКНЕННЯ ПОЛІВ (V4.0 - Найнадійніше націлення за іменем)
     // =========================================================
 
     function toggleDayInputs(dayIndex, activityType, isPlanActive) {
         
         const isDisabledOverall = !isPlanActive;
-        // !!! НАДІЙНИЙ СЕЛЕКТОР: ШУКАЄ ПО ВСЬОМУ ДОКУМЕНТУ !!!
+        // Шукаємо ВСІ поля введення по всьому документу
         const allFormElements = document.body.querySelectorAll('input, select, textarea');
         const currentDayIndexStr = dayIndex.toString();
 
@@ -45,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let shouldBeDisabled = false;
             
             // 1. Визначаємо, чи поле стосується поточного дня 
+            // Шукаємо за _0, _1, _2, _3, і т.д.
             const isFieldRelatedToDayIndex = elementName.includes(`_${currentDayIndexStr}`);
             const isFieldRelatedToMDPlus2 = (dayIndex === 6 && elementName.includes('md_plus_2')); 
             const isFieldRelatedToCurrentDay = isFieldRelatedToDayIndex || isFieldRelatedToMDPlus2;
@@ -157,7 +159,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (minOffset <= 4 && minOffset > 0) { 
-                    // <--- ВИПРАВЛЕНО СИНТАКСИЧНУ ПОМИЛКУ ТУТ!
                     statusKey = isPostMatch ? `MD+${minOffset}` : `MD-${minOffset}`; 
                 }
             } else {
@@ -190,4 +191,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === ПОЧАТКОВИЙ ЗАПУСК ===
     updateCycleColors(); 
-});
+}); // <--- ПОВНА, ПРАВИЛЬНО ЗАКРИТА ФІНАЛЬНА ДУЖКА
