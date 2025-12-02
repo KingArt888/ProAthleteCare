@@ -1,5 +1,5 @@
 // =========================================================
-// weekly-individual.js - ФІНАЛЬНА ВЕРСІЯ (V16.0: Підтягує ВСІ MD-статуси)
+// weekly-individual.js - ФІНАЛЬНА ВЕРСІЯ (V17.0: Виправлено синтаксис та автозаповнення)
 // =========================================================
 
 const COLOR_MAP = {
@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dynamicMatchFields = document.getElementById('dynamic-match-fields');
     const dayCells = document.querySelectorAll('#md-colors-row .cycle-day');
     
-    // ФУНКЦІЯ ОТРИМАННЯ ШАБЛОНУ: Отримує актуальний текст з textarea
+    // ФУНКЦІЯ ОТРИМАННЯ ШАБЛОНУ
     function getTemplateText(status) {
         if (status === 'MD') return 'Матч: Індивідуальна розминка/завершення гри';
         if (status === 'REST') return 'Повний відпочинок, відновлення, сон.';
@@ -31,77 +31,74 @@ document.addEventListener('DOMContentLoaded', () => {
             fieldName = `tasks_md_plus_${status.charAt(3)}`;
         } else if (status.startsWith('MD-')) {
             fieldName = `tasks_md_minus_${status.charAt(3)}`;
+        } else {
+             // Якщо статус не MD-фаза, повертаємо порожній рядок
+             return ''; 
         }
 
         const templateElement = document.querySelector(`textarea[name="${fieldName}"]`);
-        // Використовуємо .value, щоб отримати актуальний текст
         return templateElement ? templateElement.value.trim() : ''; 
     }
 
     // =========================================================
     // ФУНКЦІЯ 1: ВИМКНЕННЯ ПОЛІВ
-    // (Без змін)
     // =========================================================
 
     function toggleDayInputs(dayIndex, activityType, isPlanActive) {
-        
-        const isDisabledOverall = !isPlanActive;
-        const allFormElements = document.body.querySelectorAll('input, select, textarea');
-        const currentDayIndexStr = dayIndex.toString();
-        
-        const fieldPrefixesToDisable = [
-            'daily_task',       
-            'tasks',            
-            'cardio',           
-            'opponent',         
-            'venue',            
-            'travel_km'         
-        ];
+        try {
+            const isDisabledOverall = !isPlanActive;
+            const allFormElements = document.body.querySelectorAll('input, select, textarea');
+            const currentDayIndexStr = dayIndex.toString();
+            
+            const fieldPrefixesToDisable = [
+                'daily_task', 'tasks', 'cardio', 'opponent', 'venue', 'travel_km'
+            ];
 
-        allFormElements.forEach(element => {
-            const elementName = element.name || '';
-            
-            if (element.classList.contains('activity-type-select')) {
-                return; 
-            }
-
-            let shouldBeDisabled = false;
-            
-            const isFieldRelatedToDay = fieldPrefixesToDisable.some(prefix => 
-                elementName.startsWith(prefix) && (elementName.endsWith(`_${currentDayIndexStr}`))
-            );
-            
-            const isFieldRelatedToMDPlus2 = (elementName.includes('md_plus_2')); 
-            
-            const isFieldRelevant = isFieldRelatedToDay || isFieldRelatedToMDPlus2;
-            
-            
-            if (isDisabledOverall) {
-                shouldBeDisabled = true; 
-            } 
-            else if (isFieldRelevant) {
+            allFormElements.forEach(element => {
+                const elementName = element.name || '';
                 
-                if (activityType === 'REST') {
+                if (element.classList.contains('activity-type-select')) {
+                    return; 
+                }
+
+                let shouldBeDisabled = false;
+                
+                const isFieldRelatedToDay = fieldPrefixesToDisable.some(prefix => 
+                    elementName.startsWith(prefix) && (elementName.endsWith(`_${currentDayIndexStr}`))
+                );
+                
+                const isFieldRelevant = isFieldRelatedToDay || (elementName.includes('md_plus_2')); 
+                
+                
+                if (isDisabledOverall) {
                     shouldBeDisabled = true; 
                 } 
-                
-                else if (activityType !== 'MATCH' && (elementName.startsWith('opponent_') || elementName.startsWith('venue_') || elementName.startsWith('travel_km_'))) {
-                     shouldBeDisabled = true;
+                else if (isFieldRelevant) {
+                    
+                    if (activityType === 'REST') {
+                        shouldBeDisabled = true; 
+                    } 
+                    
+                    else if (activityType !== 'MATCH' && (elementName.startsWith('opponent_') || elementName.startsWith('venue_') || elementName.startsWith('travel_km_'))) {
+                         shouldBeDisabled = true;
+                    }
                 }
-            }
-            
-            element.disabled = shouldBeDisabled;
-            
-            if (shouldBeDisabled) {
-                element.classList.add('day-disabled');
-            } else {
-                element.classList.remove('day-disabled');
-            }
-        });
+                
+                element.disabled = shouldBeDisabled;
+                
+                if (shouldBeDisabled) {
+                    element.classList.add('day-disabled');
+                } else {
+                    element.classList.remove('day-disabled');
+                }
+            });
+        } catch (e) {
+            console.error("Помилка у toggleDayInputs:", e);
+        }
     }
 
     // =========================================================
-    // ФУНКЦІЯ 2: ПЕРЕРИВАННЯ ЦИКЛУ (Без змін)
+    // ФУНКЦІЯ 2: ПЕРЕРИВАННЯ ЦИКЛУ
     // =========================================================
 
     function resetCycleAfterRest(days, activityTypes, matchDays) {
@@ -150,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // =========================================================
-    // ФУНКЦІЯ 3: ОНОВЛЕННЯ ДЕТАЛЕЙ МАТЧУ (Без змін)
+    // ФУНКЦІЯ 3: ОНОВЛЕННЯ ДЕТАЛЕЙ МАТЧУ
     // =========================================================
 
     function updateMatchDetails(dayIndex, activityType) {
@@ -183,7 +180,70 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // =========================================================
-    // ФУНКЦІЯ 4: РОЗРАХУНОК КОЛЬОРУ ЦИКЛУ та АВТОЗАПОВНЕННЯ (V16.0)
+    // ФУНКЦІЯ 4: РОЗРАХУНОК КОЛЬОРУ ЦИКЛУ та АВТОЗАПОВНЕННЯ (V17.0)
     // =========================================================
     
     function updateCycleColors() {
+        try {
+            let activityTypes = [];
+            let matchDays = [];
+
+            activitySelects.forEach((select, index) => {
+                activityTypes[index] = select.value;
+                if (select.value === 'MATCH') {
+                    matchDays.push(index); 
+                }
+            });
+            
+            const isPlanActive = matchDays.length > 0;
+            let dayStatuses = new Array(7).fill('REST'); 
+
+            // 1. Стандартний розрахунок MD+X/MD-X
+            dayCells.forEach((cell, index) => {
+                if (matchDays.includes(index)) {
+                    dayStatuses[index] = 'MD';
+                } else if (isPlanActive) { 
+                    
+                    let minOffset = 7;
+                    let isPostMatch = false; 
+                    
+                    matchDays.forEach(mdIndex => {
+                        const offsetForward = (index - mdIndex + 7) % 7; 
+                        const offsetBackward = (mdIndex - index + 7) % 7; 
+                        
+                        if (offsetForward > 0 && offsetForward <= 2) { 
+                            if (offsetForward < minOffset) {
+                                minOffset = offsetForward;
+                                isPostMatch = true;
+                            }
+                        } 
+                        else if (offsetBackward > 0 && offsetBackward < 7) { 
+                            if (offsetBackward <= 4) { 
+                                if (offsetBackward < minOffset) {
+                                    minOffset = offsetBackward;
+                                    isPostMatch = false;
+                                }
+                            }
+                        }
+                    });
+
+                    if (minOffset <= 4 && minOffset > 0) { 
+                        dayStatuses[index] = isPostMatch ? `MD+${minOffset}` : `MD-${minOffset}`; 
+                    }
+                }
+            });
+
+            // 2. ПЕРЕРИВАННЯ ЦИКЛУ
+            let finalStatuses = dayStatuses;
+
+            if (activityTypes.includes('REST') && isPlanActive) {
+                finalStatuses = resetCycleAfterRest(dayStatuses, activityTypes, matchDays);
+            }
+
+            // 3. ФІНАЛЬНЕ ОНОВЛЕННЯ КОЛЬОРІВ ТА АВТОЗАПОВНЕННЯ ПОЛІВ
+            dayCells.forEach((cell, index) => {
+                const mdStatusElement = cell.querySelector('.md-status');
+                
+                let statusKey = finalStatuses[index] || 'REST'; 
+                
+                // Якщо селектор - REST, колір має бути REST
