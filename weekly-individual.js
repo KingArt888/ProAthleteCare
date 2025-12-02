@@ -1,5 +1,5 @@
 // =========================================================
-// weekly-individual.js - ФІНАЛЬНА ВЕРСІЯ (V13.0: ВИДАЛЕНО LOAD AU)
+// weekly-individual.js - ФІНАЛЬНА ВЕРСІЯ (V15.0: Виправлено автозаповнення)
 // =========================================================
 
 const COLOR_MAP = {
@@ -21,12 +21,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const dynamicMatchFields = document.getElementById('dynamic-match-fields');
     const dayCells = document.querySelectorAll('#md-colors-row .cycle-day');
     
-    // Нова функція для отримання тексту шаблону
+    // ФУНКЦІЯ ОТРИМАННЯ ШАБЛОНУ: Отримує актуальний текст з textarea
     function getTemplateText(status) {
         if (status === 'MD') return 'Матч: Сфокусуватися на розминці та відновленні після гри.';
-        if (status === 'REST') return 'Вихідний: Повний відпочинок або легке відновлення за шаблоном MD+2.';
+        if (status === 'REST') return 'Повний відпочинок, відновлення, сон.';
         
-        // Перетворюємо MD+X/MD-X в ім'я поля шаблону
         let fieldName = '';
         if (status.startsWith('MD+')) {
             fieldName = `tasks_md_plus_${status.charAt(3)}`;
@@ -35,11 +34,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const templateElement = document.querySelector(`textarea[name="${fieldName}"]`);
-        return templateElement ? templateElement.value : '';
+        // Використовуємо .value, щоб отримати текст
+        return templateElement ? templateElement.value.trim() : ''; 
     }
 
     // =========================================================
-    // ФУНКЦІЯ 1: ВИМКНЕННЯ ПОЛІВ (V13.0 - ВИДАЛЕНО 'load')
+    // ФУНКЦІЯ 1: ВИМКНЕННЯ ПОЛІВ
+    // (Код залишається, просто перенесено у фінальну версію)
     // =========================================================
 
     function toggleDayInputs(dayIndex, activityType, isPlanActive) {
@@ -49,7 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentDayIndexStr = dayIndex.toString();
         
         const fieldPrefixesToDisable = [
-            // ВИДАЛЕНО 'load',
             'daily_task',       
             'tasks',            
             'cardio',           
@@ -67,13 +67,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let shouldBeDisabled = false;
             
-            // 1. Встановлюємо, чи поле належить поточному Дню/Індексу
             const isFieldRelatedToDay = fieldPrefixesToDisable.some(prefix => 
                 elementName.startsWith(prefix) && (elementName.endsWith(`_${currentDayIndexStr}`))
             );
             
-            // 2. Окремо для полів MD+2 (для Неділі)
-            // Примітка: ця перевірка для полів шаблону, а не для щоденних полів, але ми її залишаємо, якщо вона потрібна.
             const isFieldRelatedToMDPlus2 = (elementName.includes('md_plus_2')); 
             
             const isFieldRelevant = isFieldRelatedToDay || isFieldRelatedToMDPlus2;
@@ -104,9 +101,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================
-    // ФУНКЦІЯ 2: ПЕРЕРИВАННЯ ЦИКЛУ ТА ВІДЛІК ДО НАСТУПНОГО МАТЧУ (V10.0)
+    // ФУНКЦІЯ 2: ПЕРЕРИВАННЯ ЦИКЛУ (Без змін)
     // =========================================================
-    // (Без змін)
 
     function resetCycleAfterRest(days, activityTypes, matchDays) {
         const updatedDays = [...days]; 
@@ -187,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // =========================================================
-    // ФУНКЦІЯ 4: РОЗРАХУНОК КОЛЬОРУ ЦИКЛУ та АВТОЗАПОВНЕННЯ (V13.0)
+    // ФУНКЦІЯ 4: РОЗРАХУНОК КОЛЬОРУ ЦИКЛУ та АВТОЗАПОВНЕННЯ (V15.0)
     // =========================================================
     
     function updateCycleColors() {
@@ -270,12 +266,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // АВТОЗАПОВНЕННЯ daily_task
             const dailyTaskField = document.querySelector(`textarea[name="daily_task_${index}"]`);
-            if (dailyTaskField && currentActivity !== 'MATCH') {
-                 // Заповнюємо, якщо це не "Матч"
+            
+            if (dailyTaskField) {
                  const templateText = getTemplateText(statusKey);
                  dailyTaskField.value = templateText;
-            } else if (dailyTaskField && currentActivity === 'MATCH') {
-                 dailyTaskField.value = 'Матч: Індивідуальна розминка/завершення гри';
             }
             
         });
@@ -293,9 +287,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // === ОБРОБНИКИ ДЛЯ ЗМІНИ ШАБЛОНІВ ===
+    // === ОБРОБНИКИ ДЛЯ ЗМІНИ ШАБЛОНІВ (Важливо!) ===
+    // Якщо користувач змінює текст у шаблоні, ми одразу оновлюємо Daily Tasks
     document.querySelectorAll('#recovery-details-container textarea').forEach(textarea => {
         textarea.addEventListener('input', updateCycleColors);
+        textarea.addEventListener('change', updateCycleColors); // Додамо обидва обробники
     });
     
     // === ПОЧАТКОВИЙ ЗАПУСК ===
