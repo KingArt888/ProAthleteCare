@@ -1,3 +1,8 @@
+/* Золотий акцент */
+:root {
+    --gold-accent: #FFD700; /* Чистий золотий колір */
+}
+
 /* ========================================= */
 /* 1. ЗАГАЛЬНІ СТИЛІ ТА МАКЕТ */
 /* ========================================= */
@@ -12,7 +17,7 @@
     padding: 0;
 }
 h2 {
-    color: #FFD700; 
+    color: var(--gold-accent); /* Золотий */
     border-bottom: 2px solid #3A3A3A;
     padding-bottom: 10px;
     margin-bottom: 20px;
@@ -31,6 +36,7 @@ p.subtitle {
     table-layout: fixed; 
     margin-bottom: 30px;
     box-shadow: 0 0 15px rgba(255, 215, 0, 0.1); 
+    min-width: 800px; /* Запобігає надто сильному стисненню */
 }
 .microcycle-table th,
 .microcycle-table td {
@@ -43,7 +49,7 @@ p.subtitle {
 
 .microcycle-table thead th {
     background-color: #2A2A2A; 
-    color: #FFD700; 
+    color: var(--gold-accent); /* Золотий */
     font-size: 0.9em; 
 }
 
@@ -58,9 +64,9 @@ p.subtitle {
     padding: 6px 2px;
     box-sizing: border-box;
     font-size: 13px;
-    border: 1px solid #FFD700;
+    border: 1px solid var(--gold-accent);
     background-color: #1A1A1A;
-    color: #FFD700;
+    color: var(--gold-accent);
     border-radius: 4px;
 }
 
@@ -79,36 +85,38 @@ p.subtitle {
     padding: 4px;
 }
 
-/* Стилі для полів завдань у таблиці (daily_task_X) */
+/* Стилі для полів завдань у таблиці (daily_task_X) - ОНОВЛЕНО */
 .daily-tasks-row textarea {
-    /* Збільшуємо розмір та використовуємо професійний, чистий шрифт */
-    font-size: 16px; 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-    /* Збільшуємо міжрядковий інтервал для кращої читабельності списку */
-    line-height: 1.6; 
-    padding: 12px; 
-    border: 1px solid #444; /* Чітка, але не агресивна рамка */
-    box-sizing: border-box;
     width: 100%;
-    height: 180px; /* Збільшена висота для вмісту списку */
-    background-color: #1e1e1e; /* Темний фон */
-    color: #e0e0e0; /* Світлий текст */
-    resize: vertical; /* Дозволити користувачеві змінювати розмір */
+    height: 90px; 
+    min-height: 90px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    line-height: 1.6; 
+    padding: 8px; 
+    box-sizing: border-box;
+    border: 2px solid #555555; /* Товстіша, але м'якша рамка */
+    border-radius: 6px; /* Більш округлі кути */
+    font-size: 13px; /* Трохи менший шрифт */
+    resize: vertical; 
+    
+    background-color: #111111; /* Трохи темніший фон для контрасту */
+    color: #DDDDDD; /* Світліший текст для кращої читабельності */
+    transition: border-color 0.2s, box-shadow 0.2s; 
 }
 
 /* Стиль для активного поля (при фокусі) */
-.daily-tasks-row textarea:focus {
-    border-color: #007bff; /* Професійний синій акцент */
-    box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+.daily-tasks-row textarea:focus:not([disabled]) {
+    border-color: var(--gold-accent); /* Золота рамка при фокусі */
+    box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+    outline: none;
 }
 
 /* Стилі для поля шаблонів (tasks_md_plus_X) */
 #recovery-details-container textarea {
-    /* Робимо їх трохи більшими, але зберігаємо загальний стиль */
     font-size: 16px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
-    height: 200px; /* Збільшена висота для редагування */
+    height: 200px; 
     background-color: #2a2a2a; 
     color: #f0f0f0;
     border: 1px solid #666;
@@ -116,25 +124,17 @@ p.subtitle {
     resize: vertical;
 }
 
-/* Стиль для жирного тексту, який ми вставляємо (**Фаза:..**) */
-/* Хоча це не повна підтримка Markdown у textarea, 
-   цей стиль забезпечує чіткий вигляд на початку кожного шаблону. */
-.daily-tasks-row textarea strong {
-    font-weight: bold;
-    color: #ffcc00; /* Яскравий колір для заголовка фази */
-}
-
 /* ========================================= */
 /* 3. КОЛЬОРИ СТАТУСІВ (MD+X) */
 /* ========================================= */
-.cycle-day .md-status.color-red { background-color: #D9534F !important; color: white !important; }
-.cycle-day .md-status.color-dark-green { background-color: #1E8449 !important; color: white !important; }
-.cycle-day .md-status.color-green { background-color: #4CAF50 !important; color: white !important; }
-.cycle-day .md-status.color-yellow { background-color: #FFC107 !important; color: black !important; }
-.cycle-day .md-status.color-deep-green { background-color: #008080 !important; color: white !important; }
-.cycle-day .md-status.color-orange { background-color: #FF9800 !important; color: white !important; }
-.cycle-day .md-status.color-blue { background-color: #007bff !important; color: white !important; }
-.cycle-day .md-status.color-neutral { background-color: #2A2A2A !important; color: #CCCCCC !important; }
+.cycle-day .md-status.color-red { background-color: #D9534F !important; color: white !important; } /* MD */
+.cycle-day .md-status.color-dark-green { background-color: #1E8449 !important; color: white !important; } /* MD+1 */
+.cycle-day .md-status.color-green { background-color: #4CAF50 !important; color: white !important; } /* MD+2 */
+.cycle-day .md-status.color-neutral { background-color: #2A2A2A !important; color: #CCCCCC !important; } /* MD+3, TRAIN, REST */
+.cycle-day .md-status.color-yellow { background-color: #FFC107 !important; color: black !important; } /* MD-1 */
+.cycle-day .md-status.color-deep-green { background-color: #008080 !important; color: white !important; } /* MD-2 */
+.cycle-day .md-status.color-orange { background-color: #FF9800 !important; color: white !important; } /* MD-3 */
+.cycle-day .md-status.color-blue { background-color: #007bff !important; color: white !important; } /* MD-4 */
 
 
 /* ========================================= */
@@ -149,7 +149,7 @@ p.subtitle {
 }
 
 .details-section h3 {
-    color: #FFD700;
+    color: var(--gold-accent);
     border-bottom: 1px solid #333;
     padding-bottom: 10px;
     margin-bottom: 20px;
@@ -158,7 +158,7 @@ p.subtitle {
 .cycle-task-block {
     margin-top: 20px;
     padding: 15px;
-    border-left: 5px solid #FFD700; /* Золотий акцент зліва */
+    border-left: 5px solid var(--gold-accent); /* Золотий акцент зліва */
     background-color: #222222;
     border-radius: 4px;
     margin-bottom: 15px;
@@ -181,9 +181,8 @@ p.subtitle {
     resize: vertical;
     font-size: 14px;
     background-color: #1A1A1A; 
-    color: #FFD700; /* Текст шаблону золотий */
+    color: var(--gold-accent); /* Текст шаблону золотий */
 }
-
 
 /* ========================================= */
 /* 5. СТИЛІ ФОРМ ТА КНОПОК */
@@ -192,38 +191,35 @@ input[type="text"], input[type="number"], select {
     width: 100%;
     padding: 8px;
     margin-bottom: 15px;
-    border: 1px solid #FFD700; 
+    border: 1px solid var(--gold-accent); 
     background-color: #1A1A1A;
-    color: #FFD700;
+    color: #FFFFFF;
     box-sizing: border-box;
 }
-/* ========================================= */
-/* 6. РЯДОК: ВПРАВИ/ЗАВДАННЯ (TEXTAREA) */
-/* (Покращений дизайн) */
-/* ========================================= */
-.daily-tasks-row td {
-    padding: 4px;
-}
 
-.daily-tasks-row textarea {
+.save-button {
+    display: block;
     width: 100%;
-    height: 90px; 
-    min-height: 90px;
-    padding: 8px; /* Збільшимо внутрішній відступ */
-    box-sizing: border-box;
-    border: 2px solid #555555; /* Товстіша, але м'якша рамка */
-    border-radius: 6px; /* Більш округлі кути */
-    font-size: 13px; 
-    resize: vertical; 
-    
-    background-color: #111111; /* Трохи темніший фон для контрасту */
-    color: #DDDDDD; /* Світліший текст для кращої читабельності */
-    transition: border-color 0.2s, box-shadow 0.2s; /* Додаємо плавний перехід */
+    padding: 15px;
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #121212;
+    background-color: var(--gold-accent);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
 }
 
-/* Ефект фокусу: робить поле "живим" */
-.daily-tasks-row textarea:focus:not([disabled]) {
-    border-color: #FFD700; /* Золота рамка при фокусі */
-    box-shadow: 0 0 5px rgba(255, 215, 0, 0.5); 
-    outline: none;
+.save-button:hover {
+    background-color: #e6c200;
+    transform: translateY(-2px);
+}
+
+.day-disabled {
+    background-color: #333 !important;
+    color: #999 !important;
+    cursor: not-allowed;
+    opacity: 0.7;
 }
