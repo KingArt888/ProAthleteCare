@@ -137,10 +137,12 @@ cell.classList.add(style.colorClass); // <-- КЛАС ДОДАЄТЬСЯ ДО TD
 const style = COLOR_MAP[statusKey];
 mdStatusElement.textContent = style.status;
 
-// Видаляємо всі класи з mdStatusElement (SPAN)
+// *** ВИДАЛЯЄМО КЛАСИ З MD STATUS ELEMENT (SPAN) ***
+// Це гарантує, що ми видаляємо старий колір (наприклад, червоний) перед додаванням нового (наприклад, зеленого).
 Object.values(COLOR_MAP).forEach(map => mdStatusElement.classList.remove(map.colorClass)); 
 
-// Додаємо новий клас до mdStatusElement (SPAN)
-mdStatusElement.classList.add(style.colorClass); // <-- ТЕПЕР КЛАС ДОДАЄТЬСЯ ДО SPAN!
+// *** ДОДАЄМО КЛАС ДО MD STATUS ELEMENT (SPAN) ***
+// Фарбування має відбуватися на SPAN, оскільки він містить текст MD-X.
+mdStatusElement.classList.add(style.colorClass); 
 
-// ...
+cell.title = `Фаза: ${style.status}`;
