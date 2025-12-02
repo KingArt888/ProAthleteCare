@@ -1,5 +1,5 @@
 // =========================================================
-// weekly_plan_logic.js - ФІНАЛЬНА ВЕРСІЯ: НЕАКТИВНИЙ СТАН ЗА ЗАМОВЧУВАННЯМ
+// weekly_plan_logic.js - ФІНАЛЬНА ВЕРСІЯ: ВИМКНЕННЯ ВСІХ ПОВ'ЯЗАНИХ ПОЛІВ
 // =========================================================
 
 const COLOR_MAP = {
@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dynamicMatchFields = document.getElementById('dynamic-match-fields');
     const dayCells = document.querySelectorAll('#md-colors-row .cycle-day');
     const microcycleTable = document.querySelector('.microcycle-table'); 
+    const weeklyPlanForm = document.getElementById('weekly-plan-form'); // Знайдемо всю форму
 
     activitySelects.forEach(select => {
         select.addEventListener('change', (event) => {
@@ -35,40 +36,143 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // =========================================================
     // МОДИФІКОВАНА ФУНКЦІЯ: ВИМКНЕННЯ ПОЛІВ
-    // Тепер приймає isPlanActive і вимикає всі поля, якщо план не активний
+    // Вмикає/вимикає поля, що знаходяться поза таблицею, але пов'язані з MD/REST
     // =========================================================
 
     function toggleDayInputs(dayIndex, activityType, isPlanActive) {
-        const dayColumns = microcycleTable.querySelectorAll(`td[data-day-index="${dayIndex}"]`);
+        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const currentDayName = dayNames[dayIndex];
         
-        // Поля вимкнені, якщо:
-        // 1. План не активний (немає обраного MD), АБО
-        // 2. Для цього дня обрано "Відпочинок"
-        const isDisabled = !isPlanActive || activityType === 'REST'; 
+        // Вимикаємо ВСІ поля, якщо план не активний (не обрано жодного MD)
+        // АБО якщо для цього дня обрано "Відпочинок"
+        const isDisabled = !isPlanActive || activityType === 'REST';
 
-        dayColumns.forEach(td => {
-            const controllableElements = td.querySelectorAll('input, select, textarea');
-            
+        // 1. Обробка полів усередині сітки (activity-row)
+        const dayColumn = microcycleTable.querySelector(`td[data-day-index="${dayIndex}"]`);
+        if (dayColumn) {
+            const controllableElements = dayColumn.querySelectorAll('input, select, textarea');
             controllableElements.forEach(element => {
-                // НЕ ВИМИКАЄМО САМ СЕЛЕКТОР АКТИВНОСТІ
                 if (element.classList.contains('activity-type-select')) {
                     return; 
                 }
-                
                 element.disabled = isDisabled;
-                
                 if (isDisabled) {
                     element.classList.add('day-disabled');
                 } else {
                     element.classList.remove('day-disabled');
                 }
             });
+        }
+        
+        // 2. Обробка полів у розділі Деталі Матчу/Відновлення (якщо вони існують)
+        // Шукаємо поля за ім'ям, що містить індекс або назву дня
+        const fieldsToToggle = weeklyPlanForm.querySelectorAll(`input[name*="_${dayIndex}"], select[name*="_${dayIndex}"]`);
+        
+        // Спеціальний випадок для MD+2 (НД) - індекс 6
+        if (dayIndex == 6) {
+             const recoveryFields = weeklyPlanForm.querySelectorAll('input[name*="md_plus_2"]');
+             recoveryFields.forEach(field => {
+                 field.disabled = isDisabled;
+                 if (isDisabled) {
+                    field.classList.add('day-disabled');
+                 } else {
+                    field.classList.remove('day-disabled');
+                 }
+             });
+        }
+
+
+        // 3. Обробляємо всі інші поля, пов'язані з індексом дня
+        fieldsToToggle.forEach(element => {
+            // Якщо поле входить до динамічного блоку деталей матчу
+            if (element.closest(`.match-detail-block[data-day-index="${dayIndex}"]`)) {
+                // Вмикаємо/Вимикаємо, але ТІЛЬКИ якщо це не MD (MATCH) і план активний
+                element.disabled = !isPlanActive || activityType !== 'MATCH';
+                
+                if (element.disabled) {
+                    element.classList.add('day-disabled');
+                } else {
+                    element.classList.remove('day-disabled');
+                }
+            }
         });
     }
 
+    // ... Функції updateMatchDetails, updateCycleColors залишаються, але з одним виправленням:
+    // Потрібно переконатися, що toggleDayInputs викликається з трьома аргументами у updateCycleColors
+    
     // =========================================================
-    // Функція updateMatchDetails (без змін)
+    // MODIFIED LOGIC: updateCycleColors (ВИКЛИК ФУНКЦІЇ)
     // =========================================================
+
+    function updateCycleColors() {
+        let matchDays = [];
+        activitySelects.forEach((select, index) => {
+            if (select.value === 'MATCH') {
+                matchDays.push(index); 
+            }
+        });
+        
+        const isPlanActive = matchDays.length > 0;
+        
+        console.log('Дні матчів (Індекси):', matchDays); 
+        console.log('План Активний:', isPlanActive);
+
+        dayCells.forEach((cell, index) => {
+            const mdStatusElement = cell.querySelector('.md-status');
+            let statusKey = 'REST'; 
+
+            if (matchDays.includes(index)) {
+                statusKey = 'MD';
+            } else if (isPlanActive) { 
+                
+                let minOffset = 7;
+                let isPostMatch = false; 
+                
+                matchDays.forEach(mdIndex => {
+                    const offsetForward = (index - mdIndex + 7) % 7;
+                    const offsetBackward = (mdIndex - index + 7) % 7; 
+                    
+                    if (offsetForward > 0 && offsetForward <= 2) { 
+                        if (offsetForward < minOffset) {
+                            minOffset = offsetForward;
+                            isPostMatch = true;
+                        }
+                    } 
+                    else if (offsetBackward > 0 && offsetBackward < 7) { 
+                        if (offsetBackward <= 4) { 
+                            if (offsetBackward < minOffset) {
+                                minOffset = offsetBackward;
+                                isPostMatch = false;
+                            }
+                        }
+                    }
+                });
+
+                if (minOffset <= 4 && minOffset > 0) { 
+                    statusKey = isPostMatch ? `MD+${minOffset}` : `MD-${minOffset}`;
+                }
+            } else {
+                 statusKey = 'REST'; 
+            }
+
+            // ЗАСТОСУВАННЯ СТИЛІВ
+            const style = COLOR_MAP[statusKey] || COLOR_MAP['REST'];
+            mdStatusElement.textContent = style.status;
+            
+            Object.values(COLOR_MAP).forEach(map => mdStatusElement.classList.remove(map.colorClass)); 
+            mdStatusElement.classList.add(style.colorClass); 
+
+            cell.title = `Фаза: ${style.status}`; 
+            console.log(`День ${index}: Статус: ${style.status}, Клас: ${style.colorClass}`); 
+
+            // === ВИКЛИК З ТРЬОМА АРГУМЕНТАМИ ===
+            const currentActivity = activitySelects[index].value;
+            toggleDayInputs(index, currentActivity, isPlanActive); 
+        });
+    }
+
+    // ... Функції updateMatchDetails (без змін)
     function updateMatchDetails(dayIndex, activityType) {
         const existingBlock = dynamicMatchFields.querySelector(`.match-detail-block[data-day-index="${dayIndex}"]`);
         const dayNames = ['Понеділок', 'Вівторок', 'Середа', 'Четвер', 'П’ятниця', 'Субота', 'Неділя'];
@@ -93,86 +197,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (activityType !== 'MATCH' && existingBlock) {
             existingBlock.remove();
         }
+        // Після додавання/видалення деталей матчу, перевіряємо стан active/disabled
+        // Це забезпечить коректне відображення disabled, якщо план неактивний або день REST
+        const isPlanActive = document.querySelectorAll('.activity-type-select[value="MATCH"]').length > 0;
+        toggleDayInputs(dayIndex, activityType, isPlanActive);
     }
-
-
-    // =========================================================
-    // МОДИФІКОВАНА ЛОГІКА: ВИДАЛЕНО MD ЗА ЗАМОВЧУВАННЯМ
-    // =========================================================
-
-    function updateCycleColors() {
-        let matchDays = [];
-        activitySelects.forEach((select, index) => {
-            if (select.value === 'MATCH') {
-                matchDays.push(index); 
-            }
-        });
-        
-        // --- КРИТИЧНА ЗМІНА: ПЛАН АКТИВНИЙ ТІЛЬКИ ПРИ ВИБОРІ MD ---
-        const isPlanActive = matchDays.length > 0;
-        // ---------------------------------------------------------
-
-        console.log('Дні матчів (Індекси):', matchDays); 
-        console.log('План Активний:', isPlanActive);
-
-        dayCells.forEach((cell, index) => {
-            const mdStatusElement = cell.querySelector('.md-status');
-            let statusKey = 'REST'; 
-
-            if (matchDays.includes(index)) {
-                statusKey = 'MD';
-            } else if (isPlanActive) { 
-                
-                let minOffset = 7;
-                let isPostMatch = false; 
-                
-                matchDays.forEach(mdIndex => {
-                    const offsetForward = (index - mdIndex + 7) % 7;
-                    const offsetBackward = (mdIndex - index + 7) % 7; 
-                    
-                    // Обмеження MD+ до +2
-                    if (offsetForward > 0 && offsetForward <= 2) { 
-                        if (offsetForward < minOffset) {
-                            minOffset = offsetForward;
-                            isPostMatch = true;
-                        }
-                    } 
-                    
-                    // MD-X до MD-4
-                    else if (offsetBackward > 0 && offsetBackward < 7) { 
-                        if (offsetBackward <= 4) { 
-                            if (offsetBackward < minOffset) {
-                                minOffset = offsetBackward;
-                                isPostMatch = false;
-                            }
-                        }
-                    }
-                });
-
-                if (minOffset <= 4 && minOffset > 0) { 
-                    statusKey = isPostMatch ? `MD+${minOffset}` : `MD-${minOffset}`;
-                }
-            } else {
-                 // Якщо план не активний, ставимо 'REST' (нейтральний колір)
-                 statusKey = 'REST'; 
-            }
-
-            // ЗАСТОСУВАННЯ СТИЛІВ
-            const style = COLOR_MAP[statusKey] || COLOR_MAP['REST'];
-            mdStatusElement.textContent = style.status;
-            
-            Object.values(COLOR_MAP).forEach(map => mdStatusElement.classList.remove(map.colorClass)); 
-            mdStatusElement.classList.add(style.colorClass); 
-
-            cell.title = `Фаза: ${style.status}`; 
-            console.log(`День ${index}: Статус: ${style.status}, Клас: ${style.colorClass}`); 
-
-            // === КРИТИЧНИЙ ВИКЛИК: Вимикаємо/Вмикаємо поля ===
-            const currentActivity = activitySelects[index].value;
-            toggleDayInputs(index, currentActivity, isPlanActive); 
-        });
-    }
-
+    // ...
+    
     console.log('--- Сторінка завантажена, початковий розрахунок ---');
     updateCycleColors(); 
 });
