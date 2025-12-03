@@ -3,7 +3,7 @@ const COLOR_MAP = {
     'MD': { status: 'MD', colorClass: 'color-red' },
     'MD+1': { status: 'MD+1', colorClass: 'color-dark-green' }, 
     'MD+2': { status: 'MD+2', colorClass: 'color-green' }, 
-    'MD+3': { status: 'MD+3', colorClass: 'color-neutral' }, // Додано для усунення помилки при наявності HTML-блоку
+    'MD+3': { status: 'MD+3', colorClass: 'color-neutral' }, 
     'MD-1': { status: 'MD-1', colorClass: 'color-yellow' }, 
     'MD-2': { status: 'MD-2', colorClass: 'color-deep-green' }, 
     'MD-3': { status: 'MD-3', colorClass: 'color-orange' }, 
@@ -66,7 +66,6 @@ document.addEventListener('DOMContentLoaded', () => {
 3. **Легкий Стретчинг (статичний):** 15 хв.
 4. **Гідратація:** Посилений контроль водного балансу.`
             },
-            // ВИПРАВЛЕННЯ: Додано MD+3
             { name: 'tasks_md_plus_3', defaultText: 
                 `1. **Загальне Командне Тренування:** Фокус на техніку/тактику.
 2. **Індивідуальна робота:** Легка аеробна активність (15-20 хв).`
@@ -116,7 +115,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (status === 'TRAIN') return 'Загальнокомандне тренування: Специфічні вправи вводити вручну.';
 
         let fieldName = '';
-        // Регулярний вираз для безпечного отримання числа з MD+X або MD-X
         const numberMatch = status.match(/(\d+)/); 
 
         if (!numberMatch) {
@@ -136,7 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const templateElement = document.querySelector(`textarea[name="${fieldName}"]`);
 
         if (!templateElement) {
-            // Це рядок 134, на який вказувала помилка
             console.error(`Помилка: Не знайдено textarea з іменем: ${fieldName}`); 
             return '';
         }
@@ -265,96 +262,90 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================
-    // ФУНКЦІЯ: updateCycleColors (Виправлений розрахунок MD-фаз)
+    // ФУНКЦІЯ: updateCycleColors (ВИПРАВЛЕНА ЛОГІКА: REST та MATCH мають пріоритет)
     // =========================================================
     function updateCycleColors() {
         try {
             let activityTypes = [];
-            let matchDays = [];
+            let dayStatuses = new Array(7).fill('TRAIN'); // Дефолтний статус
 
             activitySelects.forEach((select, index) => {
                 activityTypes[index] = select.value;
-                if (select.value === 'MATCH') {
-                    matchDays.push(index); 
+                // Встановлюємо початковий статус на основі ручного вибору
+                if (select.value === 'MATCH' || select.value === 'REST') {
+                    dayStatuses[index] = select.value;
                 }
             });
             
-            const isPlanActive = matchDays.length > 0;
-            let dayStatuses = new Array(7).fill('TRAIN'); 
+            const isPlanActive = activityTypes.includes('MATCH');
             
-            // 1. MD CALCULATION (Strict 7-day cycle for a single match)
-            if (matchDays.length === 1) {
-                const mdIndex = matchDays[0];
+            // Карта циклу MD-фаз (для відліку назад)
+            const mdMinusCycle = ['MD-1', 'MD-2', 'MD-3', 'MD-4'];
+            // MD+ фази
+            const mdPlusMap = ['MD+1', 'MD+2', 'MD+3']; 
+            
+            // 1. РОЗРАХУНОК MD- ФАЗ (працює назад від кожного матчу)
+            let currentMDMinus = 0; 
+            let matchFound = false;
+
+            for (let i = 6; i >= 0; i--) {
+                const currentActivity = activityTypes[i];
                 
-                // Фіксована послідовність MD-фаз для 7-денного мікроциклу: MD, MD+1, MD+2, MD-4, MD-3, MD-2, MD-1
-                const singleMatchCycle = ['MD', 'MD+1', 'MD+2', 'MD-4', 'MD-3', 'MD-2', 'MD-1']; 
-
-                dayCells.forEach((cell, index) => {
-                    // Розрахунок циклічного зміщення, починаючи з mdIndex
-                    const cycleOffset = (index - mdIndex + 7) % 7; 
-                    dayStatuses[index] = singleMatchCycle[cycleOffset];
-                });
-
-            } else {
-                // For multiple matches or no matches: TRAIN/MD fallback 
-                dayCells.forEach((cell, index) => {
-                    if (activityTypes[index] === 'MATCH') {
-                        dayStatuses[index] = 'MD';
-                    } else {
-                        dayStatuses[index] = 'TRAIN';
+                if (currentActivity === 'MATCH') {
+                    // Якщо матч знайдено, фінальний статус - MD (встановлений вище)
+                    currentMDMinus = 0; // Скидаємо лічильник для MD- фаз
+                    matchFound = true;
+                } else if (currentActivity === 'REST') {
+                    // ВИПРАВЛЕНО: REST тепер зупиняє відлік MD- фаз і зберігає свій статус.
+                    currentMDMinus = -1; // Припиняємо MD- відлік
+                } else if (matchFound && currentMDMinus >= 0 && currentMDMinus < mdMinusCycle.length) {
+                    // Якщо ми знайшли матч і не натрапили на REST/MATCH
+                    dayStatuses[i] = mdMinusCycle[currentMDMinus];
+                    currentMDMinus++;
+                } else {
+                    // Якщо цикл MD- фаз закінчився (MD-4), або ще не почався, встановлюємо TRAIN
+                    // Якщо i == 6 і це не MATCH/REST, то це TRAIN.
+                    if (dayStatuses[i] !== 'REST') {
+                         dayStatuses[i] = 'TRAIN';
                     }
-                });
+                }
             }
-
-
-            // 2. APPLY REST/TRAIN OVERRIDES (Вихідний день та перезапуск відліку)
-            let finalStatuses = [...dayStatuses];
-            let restEncountered = false;
+            
+            // 2. РОЗРАХУНОК MD+ ФАЗ (працює вперед від кожного матчу)
+            let daysSinceLastMatch = 0;
 
             for (let i = 0; i < 7; i++) {
                 const currentActivity = activityTypes[i];
                 
-                if (currentActivity === 'REST') {
-                    finalStatuses[i] = 'REST';
-                    restEncountered = true;
-                    continue; // Переходимо до наступного дня
-                }
-                
-                // Rule: "Відлік починається від наступної гри" після вихідного
-                if (restEncountered && currentActivity !== 'MATCH') {
-                    // Знаходимо всі матчі, які будуть після поточного дня 'i'
-                    const upcomingMDs = matchDays.filter(md => md > i);
-                    
-                    if (upcomingMDs.length > 0) {
-                        const nearestNextMDIndex = Math.min(...upcomingMDs);
-                        const daysToNextMD = nearestNextMDIndex - i; 
-                        
-                        if (daysToNextMD >= 1 && daysToNextMD <= 4) {
-                            // Якщо до матчу менше 4 днів, застосовуємо MD-фазу
-                            finalStatuses[i] = `MD-${daysToNextMD}`;
-                        } else {
-                            finalStatuses[i] = 'TRAIN'; 
-                        }
-                    } else {
-                        finalStatuses[i] = 'TRAIN'; // Немає більше матчів після REST
+                if (currentActivity === 'MATCH') {
+                    daysSinceLastMatch = 0; // Скидаємо
+                } else if (currentActivity === 'REST') {
+                    // REST перериває цикл MD+ і зберігає свій статус.
+                    daysSinceLastMatch = 0;
+                } else if (dayStatuses[i].startsWith('MD-')) {
+                    // Зберігаємо фази, розраховані назад (MD-1...MD-4)
+                    daysSinceLastMatch = 0;
+                } else if (daysSinceLastMatch >= 0 && daysSinceLastMatch < mdPlusMap.length) {
+                    // Застосовуємо MD+ фази (MD+1, MD+2, MD+3)
+                    dayStatuses[i] = mdPlusMap[daysSinceLastMatch];
+                    daysSinceLastMatch++;
+                } else {
+                    // Залишаємо TRAIN
+                    if (dayStatuses[i] !== 'REST') {
+                        dayStatuses[i] = 'TRAIN';
                     }
                 }
-                
-                // Скидаємо прапорець, якщо натрапляємо на Матч
-                if (currentActivity === 'MATCH') {
-                    restEncountered = false;
-                }
             }
-
 
             // 3. ФІНАЛЬНЕ ОНОВЛЕННЯ КОЛЬОРІВ ТА АВТОЗАПОВНЕННЯ ПОЛІВ
             dayCells.forEach((cell, index) => {
                 const mdStatusElement = cell.querySelector('.md-status');
                 
-                const statusKey = finalStatuses[index] || 'TRAIN'; 
-                const currentActivity = activitySelects[index].value;
+                // Фінальний статус беремо з розрахунку (dayStatuses)
+                const finalStatusKey = dayStatuses[index] || 'TRAIN'; 
+                const currentActivity = activitySelects[index].value; // Ручний вибір
                 
-                const style = COLOR_MAP[statusKey] || COLOR_MAP['TRAIN'];
+                const style = COLOR_MAP[finalStatusKey] || COLOR_MAP['TRAIN'];
                 mdStatusElement.textContent = style.status;
                 
                 Object.values(COLOR_MAP).forEach(map => mdStatusElement.classList.remove(map.colorClass)); 
@@ -362,30 +353,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 cell.title = `Фаза: ${style.status}`; 
 
+                // Оновлення вводу (вимкнення для REST/MATCH)
                 toggleDayInputs(index, currentActivity, isPlanActive); 
                 
                 const dailyTaskField = document.querySelector(`textarea[name="daily_task_${index}"]`);
                 
                 if (dailyTaskField) {
-                    const templateText = getTemplateText(statusKey);
+                    const templateText = getTemplateText(finalStatusKey);
                     const currentTaskValue = dailyTaskField.value.trim();
                     
-                    // Перевіряємо, чи поточний текст є одним із загальних (не редагованих) шаблонів
                     const isGenericTemplate = currentTaskValue === 'Загальнокомандне тренування: Специфічні вправи вводити вручну.' ||
                                                  currentTaskValue === 'Матч: Індивідуальна розминка/завершення гри' ||
                                                  currentTaskValue === 'Повний відпочинок, відновлення, сон.' ||
-                                                 currentTaskValue.includes('**Фаза: MD'); // Всі автозгенеровані MD-фази
+                                                 currentTaskValue.includes('**Фаза: MD'); 
 
-                    // Логіка оновлення
-                    if (statusKey === 'MD' || statusKey === 'REST' || (!isPlanActive && statusKey === 'TRAIN')) {
-                         // Для MD, REST або TRAIN без плану - завжди встановлюємо фіксований шаблон
+                    // Автозаповнення лише для MD, REST або TRAIN (без плану) та для MD+/- фаз, якщо поле порожнє/шаблонне.
+                    if (finalStatusKey === 'MD' || finalStatusKey === 'REST' || (!isPlanActive && finalStatusKey === 'TRAIN')) {
                          dailyTaskField.value = templateText;
                     } 
                     else if (templateText && (currentTaskValue === '' || isGenericTemplate)) {
-                         // Для MD+X/MD-X - заповнюємо шаблоном лише якщо поле порожнє АБО містить старий, загальний шаблон.
                          dailyTaskField.value = templateText;
                     }
-                    // Якщо поле містить відредагований текст, ми його НЕ чіпаємо.
                 }
             });
         } catch (e) {
@@ -406,11 +394,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Обробник для полів шаблонів (tasks_md_...) - тепер з автозбереженням
+    // Обробник для полів шаблонів (tasks_md_...)
     document.querySelectorAll('[name^="tasks_md_"]').forEach(textarea => { 
-        // Оновлюємо кольори, щоб MD-фази могли автозаповнитись, якщо шаблони були змінені
         textarea.addEventListener('input', updateCycleColors);
-        // ПОКРАЩЕННЯ: Зберігаємо шаблон при втраті фокусу (зміна)
         textarea.addEventListener('change', saveData); 
     });
     
@@ -421,13 +407,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Обробники для всіх інших полів вводу
     document.querySelectorAll('input, select, textarea').forEach(input => {
-        // Запобігаємо подвійному обробнику для шаблонів, які ми вже обробили вище
         if (input.name.startsWith('tasks_md_')) {
             return;
         }
 
         if (input.name !== 'travel_km_0') {
-            // Зберігаємо дані при зміні будь-якого поля
             input.addEventListener('change', saveData);
             input.addEventListener('input', saveData);
         }
