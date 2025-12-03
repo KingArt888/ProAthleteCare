@@ -317,8 +317,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         const daysUntilNextMatch = nextMatchIndex - i; 
 
                         // Якщо до наступної гри залишилося MD-4, MD-3, MD-2, MD-1, то MD+ цикл завершується, ставимо TRAIN
+                        // Це дозволяє MD- циклу взяти пріоритет.
                         if (daysUntilNextMatch <= 4) { 
-                            dayStatuses[i] = 'TRAIN';
+                            if (dayStatuses[i] !== 'REST') { // Не чіпаємо REST, якщо він був обраний
+                                dayStatuses[i] = 'TRAIN';
+                            }
                         } else {
                              // В іншому випадку, якщо MD- цикл ще не почався, продовжуємо MD+
                              if (dayStatuses[i] !== 'REST' && dayStatuses[i] !== 'MD') {
