@@ -52,6 +52,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ФУНКЦІЯ: ІНІЦІАЛІЗАЦІЯ ШАБЛОНІВ 
     // =========================================================
     function initializeTemplates() {
+        // У шаблонах я виправив синтаксис (замість '...' використано \n для перенесення рядків),
+        // щоб уникнути потенційних проблем з копіюванням/вставкою в деяких середовищах.
         const templates = [
             { name: 'tasks_md_plus_2', defaultText: `1. **Самомасаж (Ролінг/Перкусія):** 10 хв (фокус на квадрицепси, сідниці, спина).\n2. **Мобілізація суглобів:** 15 хв (комплекс на гомілкостоп, тазостегновий суглоб).\n3. **Легкий Стретчинг (статичний):** 15 хв.\n4. **Гідратація:** Посилений контроль водного балансу.` },
             { name: 'tasks_md_plus_3', defaultText: `1. **Загальне Командне Тренування:** Фокус на техніку/тактику.\n2. **Індивідуальна робота:** Легка аеробна активність (15-20 хв).` },
@@ -116,6 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (dailyTaskField) {
                  let shouldDisable = true;
                  
+                 // --- ВИПРАВЛЕНО ТУТ ---
                  // 1. Якщо MATCH обрано: поле завжди активне
                  if (activityType === 'MATCH') {
                      shouldDisable = false;
@@ -196,14 +199,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (venueSelect && savedValues[`venue_${dayIndex}`]) {
                 venueSelect.value = savedValues[`venue_${dayIndex}`];
             }
+
+            // Додаємо обробники для нових динамічних полів (зберігаються по зміні)
+            document.querySelectorAll(`.match-detail-block[data-day-index="${dayIndex}"] input, .match-detail-block[data-day-index="${dayIndex}"] select`).forEach(input => {
+                input.addEventListener('change', saveData); 
+                input.addEventListener('input', saveData);
+            });
+
         } else if (activityType !== 'MATCH' && existingBlock) {
             existingBlock.remove();
-        }
-        
-        const isPlanActive = document.querySelectorAll('.activity-type-select[value="MATCH"]').length > 0;
-        if (dayIndex !== -1) {
-            // Тут ми тільки викликаємо toggleDayInputs, а не перераховуємо всі поля.
-            // При зміні селекта updateCycleColors викликається окремо і оновлює toggleDayInputs для всіх полів.
         }
     }
 
@@ -233,7 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             activitySelects.forEach((select, index) => {
                 const activityType = select.value;
-                // updateMatchDetails викликається для створення динамічних полів.
                 updateMatchDetails(index, activityType, matchDetailsData);
             });
 
@@ -270,10 +273,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     mdStatusElement.classList.add(style.colorClass); 
                     cell.title = `Фаза: ${style.status}`; 
 
+                    // Викликаємо toggleDayInputs для оновлення стану блокування
                     toggleDayInputs(index, activityTypes[index], false);
                     
                     const dailyTaskField = document.querySelector(`textarea[name="daily_task_${index}"]`);
-                    // Оновлюємо шаблон тільки для REST/TRAIN, якщо поле порожнє
                     if (dailyTaskField && (dailyTaskField.value.trim() === '' || dailyTaskField.value.includes('Фаза: MD'))) {
                         dailyTaskField.value = getTemplateText(finalStatusKey);
                     }
@@ -300,7 +303,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentMDMinus = -1; // REST перериває відлік
                     dayStatuses[i] = 'REST'; // Фіксуємо REST
                 } else if (matchFoundInCycle && currentMDMinus >= 0 && currentMDMinus < mdMinusCycle.length) {
-                    // Якщо ще не REST і не MD (що має бути встановлено вище), застосовуємо MD-
                     dayStatuses[i] = mdMinusCycle[currentMDMinus];
                     currentMDMinus++;
                 }
@@ -345,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 cell.title = `Фаза: ${style.status}`; 
 
-                // !!! КЛЮЧОВЕ ВИПРАВЛЕННЯ: оновлюємо активність полів !!!
+                // !!! КЛЮЧОВЕ ОНОВЛЕННЯ: оновлюємо активність полів !!!
                 toggleDayInputs(index, currentActivity, isPlanActive); 
                 
                 const dailyTaskField = document.querySelector(`textarea[name="daily_task_${index}"]`);
@@ -390,14 +392,12 @@ document.addEventListener('DOMContentLoaded', () => {
         textarea.addEventListener('input', updateCycleColors);
     });
     
-    // Обробники для всіх полів, що зберігаються
+    // Обробники для всіх полів, що зберігаються (крім activity_type_ і tasks_md_...)
     document.querySelectorAll('input, select, textarea').forEach(input => {
-        // Запобігаємо подвійному обробнику для шаблонів, які мають свій обробник вище
         if (input.name.startsWith('tasks_md_') || input.name.startsWith('activity_')) {
             return;
         }
 
-        // Всі інші поля зберігаються при зміні/вводі
         input.addEventListener('change', saveData);
         input.addEventListener('input', saveData);
     });
