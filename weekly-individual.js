@@ -103,28 +103,43 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // =========================================================
-    // ФУНКЦІЯ: ОТРИМАННЯ ШАБЛОНУ
-    // =========================================================
-    function getTemplateText(status) {
-        if (status === 'MD') return 'Матч: Індивідуальна розминка/завершення гри';
-        if (status === 'REST') return 'Повний відпочинок, відновлення, сон.';
-        if (status === 'TRAIN') return 'Загальнокомандне тренування: Специфічні вправи вводити вручну.';
-        
-        let fieldName = '';
-        if (status.startsWith('MD+')) {
-            fieldName = `tasks_md_plus_${status.charAt(3)}`;
-        } else if (status.startsWith('MD-')) {
-            fieldName = `tasks_md_minus_${status.charAt(3)}`;
-        } else {
-            return ''; 
-        }
+  // =========================================================
+// ФУНКЦІЯ: ОТРИМАННЯ ШАБЛОНУ (ВИПРАВЛЕНО)
+// =========================================================
+function getTemplateText(status) {
+    if (status === 'MD') return 'Матч: Індивідуальна розминка/завершення гри';
+    if (status === 'REST') return 'Повний відпочинок, відновлення, сон.';
+    if (status === 'TRAIN') return 'Загальнокомандне тренування: Специфічні вправи вводити вручну.';
 
-        const templateElement = document.querySelector(`textarea[name="${fieldName}"]`);
-        
-        if (!templateElement) {
-            return '';
-        }
+    let fieldName = '';
+    const numberMatch = status.match(/(\d+)/); // <-- ВИПРАВЛЕНО: Регулярний вираз для отримання числа
+
+    if (!numberMatch) {
+        return '';
+    }
+
+    const phaseNumber = numberMatch[1]; // Отримуємо число (наприклад, '4' для MD-4)
+
+    if (status.startsWith('MD+')) {
+        fieldName = `tasks_md_plus_${phaseNumber}`;
+    } else if (status.startsWith('MD-')) {
+        fieldName = `tasks_md_minus_${phaseNumber}`;
+    } else {
+        return '';
+    }
+
+    const templateElement = document.querySelector(`textarea[name="${fieldName}"]`);
+
+    if (!templateElement) {
+        // Додамо логування, щоб бачити, якщо поле не знайдено
+        console.error(`Помилка: Не знайдено textarea з іменем: ${fieldName}`); 
+        return '';
+    }
+
+    // Додаємо заголовок фази перед шаблоном
+    const phaseTitle = `**Фаза: ${status}**\n`;
+    return phaseTitle + templateElement.value.trim();
+}
 
         // Додаємо заголовок фази перед шаблоном
         const phaseTitle = `**Фаза: ${status}**\n`;
