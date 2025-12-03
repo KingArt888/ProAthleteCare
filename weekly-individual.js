@@ -261,4 +261,212 @@ document.addEventListener('DOMContentLoaded', () => {
                  if (data[name] !== undefined) {
                      element.value = data[name];
                     
-                    if (name.startsWith('
+                    if (name.startsWith('opponent_') || name.startsWith('venue_') || name.startsWith('travel_km_')) {
+                        matchDetailsData[name] = data[name];
+                    }
+                 }
+            });
+
+            // Нарешті, оновлюємо динамічні блоки матчів
+            activitySelects.forEach((select, index) => {
+                const activityType = select.value;
+                updateMatchDetails(index, activityType, matchDetailsData);
+            });
+
+
+        } catch (e) {
+            console.error("Помилка при завантаженні даних:", e);
+        }
+    }
+
+    // =========================================================
+    // ФУНКЦІЯ: updateCycleColors (ОСНОВНИЙ РОЗРАХУНОК ФАЗ)
+    // =========================================================
+    function updateCycleColors() {
+        try {
+            let activityTypes = [];
+            let dayStatuses = new Array(7).fill('TRAIN'); // Дефолтний статус
+
+            activitySelects.forEach((select, index) => {
+                activityTypes[index] = select.value;
+                // Встановлюємо початковий статус на основі ручного вибору (MATCH та REST мають пріоритет)
+                if (select.value === 'MATCH' || select.value === 'REST') {
+                    dayStatuses[index] = select.value;
+                }
+            });
+            
+            const isPlanActive = activityTypes.includes('MATCH');
+
+            // === ВІДМІНА РОЗРАХУНКІВ, ЯКЩО НЕМАЄ МАТЧУ ===
+            if (!isPlanActive) {
+                dayCells.forEach((cell, index) => {
+                    const mdStatusElement = cell.querySelector('.md-status');
+                    
+                    const finalStatusKey = activityTypes[index] === 'REST' ? 'REST' : 'TRAIN';
+                    
+                    const style = COLOR_MAP[finalStatusKey];
+                    mdStatusElement.textContent = style.status;
+                    
+                    Object.values(COLOR_MAP).forEach(map => mdStatusElement.classList.remove(map.colorClass)); 
+                    mdStatusElement.classList.add(style.colorClass); 
+
+                    cell.title = `Фаза: ${style.status}`; 
+
+                    toggleDayInputs(index, activityTypes[index], false);
+                    
+                    const dailyTaskField = document.querySelector(`textarea[name="daily_task_${index}"]`);
+                    // Оновлюємо шаблон лише якщо поле порожнє або містить старий автоматичний текст
+                    if (dailyTaskField && (dailyTaskField.value.trim() === '' || dailyTaskField.value.includes('Фаза: MD'))) {
+                        dailyTaskField.value = getTemplateText(finalStatusKey);
+                    }
+                });
+                return; 
+            }
+            // ===============================================
+
+            // Карта циклу MD-фаз
+            const mdMinusCycle = ['MD-1', 'MD-2', 'MD-3', 'MD-4'];
+            const mdPlusMap = ['MD+1', 'MD+2', 'MD+3']; 
+            
+            // 1. РОЗРАХУНОК MD- ФАЗ (назад від MATCH)
+            let currentMDMinus = 0; 
+            let matchFound = false;
+
+            for (let i = 6; i >= 0; i--) { // Починаємо з НД (індекс 6) до ПН (індекс 0)
+                const currentActivity = activityTypes[i];
+                
+                if (currentActivity === 'MATCH') {
+                    currentMDMinus = 0; 
+                    matchFound = true;
+                } else if (currentActivity === 'REST') {
+                    // Якщо REST, то він перериває відлік MD- фаз.
+                    currentMDMinus = -1; 
+                } else if (matchFound && currentMDMinus >= 0 && currentMDMinus < mdMinusCycle.length) {
+                    // Тільки якщо це TRAIN і ми в межах MD- циклу
+                    dayStatuses[i] = mdMinusCycle[currentMDMinus];
+                    currentMDMinus++;
+                } else {
+                    // Якщо вже далі MD-4 або не знайшли матч, залишаємо TRAIN (або REST, якщо обрано вручну)
+                    if (dayStatuses[i] !== 'REST' && dayStatuses[i] !== 'MATCH') { 
+                         dayStatuses[i] = 'TRAIN';
+                    }
+                }
+            }
+            
+            // 2. РОЗРАХУНОК MD+ ФАЗ (вперед від MATCH)
+            let daysSinceLastMatch = 0;
+
+            for (let i = 0; i < 7; i++) { // Починаємо з ПН (індекс 0) до НД (індекс 6)
+                const currentActivity = activityTypes[i];
+                
+                if (currentActivity === 'MATCH') {
+                    daysSinceLastMatch = 0; 
+                } else if (currentActivity === 'REST') {
+                    daysSinceLastMatch = 0; // REST перериває цикл MD+
+                } else if (dayStatuses[i].startsWith('MD-')) {
+                    daysSinceLastMatch = 0; // MD- фази також переривають MD+
+                } else if (daysSinceLastMatch >= 0 && daysSinceLastMatch < mdPlusMap.length) {
+                    // Якщо це не MD, не REST і не MD- фаза
+                    if (dayStatuses[i] !== 'MATCH' && dayStatuses[i] !== 'REST') { 
+                        dayStatuses[i] = mdPlusMap[daysSinceLastMatch];
+                    }
+                    daysSinceLastMatch++;
+                } else {
+                    if (dayStatuses[i] !== 'REST' && dayStatuses[i] !== 'MATCH') {
+                        dayStatuses[i] = 'TRAIN';
+                    }
+                }
+            }
+
+            // 3. ФІНАЛЬНЕ ОНОВЛЕННЯ КОЛЬОРІВ ТА АВТОЗАПОВНЕННЯ ПОЛІВ
+            dayCells.forEach((cell, index) => {
+                const mdStatusElement = cell.querySelector('.md-status');
+                
+                const finalStatusKey = dayStatuses[index] || 'TRAIN'; 
+                const currentActivity = activitySelects[index].value; 
+                
+                const style = COLOR_MAP[finalStatusKey] || COLOR_MAP['TRAIN'];
+                mdStatusElement.textContent = style.status;
+                
+                Object.values(COLOR_MAP).forEach(map => mdStatusElement.classList.remove(map.colorClass)); 
+                mdStatusElement.classList.add(style.colorClass); 
+
+                cell.title = `Фаза: ${style.status}`; 
+
+                toggleDayInputs(index, currentActivity, isPlanActive); 
+                
+                const dailyTaskField = document.querySelector(`textarea[name="daily_task_${index}"]`);
+                
+                if (dailyTaskField && finalStatusKey !== 'TRAIN') {
+                    const templateText = getTemplateText(finalStatusKey);
+                    const currentTaskValue = dailyTaskField.value.trim();
+                    
+                    const isGenericTemplate = currentTaskValue === 'Загальнокомандне тренування: Специфічні вправи вводити вручну.' ||
+                                                 currentTaskValue === 'Матч: Індивідуальна розминка/завершення гри' ||
+                                                 currentTaskValue === 'Повний відпочинок, відновлення, сон.' ||
+                                                 currentTaskValue.includes('**Фаза: MD'); 
+
+                    // Якщо фаза MD, REST, MD+ або MD-
+                    if (templateText && (currentTaskValue === '' || isGenericTemplate)) {
+                         dailyTaskField.value = templateText;
+                    }
+                } else if (dailyTaskField && finalStatusKey === 'TRAIN') {
+                    // Якщо це TRAIN, не перезаписуємо, якщо там уже є текст користувача
+                    const currentTaskValue = dailyTaskField.value.trim();
+                    if (currentTaskValue === '' || currentTaskValue.includes('Фаза: MD')) {
+                        dailyTaskField.value = getTemplateText(finalStatusKey);
+                    }
+                }
+            });
+        } catch (e) {
+            console.error("Критична помилка у updateCycleColors:", e);
+        }
+    }
+
+
+    // === ІНІЦІАЛІЗАЦІЯ ОБРОБНИКІВ ===
+    
+    activitySelects.forEach(select => {
+        select.addEventListener('change', (event) => {
+            // Отримуємо індекс дня з data-day-index батьківського <td>
+            const dayIndexElement = event.target.closest('td');
+            if (!dayIndexElement || dayIndexElement.dataset.dayIndex === undefined) {
+                 console.error("Не знайдено data-day-index для селекта активності.");
+                 return;
+            }
+            const dayIndex = parseInt(dayIndexElement.dataset.dayIndex); 
+            const activityType = event.target.value;
+            
+            updateCycleColors(); 
+            updateMatchDetails(dayIndex, activityType); 
+            
+            saveData(); 
+        });
+    });
+
+    // Обробник для полів шаблонів (tasks_md_...)
+    document.querySelectorAll('[name^="tasks_md_"]').forEach(textarea => { 
+        textarea.addEventListener('input', updateCycleColors);
+        textarea.addEventListener('change', saveData); 
+    });
+    
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        saveData();
+    });
+
+    // Обробники для всіх інших полів вводу
+    document.querySelectorAll('input, select, textarea').forEach(input => {
+        if (input.name.startsWith('tasks_md_') || input.name.startsWith('activity_type_')) {
+            return;
+        }
+
+        input.addEventListener('change', saveData);
+        input.addEventListener('input', saveData);
+    });
+
+    // === ПОЧАТКОВИЙ ЗАПУСК ===
+    initializeTemplates();
+    loadData();
+    updateCycleColors();
+});
