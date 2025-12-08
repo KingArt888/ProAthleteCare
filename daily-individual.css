@@ -2,9 +2,9 @@
 
 /* --- ЗАГАЛЬНІ СТИЛІ --- */
 
-/* 1. ПРИХОВУЄМО КНОПКУ МЕНЮ ЗА ЗАМОВЧУВАННЯМ (для десктопу) */
+/* 1. ПРИХОВУЄМО КНОПКУ МЕНЮ НА ДЕСКТОПІ */
 .menu-toggle {
-    display: none !important; /* Використовуємо !important, щоб подолати можливі конфлікти з style.css */
+    display: none !important; 
 }
 
 .daily-plan-header {
@@ -194,7 +194,7 @@ input[type="checkbox"]:checked::after {
         display: flex;
         align-items: center; 
         justify-content: flex-start;
-        padding: 10px 60px 5px 10px; /* Місце для кнопки */
+        padding: 10px 60px 5px 10px; 
     }
 
     /* ОБМЕЖЕННЯ РОЗМІРУ ОСНОВНОГО ЛОГОТИПУ У ШАПЦІ */
@@ -221,10 +221,11 @@ input[type="checkbox"]:checked::after {
     
     /* СТИЛЬНА КНОПКА МЕНЮ (БУРГЕР): ТУТ ВОНА ВІДОБРАЖАЄТЬСЯ */
     .menu-toggle {
-        display: block !important; /* ПРИМУСОВЕ ВІДОБРАЖЕННЯ НА МОБІЛЬНОМУ */
-        position: absolute; 
+        display: block !important; /* ПРИМУСОВЕ ВІДОБРАЖЕННЯ */
+        position: fixed; /* ФІКСУЄМО ЇЇ НА ЕКРАНІ */
         top: 15px; 
         right: 15px;
+        z-index: 1010; /* ПЕРЕВІС У ШАРІ */
         background: #FFD700; 
         color: #000; 
         border: none;
@@ -233,7 +234,6 @@ input[type="checkbox"]:checked::after {
         cursor: pointer;
         border-radius: 6px; 
         line-height: 1; 
-        z-index: 1010; 
     }
     
     /* Фіксоване меню-оверлей */
