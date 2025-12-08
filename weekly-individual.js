@@ -79,14 +79,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     let postTask = '';
 
                     const content = dailyTaskContent.trim();
+                    // Шукаємо ключові слова для розділення
                     const indexPre = content.indexOf('Розминка');
                     const indexMain = content.indexOf('Основна');
                     const indexPost = content.indexOf('Завершення');
                     
                     // 1. Розминка/Підготовка
                     if (indexPre !== -1) {
-                         // Закінчується на Основна або на кінець тексту
-                         const endPre = indexMain !== -1 && indexMain > indexPre ? indexMain : indexPost !== -1 && indexPost > indexPre ? indexPost : content.length;
+                         // Закінчується на Основна або на Завершення, або на кінець тексту
+                         const endPre = Math.min(
+                             indexMain !== -1 && indexMain > indexPre ? indexMain : content.length,
+                             indexPost !== -1 && indexPost > indexPre ? indexPost : content.length
+                         );
                          preTask = content.substring(indexPre, endPre);
                     }
                     
@@ -98,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else if (indexPre === -1 && indexPost === -1) {
                          // Якщо немає ключових слів, то це все Main Training
                          mainTask = content;
-                         preTask = ''; // щоб не було дублювання
+                         preTask = ''; 
                     } else {
                          mainTask = '';
                     }
@@ -109,8 +113,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
 
-                    // Якщо вдалося розділити, додаємо окремі блоки
-                    if (preTask.trim().length > 0 && preTask.trim() !== 'Розминка' && preTask.trim() !== 'Розминка/Підготовка:') {
+                    // Додаємо структуровані блоки
+                    const taskCheck = (text) => text.trim().length > 0 && 
+                                               !text.trim().startsWith('Розминка') && 
+                                               !text.trim().startsWith('Основна') && 
+                                               !text.trim().startsWith('Завершення');
+
+                    if (preTask.trim().length > 0) {
                         tasks.push({
                             "title": `Підготовка: ${finalPhase}`,
                             "stage": "Pre-Training",
@@ -118,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             "video_key": videoKey
                         });
                     }
-                    if (mainTask.trim().length > 0 && mainTask.trim() !== 'Основна' && mainTask.trim() !== 'Основна Вправа:') {
+                    if (mainTask.trim().length > 0) {
                         tasks.push({
                             "title": `Основна робота: ${finalPhase}`,
                             "stage": "Main Training",
@@ -126,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             "video_key": videoKey
                         });
                     }
-                    if (postTask.trim().length > 0 && postTask.trim() !== 'Завершення' && postTask.trim() !== 'Завершення/Відновлення:') {
+                    if (postTask.trim().length > 0) {
                         tasks.push({
                             "title": `Відновлення: ${finalPhase}`,
                             "stage": "Post-Training",
@@ -135,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                     }
 
-                    // Якщо розділення не дало результату, але вміст є (наприклад, тільки REST/MD), додаємо як є.
+                    // Якщо розділення не дало результату, але вміст є (для REST/MD), додаємо як є.
                     if (tasks.length === 0 && content.length > 0) {
                          tasks.push({
                             "title": `Протокол ${finalPhase} на ${dayNames[dayIndex]}`,
@@ -249,134 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return templateElement.value.trim();
     }
     
-    // =========================================================
-    // ФУНКЦІЯ: toggleDayInputs 
-    // =========================================================
-    function toggleDayInputs(dayIndex, activityType, isPlanActive) {
-        try {
-            const dailyTaskField = document.querySelector(`[name="daily_task_${dayIndex}"]`);
-            
-            if (dailyTaskField) {
-                 let shouldDisable = true;
-                 
-                 if (activityType === 'MATCH') {
-                     shouldDisable = false;
-                 } else if (activityType === 'REST') {
-                     shouldDisable = true;
-                 } else if (isPlanActive) {
-                      shouldDisable = false;
-                 }
-
-                 dailyTaskField.disabled = shouldDisable;
-                 
-                 if (shouldDisable) {
-                     dailyTaskField.classList.add('day-disabled');
-                     if (!isPlanActive) {
-                         dailyTaskField.value = 'Оберіть МАТЧ для активації планування.';
-                     }
-                 } else {
-                     dailyTaskField.classList.remove('day-disabled');
-                     if (dailyTaskField.value === 'Оберіть МАТЧ для активації планування.') {
-                         dailyTaskField.value = ''; 
-                     }
-                 }
-            }
-
-            const fieldPrefixesToDisable = ['opponent', 'venue', 'travel_km'];
-            
-            fieldPrefixesToDisable.forEach(prefix => {
-                 const element = document.querySelector(`[name="${prefix}_${dayIndex}"]`);
-                 if (element) {
-                      const shouldBeDisabled = (activityType !== 'MATCH');
-                      element.disabled = shouldBeDisabled;
-                      
-                      if (shouldBeDisabled) {
-                          element.classList.add('day-disabled');
-                      } else {
-                          element.classList.remove('day-disabled');
-                      }
-                 }
-            });
-        } catch (e) {
-            console.error("Помилка у toggleDayInputs:", e);
-        }
-    }
-
-    // =========================================================
-    // ФУНКЦІЯ: updateMatchDetails 
-    // =========================================================
-    function updateMatchDetails(dayIndex, activityType, savedValues = {}) {
-        const existingBlock = dynamicMatchFields.querySelector(`.match-detail-block[data-day-index="${dayIndex}"]`);
-        
-        const dayName = dayNames[dayIndex];
-
-        if (activityType === 'MATCH' && dynamicMatchFields && !existingBlock && dayIndex !== -1) {
-             const detailsHTML = `
-                 <div class="match-detail-block" data-day-index="${dayIndex}">
-                     <h4>День ${dayIndex * 1 + 1}: ${dayName} (Матч)</h4>
-                     <label for="opponent-${dayIndex}">Суперник:</label>
-                     <input type="text" name="opponent_${dayIndex}" id="opponent-${dayIndex}" value="${savedValues[`opponent_${dayIndex}`] || ''}" required>
-                     <label for="venue-${dayIndex}">Місце проведення:</label>
-                     <select name="venue_${dayIndex}" id="venue-${dayIndex}">
-                         <option value="Home">Вдома</option>
-                         <option value="Away">На виїзді</option>
-                     </select>
-                     <label for="travel-km-${dayIndex}">Відстань поїздки (км):</label>
-                     <input type="number" name="travel_km_${dayIndex}" id="travel-km-${dayIndex}" value="${savedValues[`travel_km_${dayIndex}`] || '0'}" min="0">
-                 </div>
-             `;
-             dynamicMatchFields.insertAdjacentHTML('beforeend', detailsHTML);
-             
-             const venueSelect = document.getElementById(`venue-${dayIndex}`);
-             if (venueSelect && savedValues[`venue_${dayIndex}`]) {
-                 venueSelect.value = savedValues[`venue_${dayIndex}`];
-             }
-
-             document.querySelectorAll(`.match-detail-block[data-day-index="${dayIndex}"] input, .match-detail-block[data-day-index="${dayIndex}"] select`).forEach(input => {
-                 input.addEventListener('change', saveData); 
-                 input.addEventListener('input', saveData);
-             });
-
-        } else if (activityType !== 'MATCH' && existingBlock) {
-             existingBlock.remove();
-        }
-    }
-
-    // =========================================================
-    // ФУНКЦІЯ: loadData
-    // =========================================================
-    function loadData() {
-        try {
-            const savedData = localStorage.getItem(STORAGE_KEY);
-            let data = {};
-            if (savedData) {
-                 data = JSON.parse(savedData);
-            }
-
-            let matchDetailsData = {};
-
-            document.querySelectorAll('#weekly-plan-form [name]').forEach(element => {
-                 const name = element.name;
-                 if (data[name] !== undefined) {
-                     element.value = data[name];
-                     
-                     if (name.startsWith('opponent_') || name.startsWith('venue_') || name.startsWith('travel_km_')) {
-                          matchDetailsData[name] = data[name];
-                      }
-                 }
-            });
-
-            activitySelects.forEach((select, index) => {
-                 const activityType = select.value;
-                 updateMatchDetails(index, activityType, matchDetailsData);
-            });
-
-
-        } catch (e) {
-            console.error("Помилка при завантаженні даних:", e);
-        }
-    }
-
+    // ... (решта функцій, які не змінювалися)
 
     // =========================================================
     // ФУНКЦІЯ: updateCycleColors 
@@ -521,7 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
          });
     });
 
-    // Обробник для редагування шаблонів
+    // Важливо: обробник tasks_md_plus_x залишається, щоб редагувати шаблони
     document.querySelectorAll('[name^="tasks_md_"]').forEach(textarea => { 
          textarea.addEventListener('input', updateCycleColors);
          textarea.addEventListener('change', saveData); 
@@ -546,4 +428,125 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeTemplates();
     loadData();
     updateCycleColors();
+    
+    // Додано решту допоміжних функцій, які тут пропущені для стислості (loadData, toggleDayInputs, updateMatchDetails)
+    function toggleDayInputs(dayIndex, activityType, isPlanActive) {
+        try {
+            const dailyTaskField = document.querySelector(`[name="daily_task_${dayIndex}"]`);
+            // ... (реалізація функції) ...
+            if (dailyTaskField) {
+                 let shouldDisable = true;
+                 
+                 if (activityType === 'MATCH') {
+                     shouldDisable = false;
+                 } else if (activityType === 'REST') {
+                     shouldDisable = true;
+                 } else if (isPlanActive) {
+                      shouldDisable = false;
+                 }
+
+                 dailyTaskField.disabled = shouldDisable;
+                 
+                 if (shouldDisable) {
+                     dailyTaskField.classList.add('day-disabled');
+                     if (!isPlanActive) {
+                         dailyTaskField.value = 'Оберіть МАТЧ для активації планування.';
+                     }
+                 } else {
+                     dailyTaskField.classList.remove('day-disabled');
+                     if (dailyTaskField.value === 'Оберіть МАТЧ для активації планування.') {
+                         dailyTaskField.value = ''; 
+                     }
+                 }
+            }
+
+            const fieldPrefixesToDisable = ['opponent', 'venue', 'travel_km'];
+            
+            fieldPrefixesToDisable.forEach(prefix => {
+                 const element = document.querySelector(`[name="${prefix}_${dayIndex}"]`);
+                 if (element) {
+                      const shouldBeDisabled = (activityType !== 'MATCH');
+                      element.disabled = shouldBeDisabled;
+                      
+                      if (shouldBeDisabled) {
+                          element.classList.add('day-disabled');
+                      } else {
+                          element.classList.remove('day-disabled');
+                      }
+                 }
+            });
+        } catch (e) {
+            console.error("Помилка у toggleDayInputs:", e);
+        }
+    }
+
+    function updateMatchDetails(dayIndex, activityType, savedValues = {}) {
+        const existingBlock = dynamicMatchFields.querySelector(`.match-detail-block[data-day-index="${dayIndex}"]`);
+        
+        const dayName = dayNames[dayIndex];
+
+        if (activityType === 'MATCH' && dynamicMatchFields && !existingBlock && dayIndex !== -1) {
+             const detailsHTML = `
+                 <div class="match-detail-block" data-day-index="${dayIndex}">
+                     <h4>День ${dayIndex * 1 + 1}: ${dayName} (Матч)</h4>
+                     <label for="opponent-${dayIndex}">Суперник:</label>
+                     <input type="text" name="opponent_${dayIndex}" id="opponent-${dayIndex}" value="${savedValues[`opponent_${dayIndex}`] || ''}" required>
+                     <label for="venue-${dayIndex}">Місце проведення:</label>
+                     <select name="venue_${dayIndex}" id="venue-${dayIndex}">
+                         <option value="Home">Вдома</option>
+                         <option value="Away">На виїзді</option>
+                     </select>
+                     <label for="travel-km-${dayIndex}">Відстань поїздки (км):</label>
+                     <input type="number" name="travel_km_${dayIndex}" id="travel-km-${dayIndex}" value="${savedValues[`travel_km_${dayIndex}`] || '0'}" min="0">
+                 </div>
+             `;
+             dynamicMatchFields.insertAdjacentHTML('beforeend', detailsHTML);
+             
+             const venueSelect = document.getElementById(`venue-${dayIndex}`);
+             if (venueSelect && savedValues[`venue_${dayIndex}`]) {
+                 venueSelect.value = savedValues[`venue_${dayIndex}`];
+             }
+
+             document.querySelectorAll(`.match-detail-block[data-day-index="${dayIndex}"] input, .match-detail-block[data-day-index="${dayIndex}"] select`).forEach(input => {
+                 input.addEventListener('change', saveData); 
+                 input.addEventListener('input', saveData);
+             });
+
+        } else if (activityType !== 'MATCH' && existingBlock) {
+             existingBlock.remove();
+        }
+    }
+
+    function loadData() {
+        try {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            let data = {};
+            if (savedData) {
+                 data = JSON.parse(savedData);
+            }
+
+            let matchDetailsData = {};
+
+            document.querySelectorAll('#weekly-plan-form [name]').forEach(element => {
+                 const name = element.name;
+                 if (data[name] !== undefined) {
+                     element.value = data[name];
+                     
+                     if (name.startsWith('opponent_') || name.startsWith('venue_') || name.startsWith('travel_km_')) {
+                          matchDetailsData[name] = data[name];
+                      }
+                 }
+            });
+
+            activitySelects.forEach((select, index) => {
+                 const activityType = select.value;
+                 updateMatchDetails(index, activityType, matchDetailsData);
+            });
+
+
+        } catch (e) {
+            console.error("Помилка при завантаженні даних:", e);
+        }
+    }
+
 });
