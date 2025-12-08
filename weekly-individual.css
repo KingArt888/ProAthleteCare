@@ -1,5 +1,55 @@
 /* weekly-individual.css */
+/* ======================================================= */
+/* МОБІЛЬНА ЛОГІКА ДЛЯ HEADER ТА SIDEBAR (Сайдбар Гамбургер) */
+/* Цей стиль використовує логіку з daily-individual.html */
+/* ======================================================= */
 
+/* Приховати кнопку-гамбургер за замовчуванням */
+.menu-toggle {
+    display: none; 
+}
+
+@media (max-width: 900px) {
+    /* Відображення кнопки-гамбургера */
+    .menu-toggle {
+        display: block; 
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 1.8em;
+        background: none;
+        border: none;
+        color: #FFD700; /* Золотий колір */
+        cursor: pointer;
+        z-index: 1001; /* Поверх усіх елементів */
+    }
+
+    /* Приховати слоган на мобільному для економії місця */
+    header .tagline {
+        display: none;
+    }
+
+    /* Базове положення бічної панелі (схована) */
+    .sidebar {
+        position: fixed;
+        top: 60px; /* Якщо висота хедеру 60px */
+        left: -280px; /* Зсув за межі екрана */
+        width: 250px;
+        height: calc(100vh - 60px); 
+        background-color: #0d0d0d; /* Темний фон */
+        z-index: 1000;
+        transition: left 0.3s ease-in-out;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+        padding: 20px 0;
+        overflow-y: auto;
+    }
+
+    /* Активне положення бічної панелі (видима) */
+    .sidebar.active {
+        left: 0;
+    }
+}
 /* --- СТИЛІ MD-СТАТУСІВ (для таблиці та заголовків) --- */
 .md-status {
     padding: 3px 6px;
