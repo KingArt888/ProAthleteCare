@@ -41,8 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // =========================================================
-    // ФУНКЦІЯ: ГЕНЕРАЦІЯ HTML ДЛЯ ОДНІЄЇ ВПРАВИ
+    // 1. ФУНКЦІЇ ДЛЯ СТРУКТУРОВАНИХ ВПРАВ (НОВИЙ КОД)
     // =========================================================
+    
     function getExerciseHtml(dayIndex, stage, index, exercise = {}) {
         const idPrefix = `${dayIndex}_${stage.replace(/\s/g, '-')}_${index}`;
         
@@ -67,259 +68,137 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    // =========================================================
-    // ФУНКЦІЯ: ДОДАВАННЯ ВПРАВИ
-    // =========================================================
     function addExercise(dayIndex, stage, exercise) {
         const containerId = `exercise-list-${dayIndex}`;
         const container = document.getElementById(containerId);
         if (!container) return;
 
-        // Визначаємо індекс для нової вправи
-        const existingItems = container.querySelectorAll(`.exercise-item[data-stage="${stage}"]`);
+        const existingItems = Array.from(container.querySelectorAll('.exercise-item')).filter(item => item.dataset.stage === stage);
         const newIndex = existingItems.length;
 
-        // Створюємо новий елемент
         const newItem = document.createElement('div');
         newItem.innerHTML = getExerciseHtml(dayIndex, stage, newIndex, exercise);
         
-        // Знаходимо правильне місце для вставки (після останньої вправи цієї фази)
-        let insertionPoint = null;
-        if (existingItems.length > 0) {
-            insertionPoint = existingItems[existingItems.length - 1].nextElementSibling;
-        } else {
-            // Якщо це перша вправа фази, вставляємо на початок контейнера
-            insertionPoint = container.firstElementChild;
-        }
+        // Знаходимо правильну кнопку "Додати" для цієї фази і вставляємо елемент перед нею
+        const insertionPoint = document.querySelector(`.add-exercise-button[data-day-index="${dayIndex}"][data-stage="${stage}"]`);
 
         if (insertionPoint) {
-             container.insertBefore(newItem.firstElementChild, insertionPoint);
+            container.insertBefore(newItem.firstElementChild, insertionPoint);
         } else {
-             container.appendChild(newItem.firstElementChild);
+            container.appendChild(newItem.firstElementChild);
         }
         
-        // Додаємо обробники подій до нових полів
         attachExerciseListeners(dayIndex);
     }
-
-    // =========================================================
-    // ФУНКЦІЯ: ПРИКРІПЛЕННЯ ОБРОБНИКІВ ДО ПОЛІВ ВПРАВ
-    // =========================================================
+    
     function attachExerciseListeners(dayIndex) {
         const container = document.getElementById(`exercise-list-${dayIndex}`);
         if (!container) return;
         
-        // Обробники введення/зміни
         container.querySelectorAll('input, textarea').forEach(input => {
             input.removeEventListener('input', saveData);
             input.addEventListener('input', saveData);
         });
 
-        // Обробники кнопки видалення
         container.querySelectorAll('.remove-exercise-button').forEach(button => {
-            button.onclick = null; // Видаляємо старий, щоб уникнути дублювання
+            button.onclick = null; 
             button.onclick = (event) => {
                 event.preventDefault();
                 const item = event.target.closest('.exercise-item');
                 if (item) {
                     item.remove();
-                    // Після видалення потрібно переіндексувати та зберегти
                     reindexExercises(dayIndex);
                     saveData();
                 }
             };
         });
     }
-
-    // =========================================================
-    // ФУНКЦІЯ: ПЕРЕІНДЕКСАЦІЯ ПІСЛЯ ВИДАЛЕННЯ
-    // =========================================================
+    
     function reindexExercises(dayIndex) {
         const container = document.getElementById(`exercise-list-${dayIndex}`);
         if (!container) return;
         
-        container.querySelectorAll('.exercise-item').forEach((item, globalIndex) => {
-            const stage = item.dataset.stage;
-            
-            // Оновлюємо внутрішній індекс та відображення
-            item.dataset.index = globalIndex;
-            item.querySelector('.exercise-number').textContent = `${stage} #${globalIndex + 1}`;
-            
-            // Оновлюємо імена/ідентифікатори полів для коректного збереження
-            const idPrefix = `${dayIndex}_${stage.replace(/\s/g, '-')}_${globalIndex}`;
-            
-            item.querySelectorAll('input, textarea').forEach(input => {
-                const name = input.name;
-                const fieldType = name.split('_')[1]; // ex_name, ex_video, ex_desc
-                input.name = `ex_${fieldType}_${idPrefix}`;
-                input.id = `${fieldType}-${idPrefix}`;
+        // Збираємо та переіндексовуємо вправи, групуючи за фазою
+        const stages = ['Pre-Training', 'Main Training', 'Post-Training'];
+        
+        stages.forEach(stage => {
+            let stageIndex = 0;
+            container.querySelectorAll(`.exercise-item[data-stage="${stage}"]`).forEach((item) => {
+                
+                // Оновлюємо індекс
+                item.dataset.index = stageIndex;
+                
+                // Оновлюємо відображення та імена полів
+                item.querySelector('.exercise-number').textContent = `${stage} #${stageIndex + 1}`;
+                
+                const idPrefix = `${dayIndex}_${stage.replace(/\s/g, '-')}_${stageIndex}`;
+                
+                item.querySelectorAll('input, textarea').forEach(input => {
+                    const nameParts = input.name.split('_');
+                    const fieldType = nameParts[1]; 
+                    input.name = `ex_${fieldType}_${idPrefix}`;
+                    input.id = `${fieldType}-${idPrefix}`;
+                });
+                
+                item.querySelector('.remove-exercise-button').dataset.index = stageIndex;
+                stageIndex++;
             });
-            
-            // Оновлюємо data-індекси кнопок видалення
-            item.querySelector('.remove-exercise-button').dataset.index = globalIndex;
         });
     }
 
     // =========================================================
-    // ФУНКЦІЯ: ЗБЕРЕЖЕННЯ ДАНИХ (ОНОВЛЕНО)
+    // 2. ФУНКЦІЇ МІКРОЦИКЛУ ТА ДІЙ (ВІДНОВЛЕНО)
     // =========================================================
-    function saveData() {
-        try {
-            const flatData = {};
-            const structuredPlanData = {};
+    
+    function updateMatchDetails(dayIndex, activityType, savedValues = {}) {
+        const existingBlock = dynamicMatchFields.querySelector(`.match-detail-block[data-day-index="${dayIndex}"]`);
+        const dayName = dayNames[dayIndex];
 
-            document.querySelectorAll('#weekly-plan-form [name]').forEach(element => {
-                const name = element.name;
-                // Зберігаємо всі інші поля (activity, opponent, venue, travel)
-                if (!name.startsWith('ex_')) {
-                   flatData[name] = element.value;
-                }
-            });
+        if (activityType === 'MATCH' && dynamicMatchFields && !existingBlock) {
+             const detailsHTML = `
+                 <div class="match-detail-block" data-day-index="${dayIndex}">
+                     <h4>День ${dayIndex * 1 + 1}: ${dayName} (Матч)</h4>
+                     <label for="opponent-${dayIndex}">Суперник:</label>
+                     <input type="text" name="opponent_${dayIndex}" id="opponent-${dayIndex}" value="${savedValues[`opponent_${dayIndex}`] || ''}" required>
+                     <label for="venue-${dayIndex}">Місце проведення:</label>
+                     <select name="venue_${dayIndex}" id="venue-${dayIndex}">
+                         <option value="Home">Вдома</option>
+                         <option value="Away">На виїзді</option>
+                     </select>
+                     <label for="travel-km-${dayIndex}">Відстань поїздки (км):</label>
+                     <input type="number" name="travel_km_${dayIndex}" id="travel-km-${dayIndex}" value="${savedValues[`travel_km_${dayIndex}`] || '0'}" min="0">
+                 </div>
+             `;
+             dynamicMatchFields.insertAdjacentHTML('beforeend', detailsHTML);
+             
+             const venueSelect = document.getElementById(`venue-${dayIndex}`);
+             if (venueSelect && savedValues[`venue_${dayIndex}`]) {
+                 venueSelect.value = savedValues[`venue_${dayIndex}`];
+             }
 
-            // Збір структурованих даних про вправи
-            const dayIndices = [0, 1, 2, 3, 4, 5, 6];
-            dayIndices.forEach(dayIndex => {
-                const dayExercises = [];
-                
-                document.querySelectorAll(`#exercise-list-${dayIndex} .exercise-item`).forEach(item => {
-                    const stage = item.dataset.stage;
-                    
-                    const nameInput = item.querySelector('[name^="ex_name_"]');
-                    const videoInput = item.querySelector('[name^="ex_video_"]');
-                    const descInput = item.querySelector('[name^="ex_desc_"]');
+             document.querySelectorAll(`.match-detail-block[data-day-index="${dayIndex}"] input, .match-detail-block[data-day-index="${dayIndex}"] select`).forEach(input => {
+                 input.removeEventListener('change', saveData);
+                 input.removeEventListener('input', saveData);
+                 input.addEventListener('change', saveData); 
+                 input.addEventListener('input', saveData);
+             });
 
-                    if (nameInput && nameInput.value.trim() !== '') {
-                        dayExercises.push({
-                            stage: stage,
-                            name: nameInput.value.trim(),
-                            videoKey: (videoInput ? videoInput.value.trim() : ''),
-                            description: (descInput ? descInput.value.trim() : '')
-                        });
-                    }
-                });
-                
-                // Збираємо MD-статус для збереження (для Daily Individual)
-                const mdStatusElement = document.querySelector(`#day-status-${dayIndex} .md-status`);
-                const finalPhase = mdStatusElement ? mdStatusElement.textContent : 'TRAIN';
-
-                structuredPlanData[`structured_plan_${dayIndex}`] = {
-                    day: dayNames[dayIndex],
-                    phase: finalPhase, 
-                    activity: flatData[`activity_${dayIndex}`],
-                    exercises: dayExercises // <-- Зберігаємо масив вправ
-                };
-            });
-            
-            const combinedData = { ...flatData, ...structuredPlanData };
-
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(combinedData));
-            
-            saveButton.textContent = 'Збережено! (✔)';
-            setTimeout(() => {
-                saveButton.textContent = 'Зберегти Тижневий План';
-            }, 2000);
-        } catch (e) {
-            console.error("Помилка при збереженні даних:", e);
+        } else if (activityType !== 'MATCH' && existingBlock) {
+             existingBlock.remove();
         }
     }
 
-
-    // =========================================================
-    // ФУНКЦІЯ: ЗАВАНТАЖЕННЯ ДАНИХ (ОНОВЛЕНО)
-    // =========================================================
-    function loadData() {
+    function updateCycleColors() {
         try {
-            const savedData = localStorage.getItem(STORAGE_KEY);
-            let data = {};
-            if (savedData) {
-                 data = JSON.parse(savedData);
-            }
+            let activityTypes = Array.from(activitySelects).map(select => select.value);
+            let dayStatuses = activityTypes.map(type => (type === 'MATCH' ? 'MD' : (type === 'REST' ? 'REST' : 'TRAIN'))); 
+            const isPlanActive = activityTypes.includes('MATCH');
 
-            let matchDetailsData = {};
-
-            // 1. Завантаження загальних полів (activity, match details)
-            document.querySelectorAll('#weekly-plan-form [name]').forEach(element => {
-                 const name = element.name;
-                 if (data[name] !== undefined) {
-                     element.value = data[name];
+            if (!isPlanActive) {
+                dayCells.forEach((cell, index) => {
+                     const finalStatusKey = activityTypes[index] === 'REST' ? 'REST' : 'TRAIN';
+                     const mdStatusElement = cell.querySelector('.md-status');
+                     const style = COLOR_MAP[finalStatusKey];
                      
-                     if (name.startsWith('opponent_') || name.startsWith('venue_') || name.startsWith('travel_km_')) {
-                          matchDetailsData[name] = data[name];
-                      }
-                 }
-            });
-            
-            // 2. Завантаження структурованих вправ
-            const dayIndices = [0, 1, 2, 3, 4, 5, 6];
-            dayIndices.forEach(dayIndex => {
-                const planKey = `structured_plan_${dayIndex}`;
-                if (data[planKey] && data[planKey].exercises) {
-                    // Очищаємо контейнер перед додаванням
-                    const container = document.getElementById(`exercise-list-${dayIndex}`);
-                    if (container) container.innerHTML = ''; 
-                    
-                    data[planKey].exercises.forEach(exercise => {
-                        // Викликаємо функцію, яка відтворює форму вправи
-                        addExercise(dayIndex, exercise.stage, exercise);
-                    });
-                }
-            });
-
-            activitySelects.forEach((select, index) => {
-                 const activityType = select.value;
-                 updateMatchDetails(index, activityType, matchDetailsData);
-            });
-
-
-        } catch (e) {
-            console.error("Помилка при завантаженні даних:", e);
-        }
-    }
-
-
-    // =========================================================
-    // ФУНКЦІЯ: ДЛЯ СТАРОГО КОДУ (ЗАЛИШАЄМО БЕЗ ЗМІН)
-    // =========================================================
-    
-    function toggleDayInputs(dayIndex, activityType, isPlanActive) { /* ... */ }
-    function updateMatchDetails(dayIndex, activityType, savedValues = {}) { /* ... */ }
-    function updateCycleColors() { /* ... */ }
-    // ... (всі інші допоміжні функції, які були в оригіналі)
-    // Я не надаю їх тут, щоб не робити код занадто великим, але вони мають бути у вашому файлі.
-    
-    // === ІНІЦІАЛІЗАЦІЯ ОБРОБНИКІВ ===
-    
-    activitySelects.forEach(select => {
-         select.addEventListener('change', (event) => {
-             const dayIndexElement = event.target.closest('td');
-             if (!dayIndexElement || dayIndexElement.dataset.dayIndex === undefined) return;
-             
-             const dayIndex = parseInt(dayIndexElement.dataset.dayIndex); 
-             const activityType = event.target.value;
-             
-             updateCycleColors(); 
-             updateMatchDetails(dayIndex, activityType); 
-             saveData();
-         });
-    });
-
-    // Обробники для введених вправ додаються динамічно у attachExerciseListeners
-
-    document.querySelectorAll('input, select, textarea').forEach(input => {
-         if (input.name.startsWith('activity_') || input.name.startsWith('ex_')) {
-             return;
-         }
-
-         input.addEventListener('change', saveData);
-         input.addEventListener('input', saveData);
-    });
-
-    form.addEventListener('submit', (e) => {
-         e.preventDefault();
-         saveData(); 
-    });
-
-    // === ПОЧАТКОВИЙ ЗАПУСК ===
-    loadData();
-    updateCycleColors();
-});
+                     mdStatusElement.textContent = style.status;
+                     Object.values(COLOR_MAP).forEach(map => mdStatusElement.classList.remove(map.
