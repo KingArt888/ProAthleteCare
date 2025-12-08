@@ -201,4 +201,215 @@ document.addEventListener('DOMContentLoaded', () => {
                      const style = COLOR_MAP[finalStatusKey];
                      
                      mdStatusElement.textContent = style.status;
-                     Object.values(COLOR_MAP).forEach(map => mdStatusElement.classList.remove(map.
+                     Object.values(COLOR_MAP).forEach(map => mdStatusElement.classList.remove(map.colorClass)); 
+                     mdStatusElement.classList.add(style.colorClass); 
+                     cell.title = `Фаза: ${style.status}`; 
+
+                     // Тут логіка відключення полів (тепер неактуальна, бо поля динамічні)
+                 });
+                 return; 
+            }
+
+            const mdMinusCycle = ['MD-1', 'MD-2', 'MD-3', 'MD-4', 'MD-5', 'MD-6']; 
+            const mdPlusMap = ['MD+1', 'MD+2', 'MD+3', 'MD+4', 'MD+5', 'MD+6']; 
+            let matchIndices = dayStatuses.map((status, index) => status === 'MD' ? index : -1).filter(index => index !== -1);
+
+            for (const matchIdx of matchIndices) {
+                 for (let j = 1; j <= 2; j++) { 
+                      const currentIdx = (matchIdx + j) % 7;
+                      
+                      if (activityTypes[currentIdx] !== 'REST' && dayStatuses[currentIdx] !== 'MD') {
+                           if (j === 1 || dayStatuses[currentIdx] !== 'MD+1') { 
+                              dayStatuses[currentIdx] = mdPlusMap[j - 1]; 
+                           }
+                      }
+                 }
+            }
+            
+            for (const matchIdx of matchIndices) {
+                 let currentMDMinus = 0;
+                 
+                 for (let j = 1; j <= 7; j++) {
+                      let i = (matchIdx - j + 7) % 7; 
+                      
+                      if (activityTypes[i] === 'REST' || dayStatuses[i] === 'MD') {
+                           break;
+                      }
+                      
+                      if (currentMDMinus < 4) {
+                           if (dayStatuses[i] !== 'MD+1' && dayStatuses[i] !== 'MD+2') {
+                                dayStatuses[i] = mdMinusCycle[currentMDMinus];
+                           }
+                           currentMDMinus++;
+                      } else {
+                           break;
+                      }
+                 }
+            }
+            
+            dayCells.forEach((cell, index) => {
+                 let finalStatusKey = dayStatuses[index] || 'TRAIN'; 
+                 
+                 if (finalStatusKey.startsWith('MD+') && parseInt(finalStatusKey.substring(3)) > 2) {
+                      finalStatusKey = 'TRAIN';
+                 } else if (finalStatusKey.startsWith('MD-') && parseInt(finalStatusKey.substring(3)) > 4) {
+                      finalStatusKey = 'TRAIN'; 
+                 }
+
+                 const currentActivity = activityTypes[index]; 
+                 const style = COLOR_MAP[finalStatusKey] || COLOR_MAP['TRAIN'];
+                 const mdStatusElement = cell.querySelector('.md-status');
+
+                 mdStatusElement.textContent = style.status;
+                 Object.values(COLOR_MAP).forEach(map => mdStatusElement.classList.remove(map.colorClass)); 
+                 mdStatusElement.classList.add(style.colorClass); 
+                 cell.title = `Фаза: ${style.status}`; 
+                 
+                 // Оновлюємо MD-статус у Local Storage при наступному збереженні
+            });
+        } catch (e) {
+            console.error("Критична помилка у updateCycleColors:", e);
+        }
+    }
+
+
+    // =========================================================
+    // 3. ФУНКЦІЇ ЗБЕРЕЖЕННЯ/ЗАВАНТАЖЕННЯ (АДАПТОВАНО)
+    // =========================================================
+
+    function saveData() {
+        try {
+            const flatData = {};
+            const structuredPlanData = {};
+
+            document.querySelectorAll('#weekly-plan-form [name]').forEach(element => {
+                const name = element.name;
+                if (!name.startsWith('ex_')) {
+                   flatData[name] = element.value;
+                }
+            });
+
+            const dayIndices = [0, 1, 2, 3, 4, 5, 6];
+            dayIndices.forEach(dayIndex => {
+                const dayExercises = [];
+                
+                document.querySelectorAll(`#exercise-list-${dayIndex} .exercise-item`).forEach(item => {
+                    const stage = item.dataset.stage;
+                    
+                    const nameInput = item.querySelector('[name^="ex_name_"]');
+                    const videoInput = item.querySelector('[name^="ex_video_"]');
+                    const descInput = item.querySelector('[name^="ex_desc_"]');
+
+                    if (nameInput && nameInput.value.trim() !== '') {
+                        dayExercises.push({
+                            stage: stage,
+                            name: nameInput.value.trim(),
+                            videoKey: (videoInput ? videoInput.value.trim() : ''),
+                            description: (descInput ? descInput.value.trim() : '')
+                        });
+                    }
+                });
+                
+                const mdStatusElement = document.querySelector(`#day-status-${dayIndex} .md-status`);
+                const finalPhase = mdStatusElement ? mdStatusElement.textContent : 'TRAIN';
+
+                structuredPlanData[`structured_plan_${dayIndex}`] = {
+                    day: dayNames[dayIndex],
+                    phase: finalPhase, 
+                    activity: flatData[`activity_${dayIndex}`],
+                    exercises: dayExercises 
+                };
+            });
+            
+            const combinedData = { ...flatData, ...structuredPlanData };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(combinedData));
+            
+            saveButton.textContent = 'Збережено! (✔)';
+            setTimeout(() => {
+                saveButton.textContent = 'Зберегти Тижневий План';
+            }, 2000);
+        } catch (e) {
+            console.error("Помилка при збереженні даних:", e);
+        }
+    }
+
+    function loadData() {
+        try {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            let data = {};
+            if (savedData) {
+                 data = JSON.parse(savedData);
+            }
+
+            let matchDetailsData = {};
+
+            document.querySelectorAll('#weekly-plan-form [name]').forEach(element => {
+                 const name = element.name;
+                 if (data[name] !== undefined) {
+                     element.value = data[name];
+                     
+                     if (name.startsWith('opponent_') || name.startsWith('venue_') || name.startsWith('travel_km_')) {
+                          matchDetailsData[name] = data[name];
+                      }
+                 }
+            });
+            
+            const dayIndices = [0, 1, 2, 3, 4, 5, 6];
+            dayIndices.forEach(dayIndex => {
+                const planKey = `structured_plan_${dayIndex}`;
+                if (data[planKey] && data[planKey].exercises) {
+                    const container = document.getElementById(`exercise-list-${dayIndex}`);
+                    if (container) container.innerHTML = ''; 
+                    
+                    data[planKey].exercises.forEach(exercise => {
+                        addExercise(dayIndex, exercise.stage, exercise);
+                    });
+                }
+            });
+
+            activitySelects.forEach((select, index) => {
+                 const activityType = select.value;
+                 updateMatchDetails(index, activityType, matchDetailsData);
+            });
+
+
+        } catch (e) {
+            console.error("Помилка при завантаженні даних:", e);
+        }
+    }
+
+
+    // === ІНІЦІАЛІЗАЦІЯ ОБРОБНИКІВ ===
+    
+    activitySelects.forEach(select => {
+         select.addEventListener('change', (event) => {
+             const dayIndexElement = event.target.closest('td');
+             if (!dayIndexElement || dayIndexElement.dataset.dayIndex === undefined) return;
+             
+             const dayIndex = parseInt(dayIndexElement.dataset.dayIndex); 
+             const activityType = event.target.value;
+             
+             updateCycleColors(); // ЗАРАЗ ПРАЦЮЄ!
+             updateMatchDetails(dayIndex, activityType); 
+             saveData();
+         });
+    });
+
+    document.querySelectorAll('input, select, textarea').forEach(input => {
+         if (input.name.startsWith('activity_') || input.name.startsWith('ex_')) {
+             return;
+         }
+
+         input.addEventListener('change', saveData);
+         input.addEventListener('input', saveData);
+    });
+
+    form.addEventListener('submit', (e) => {
+         e.preventDefault();
+         saveData(); 
+    });
+
+    // === ПОЧАТКОВИЙ ЗАПУСК ===
+    loadData();
+    updateCycleColors(); // ЗАРАЗ ПРАЦЮЄ!
+});
