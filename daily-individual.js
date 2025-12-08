@@ -311,3 +311,25 @@ function loadAndDisplayDailyPlan() {
 
 // Запуск при завантаженні сторінки
 document.addEventListener('DOMContentLoaded', loadAndDisplayDailyPlan);
+// daily-individual.js (Додайте в кінці файлу)
+
+function setupMenuToggle() {
+    const toggleButton = document.getElementById('menu-toggle-button');
+    const sidebar = document.getElementById('main-sidebar');
+
+    if (toggleButton && sidebar) {
+        toggleButton.addEventListener('click', () => {
+            sidebar.classList.toggle('active');
+        });
+    }
+}
+
+// Запуск при завантаженні сторінки
+document.addEventListener('DOMContentLoaded', () => {
+    loadAndDisplayDailyPlan();
+    setupMenuToggle(); // !!! Додаємо ініціалізацію перемикача
+});
+
+// Або, якщо ви використовуєте старий синтаксис:
+// document.addEventListener('DOMContentLoaded', loadAndDisplayDailyPlan);
+// document.addEventListener('DOMContentLoaded', setupMenuToggle);
