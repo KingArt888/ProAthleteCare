@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // =========================================================
-    // ФУНКЦІЯ: ЗБЕРЕЖЕННЯ ДАНИХ (ОНОВЛЕНО ДЛЯ ЗВ'ЯЗКУ)
+    // ФУНКЦІЯ: ЗБЕРЕЖЕННЯ ДАНИХ (ОНОВЛЕНО ДЛЯ СТРУКТУРИ)
     // =========================================================
     function saveData() {
         try {
@@ -83,27 +83,34 @@ document.addEventListener('DOMContentLoaded', () => {
                     const indexMain = content.indexOf('Основна');
                     const indexPost = content.indexOf('Завершення');
                     
-                    if (indexPre !== -1 && indexMain !== -1 && indexMain > indexPre) {
-                        preTask = content.substring(indexPre, indexMain);
+                    // 1. Розминка/Підготовка
+                    if (indexPre !== -1) {
+                         // Закінчується на Основна або на кінець тексту
+                         const endPre = indexMain !== -1 && indexMain > indexPre ? indexMain : indexPost !== -1 && indexPost > indexPre ? indexPost : content.length;
+                         preTask = content.substring(indexPre, endPre);
                     }
                     
+                    // 2. Основна Вправа
                     if (indexMain !== -1) {
-                         mainTask = content.substring(indexMain, indexPost !== -1 && indexPost > indexMain ? indexPost : content.length);
+                        // Закінчується на Завершення або на кінець тексту
+                        const endMain = indexPost !== -1 && indexPost > indexMain ? indexPost : content.length;
+                        mainTask = content.substring(indexMain, endMain);
                     } else if (indexPre === -1 && indexPost === -1) {
                          // Якщо немає ключових слів, то це все Main Training
                          mainTask = content;
-                         preTask = ''; 
+                         preTask = ''; // щоб не було дублювання
                     } else {
                          mainTask = '';
                     }
 
+                    // 3. Завершення/Відновлення
                     if (indexPost !== -1) {
                         postTask = content.substring(indexPost);
                     }
 
 
                     // Якщо вдалося розділити, додаємо окремі блоки
-                    if (preTask.trim().length > 0) {
+                    if (preTask.trim().length > 0 && preTask.trim() !== 'Розминка' && preTask.trim() !== 'Розминка/Підготовка:') {
                         tasks.push({
                             "title": `Підготовка: ${finalPhase}`,
                             "stage": "Pre-Training",
@@ -111,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             "video_key": videoKey
                         });
                     }
-                    if (mainTask.trim().length > 0) {
+                    if (mainTask.trim().length > 0 && mainTask.trim() !== 'Основна' && mainTask.trim() !== 'Основна Вправа:') {
                         tasks.push({
                             "title": `Основна робота: ${finalPhase}`,
                             "stage": "Main Training",
@@ -119,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             "video_key": videoKey
                         });
                     }
-                    if (postTask.trim().length > 0) {
+                    if (postTask.trim().length > 0 && postTask.trim() !== 'Завершення' && postTask.trim() !== 'Завершення/Відновлення:') {
                         tasks.push({
                             "title": `Відновлення: ${finalPhase}`,
                             "stage": "Post-Training",
@@ -149,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             // ----------------------------------------------------
-            // 3. ОБ'ЄДНАННЯ ТА ЗБЕРЕЖЕННЯ (Плоскі дані + Структуровані плани)
+            // 3. ОБ'ЄДНАННЯ ТА ЗБЕРЕЖЕННЯ 
             // ----------------------------------------------------
             const combinedData = { ...flatData, ...structuredPlanData };
 
@@ -168,8 +175,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ФУНКЦІЯ: ІНІЦІАЛІЗАЦІЯ ШАБЛОНІВ 
     // =========================================================
     function initializeTemplates() {
+        // УВАГА: Важливо зберегти ключові слова: "Розминка", "Основна", "Завершення"
         const templates = [
-            // СТРУКТУРОВАНІ ШАБЛОНИ: ВАЖЛИВО, щоб тут були слова "Розминка", "Основна", "Завершення"
             { name: 'tasks_md_plus_2', defaultText: `**Фаза: MD+2**\n\n1. **Розминка/Підготовка:** Самомасаж (Ролінг) 10 хв. Мобілізація суглобів.\n2. **Основна Вправа (Активація):** Превентивні вправи на CORE та ротаторну манжету (20 хв).\n3. **Завершення/Відновлення:** Легкий Стретчинг (статичний) 15 хв. Гідратація.` },
             { name: 'tasks_md_plus_1', defaultText: `**Фаза: MD+1**\n\n1. **Розминка/Підготовка:** Легке кардіо (велотренажер) 15 хв.\n2. **Основна Вправа (LSD):** Кардіо в легкій зоні (пульс 120-130 уд/хв) 20 хв.\n3. **Завершення/Відновлення:** Посилене харчування. Якісний сон.` },
             { name: 'tasks_md_minus_4', defaultText: `**Фаза: MD-4**\n\n1. **Розминка/Підготовка:** Силова активація (10 хв, динамічні стрибки).\n2. **Основна Вправа (MAX Load):** Тренування в залі (45-60 хв). Фокус на **максимальну силу** ніг.\n3. **Завершення/Відновлення:** Ролінг/Заминка 10 хв.` },
@@ -185,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        // Додаємо заглушки для MD+3/MD+4/MD+5/MD+6, які тепер TRAIN, щоб уникнути помилок в консолі.
+        // Додаємо заглушки для MD+3/MD+4/MD+5/MD+6
         const trainTemplate = 'Загальнокомандне тренування: Специфічні вправи вводити вручну.';
         ['tasks_md_plus_3', 'tasks_md_plus_4', 'tasks_md_plus_5', 'tasks_md_plus_6'].forEach(name => {
              let textarea = document.querySelector(`textarea[name="${name}"]`);
@@ -196,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
              }
         });
         
-        // Приховуємо всі поля шаблонів від користувачів
+        // Приховуємо всі поля шаблонів
         document.querySelectorAll('[name^="tasks_md_"]').forEach(el => {
              let parent = el.closest('div') || el.closest('section') || el.closest('fieldset');
              if (parent) {
@@ -514,7 +521,7 @@ document.addEventListener('DOMContentLoaded', () => {
          });
     });
 
-    // Важливо: обробник tasks_md_plus_x залишається, щоб редагувати шаблони
+    // Обробник для редагування шаблонів
     document.querySelectorAll('[name^="tasks_md_"]').forEach(textarea => { 
          textarea.addEventListener('input', updateCycleColors);
          textarea.addEventListener('change', saveData); 
