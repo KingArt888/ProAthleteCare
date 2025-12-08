@@ -12,7 +12,7 @@ const COLOR_MAP = {
     'TRAIN': { status: 'TRAIN', colorClass: 'color-dark-grey' }, 
 };
 
-// Приклад карти відео для Daily Individual (повинна збігатися з daily-individual.js)
+// Карта відео, яка використовується для автоматичного підбору відео в Daily Individual
 const DEFAULT_VIDEO_KEY_MAP = {
     'MD-4': "back_squat_70", 
     'MD-3': "sprint_30m",
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================
     function saveData() {
         try {
-            // 1. Збираємо всі плоскі дані форми (для повного завантаження форми)
+            // 1. Збираємо всі плоскі дані форми 
             const flatData = {};
             document.querySelectorAll('#weekly-plan-form [name]').forEach(element => {
                 const name = element.name;
@@ -68,55 +68,74 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const tasks = [];
                 
-                if (dailyTaskContent && dailyTaskContent.trim() !== '') {
+                if (dailyTaskContent && dailyTaskContent.trim() !== '' && dailyTaskContent.trim() !== 'Оберіть МАТЧ для активації планування.') {
+                    
                     // Визначаємо загальний ключ відео для цього дня/фази
                     const videoKey = DEFAULT_VIDEO_KEY_MAP[finalPhase] || DEFAULT_VIDEO_KEY_MAP['TRAIN'];
                     
-                    // Тут ми об'єднуємо весь вміст dailyTaskContent в одну "загальну" задачу.
-                    // УВАГА: Якщо ви захочете розділяти текст на Pre/Main/Post, 
-                    // ця логіка має бути значно складнішою (парсинг тексту на блоки).
-                    
-                    // Щоб Daily Individual відображав три окремі блоки, 
-                    // ми спробуємо розділити текст за ключовими словами
-                    
-                    let preTask = dailyTaskContent.includes('Розминка') ? dailyTaskContent.substring(0, dailyTaskContent.indexOf('Основна')) : '';
-                    let mainTask = dailyTaskContent.includes('Основна') ? dailyTaskContent.substring(dailyTaskContent.indexOf('Основна'), dailyTaskContent.indexOf('Завершення') > 0 ? dailyTaskContent.indexOf('Завершення') : dailyTaskContent.length) : dailyTaskContent;
-                    let postTask = dailyTaskContent.includes('Завершення') ? dailyTaskContent.substring(dailyTaskContent.indexOf('Завершення')) : '';
+                    // Логіка для розділення тексту на блоки (Pre, Main, Post)
+                    let preTask = '';
+                    let mainTask = dailyTaskContent;
+                    let postTask = '';
 
-                    // Якщо текст не вдалося розділити, використовуємо весь текст як Основне Тренування
-                    if (preTask === '' && mainTask === dailyTaskContent) {
+                    const content = dailyTaskContent.trim();
+                    const indexPre = content.indexOf('Розминка');
+                    const indexMain = content.indexOf('Основна');
+                    const indexPost = content.indexOf('Завершення');
+                    
+                    if (indexPre !== -1 && indexMain !== -1 && indexMain > indexPre) {
+                        preTask = content.substring(indexPre, indexMain);
+                    }
+                    
+                    if (indexMain !== -1) {
+                         mainTask = content.substring(indexMain, indexPost !== -1 && indexPost > indexMain ? indexPost : content.length);
+                    } else if (indexPre === -1 && indexPost === -1) {
+                         // Якщо немає ключових слів, то це все Main Training
+                         mainTask = content;
+                         preTask = ''; 
+                    } else {
+                         mainTask = '';
+                    }
+
+                    if (indexPost !== -1) {
+                        postTask = content.substring(indexPost);
+                    }
+
+
+                    // Якщо вдалося розділити, додаємо окремі блоки
+                    if (preTask.trim().length > 0) {
                         tasks.push({
-                            "title": `Протокол ${finalPhase} на ${dayNames[dayIndex]}`,
-                            "stage": "Main Training", 
-                            "description": dailyTaskContent.trim(), 
+                            "title": `Підготовка: ${finalPhase}`,
+                            "stage": "Pre-Training",
+                            "description": preTask.trim(),
                             "video_key": videoKey
                         });
-                    } else {
-                        // Якщо вдалося розділити, додаємо окремі блоки
-                        if (preTask.trim().length > 0) {
-                            tasks.push({
-                                "title": `Підготовка: ${finalPhase}`,
-                                "stage": "Pre-Training",
-                                "description": preTask.trim(),
-                                "video_key": videoKey
-                            });
-                        }
-                        if (mainTask.trim().length > 0) {
-                            tasks.push({
-                                "title": `Основна робота: ${finalPhase}`,
-                                "stage": "Main Training",
-                                "description": mainTask.trim(),
-                                "video_key": videoKey
-                            });
-                        }
-                         if (postTask.trim().length > 0) {
-                            tasks.push({
-                                "title": `Відновлення: ${finalPhase}`,
-                                "stage": "Post-Training",
-                                "description": postTask.trim(),
-                                "video_key": videoKey
-                            });
-                        }
+                    }
+                    if (mainTask.trim().length > 0) {
+                        tasks.push({
+                            "title": `Основна робота: ${finalPhase}`,
+                            "stage": "Main Training",
+                            "description": mainTask.trim(),
+                            "video_key": videoKey
+                        });
+                    }
+                    if (postTask.trim().length > 0) {
+                        tasks.push({
+                            "title": `Відновлення: ${finalPhase}`,
+                            "stage": "Post-Training",
+                            "description": postTask.trim(),
+                            "video_key": videoKey
+                        });
+                    }
+
+                    // Якщо розділення не дало результату, але вміст є (наприклад, тільки REST/MD), додаємо як є.
+                    if (tasks.length === 0 && content.length > 0) {
+                         tasks.push({
+                            "title": `Протокол ${finalPhase} на ${dayNames[dayIndex]}`,
+                            "stage": "Main Training", 
+                            "description": content, 
+                            "video_key": videoKey
+                        });
                     }
                 }
 
@@ -146,10 +165,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================
-    // ФУНКЦІЯ: ІНІЦІАЛІЗАЦІЯ ШАБЛОНІВ (Залишаємо без змін)
+    // ФУНКЦІЯ: ІНІЦІАЛІЗАЦІЯ ШАБЛОНІВ 
     // =========================================================
     function initializeTemplates() {
-        // ... (Ваш існуючий код initializeTemplates) ...
         const templates = [
             // СТРУКТУРОВАНІ ШАБЛОНИ: ВАЖЛИВО, щоб тут були слова "Розминка", "Основна", "Завершення"
             { name: 'tasks_md_plus_2', defaultText: `**Фаза: MD+2**\n\n1. **Розминка/Підготовка:** Самомасаж (Ролінг) 10 хв. Мобілізація суглобів.\n2. **Основна Вправа (Активація):** Превентивні вправи на CORE та ротаторну манжету (20 хв).\n3. **Завершення/Відновлення:** Легкий Стретчинг (статичний) 15 хв. Гідратація.` },
@@ -178,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
              }
         });
         
-        // --- ВИПРАВЛЕННЯ: ПРИХОВУЄМО ВСІ ШАБЛОНИ ВІД КОРИСТУВАЧІВ ---
+        // Приховуємо всі поля шаблонів від користувачів
         document.querySelectorAll('[name^="tasks_md_"]').forEach(el => {
              let parent = el.closest('div') || el.closest('section') || el.closest('fieldset');
              if (parent) {
@@ -190,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================
-    // ФУНКЦІЯ: ОТРИМАННЯ ШАБЛОНУ (Залишаємо без змін)
+    // ФУНКЦІЯ: ОТРИМАННЯ ШАБЛОНУ 
     // =========================================================
     function getTemplateText(status) {
         if (status === 'MD') return '**Фаза: MD**\nМатч: Індивідуальна розминка/завершення гри';
@@ -225,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // =========================================================
-    // ФУНКЦІЯ: toggleDayInputs (Залишаємо без змін)
+    // ФУНКЦІЯ: toggleDayInputs 
     // =========================================================
     function toggleDayInputs(dayIndex, activityType, isPlanActive) {
         try {
@@ -278,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================
-    // ФУНКЦІЯ: updateMatchDetails (Залишаємо без змін)
+    // ФУНКЦІЯ: updateMatchDetails 
     // =========================================================
     function updateMatchDetails(dayIndex, activityType, savedValues = {}) {
         const existingBlock = dynamicMatchFields.querySelector(`.match-detail-block[data-day-index="${dayIndex}"]`);
@@ -354,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // =========================================================
-    // ФУНКЦІЯ: updateCycleColors (Залишаємо без змін)
+    // ФУНКЦІЯ: updateCycleColors 
     // =========================================================
     function updateCycleColors() {
         try {
