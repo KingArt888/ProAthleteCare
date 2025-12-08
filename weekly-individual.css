@@ -52,18 +52,19 @@ body {
     border-radius: 4px;
     color: #000;
     font-size: 0.9em;
+    font-weight: bold; /* Додано для кращої видимості */
 }
 
 /* Кольори MD-статусів */
-.color-red { background-color: #FF0000; }
-.color-dark-green { background-color: #006400; color: #E0E0E0; }
-.color-green { background-color: #00AA00; }
-.color-neutral { background-color: #555; color: #E0E0E0; }
-.color-yellow { background-color: #FFD700; }
-.color-deep-green { background-color: #008000; }
-.color-orange { background-color: #FFA500; }
-.color-blue { background-color: #0000FF; color: #E0E0E0; }
-.color-dark-grey { background-color: #333; color: #E0E0E0; }
+.color-red { background-color: #FF0000; color: #fff; } /* MD */
+.color-dark-green { background-color: #006400; color: #E0E0E0; } /* MD+1 */
+.color-green { background-color: #00AA00; } /* MD+2 */
+.color-neutral { background-color: #555; color: #E0E0E0; } /* REST */
+.color-yellow { background-color: #FFD700; color: #000; } /* MD-1 */
+.color-deep-green { background-color: #008000; color: #E0E0E0; } /* MD-2 */
+.color-orange { background-color: #FFA500; } /* MD-3 */
+.color-blue { background-color: #0000FF; color: #E0E0E0; } /* MD-4 */
+.color-dark-grey { background-color: #333; color: #E0E0E0; } /* TRAIN */
 
 .activity-type-select {
     background-color: #000;
@@ -74,7 +75,7 @@ body {
 }
 
 /* ======================================================= */
-/* 3. СЕКЦІЯ ЗАВДАНЬ ТА ВПРАВ */
+/* 3. СЕКЦІЯ ЗАВДАНЬ ТА ВПРАВ (Grid) */
 /* ======================================================= */
 
 .daily-task-section {
@@ -98,6 +99,7 @@ body {
     background-color: #111;
     border: 1px solid #333;
     border-radius: 6px;
+    position: relative; /* Для позиціонування елементів */
 }
 
 .task-day-container h4 {
@@ -106,6 +108,12 @@ body {
     padding-bottom: 10px;
     border-bottom: 1px solid #333;
     margin-bottom: 15px;
+}
+
+/* Контейнер для вправ (зберігається в JS) */
+.exercise-list-container {
+    /* Стилі не потрібні, оскільки він заповнюється динамічно */
+    margin-bottom: 10px; 
 }
 
 /* Кнопки "Додати вправу" */
@@ -130,10 +138,6 @@ body {
 /* ======================================================= */
 /* 4. СТРУКТУРА ОДНІЄЇ ВПРАВИ */
 /* ======================================================= */
-
-.exercise-list-container {
-    margin-bottom: 20px;
-}
 
 .exercise-item {
     padding: 10px;
@@ -175,70 +179,4 @@ body {
 .exercise-fields label {
     display: block;
     color: #999;
-    font-size: 0.85em;
-    margin-top: 8px;
-    margin-bottom: 2px;
-}
-
-.exercise-fields input,
-.exercise-fields textarea {
-    width: 100%;
-    padding: 5px;
-    background-color: #000;
-    border: 1px solid #444;
-    color: #E0E0E0;
-    resize: vertical;
-}
-
-/* ======================================================= */
-/* 5. ІНШІ СЕКЦІЇ */
-/* ======================================================= */
-
-.match-details-section h3 {
-    color: #E0E0E0;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #333;
-    margin-bottom: 20px;
-}
-
-.match-fields-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
-}
-
-.match-detail-block h4 {
-    color: #FFD700;
-    margin-top: 0;
-}
-.match-detail-block label {
-    display: block;
-    color: #999;
-    margin-top: 10px;
-    margin-bottom: 2px;
-}
-.match-detail-block input,
-.match-detail-block select {
-    width: 100%;
-    padding: 5px;
-    background-color: #000;
-    border: 1px solid #444;
-    color: #E0E0E0;
-}
-
-/* Загальні кнопки */
-.gold-button {
-    background-color: #FFD700;
-    color: #000000;
-    border: none;
-    padding: 10px 20px;
-    margin-top: 20px;
-    cursor: pointer;
-    font-weight: bold;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-}
-.gold-button:hover {
-    background-color: #ffe873;
-}
+    font-size: 0.
