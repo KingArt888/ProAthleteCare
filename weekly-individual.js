@@ -46,11 +46,12 @@ function generateRandomExercises(stage, category, count) {
 
 function collectTemplatesFromUI() {
     const templateData = {};
-    document.querySelectorAll('.template-count-input').forEach(input => {
-        const mdStatus = input.dataset.mdStatus;
-        const stage = input.dataset.stage;
-        const category = input.dataset.category;
-        const value = parseInt(input.value) || 0;
+    // Збираємо дані з data-count на елементі template-category-button
+    document.querySelectorAll('.template-category-button').forEach(button => {
+        const mdStatus = button.dataset.mdStatus;
+        const stage = button.dataset.stage;
+        const category = button.dataset.category;
+        const value = parseInt(button.dataset.count) || 0;
         
         const templateKey = `template_${mdStatus}`;
         if (!templateData[templateKey]) {
@@ -64,6 +65,7 @@ function collectTemplatesFromUI() {
     });
     return templateData;
 }
+
 
 function collectManualChanges() {
     const manualPlanData = {};
@@ -108,6 +110,7 @@ function saveData(newWeeklyPlan = null, templatesFromUI = null) {
         
         const templateData = templatesFromUI || collectTemplatesFromUI();
         
+        // Видаляємо старі плани, щоб уникнути дублювання
         Object.keys(existingData).forEach(key => {
             if (key.startsWith('day_plan_')) {
                  delete existingData[key];
@@ -117,6 +120,7 @@ function saveData(newWeeklyPlan = null, templatesFromUI = null) {
         if (newWeeklyPlan) {
              finalPlanData = newWeeklyPlan;
         } else {
+             // Зберігаємо ручні зміни, якщо не було перегенерації
              finalPlanData = collectManualChanges();
              
              for (let i = 0; i < 7; i++) {
@@ -170,6 +174,7 @@ function renderDayTemplateInput(dayIndex, mdStatus, savedTemplates) {
     
     let html = `<div class="template-exercise-fields" data-md-status-editor="${mdStatus}">`;
     
+    // Ініціалізація шаблону, якщо він відсутній у збережених даних
     if (Object.keys(template).length === 0) {
          for (const stage of Object.keys(templateStages)) {
              template[stage] = {};
@@ -182,43 +187,40 @@ function renderDayTemplateInput(dayIndex, mdStatus, savedTemplates) {
         }
         
         categories.forEach(category => {
-            const currentCount = template[stage] && template[stage][category] ? template[stage][category] : 0;
-            const inputId = `input_${dayIndex}_${stage.replace(/\s/g, '-')}_${category}`;
+            // Отримуємо збережену кількість (0 за замовчуванням)
+            const currentCount = (template[stage] && template[stage][category] !== undefined) ? template[stage][category] : 0;
             
             const rowStyle = mdStatus === 'REST' ? 'style="display: none;"' : '';
 
             html += `
-                <div class="template-row" ${rowStyle}>
-                    <label for="${inputId}">${category}:</label>
-                    <input type="number" min="0" max="5" value="${currentCount}" 
+                <div class="template-row template-tag-row" ${rowStyle}>
+                    <button type="button" 
+                           class="template-category-button ${currentCount > 0 ? 'active-template' : ''}"
                            data-md-status="${mdStatus}" 
                            data-stage="${stage}" 
                            data-category="${category}"
                            data-day-index="${dayIndex}"
-                           id="${inputId}"
-                           name="${inputId}"
-                           class="template-count-input"
-                           title="Кількість вправ для категорії ${category} (Шаблон ${mdStatus})"
-                    >
-                    <span>вправ</span>
+                           data-count="${currentCount}"
+                           title="Кількість вправ: ${currentCount}. Натисніть для ручного вибору вправ.">
+                          
+                          ${category} (${currentCount})
+                    </button>
+                    
+                    <div class="count-controls">
+                        <button type="button" class="count-control-btn count-minus" data-step="-1" data-category="${category}" data-day-index="${dayIndex}">-</button>
+                        <button type="button" class="count-control-btn count-plus" data-step="1" data-category="${category}" data-day-index="${dayIndex}">+</button>
+                    </div>
+                    
+                    <button type="button" class="add-manual-exercise-btn" 
+                            data-day-index="${dayIndex}" 
+                            data-md-status="${mdStatus}" 
+                            data-stage="${stage}"
+                            data-category="${category}"
+                            title="Додати вправу ${category} вручну">
+                         +
+                    </button>
                 </div>
             `;
-            
-            // Кнопка "Додати вручну"
-            if (mdStatus !== 'REST') {
-                html += `
-                    <div class="template-add-row" ${rowStyle}>
-                        <button type="button" class="add-manual-exercise-btn" 
-                                data-day-index="${dayIndex}" 
-                                data-md-status="${mdStatus}" 
-                                data-stage="${stage}"
-                                data-category="${category}">
-                             + Додати ${category} вручну
-                        </button>
-                    </div>
-                 `;
-            }
-
         });
     }
 
@@ -227,6 +229,61 @@ function renderDayTemplateInput(dayIndex, mdStatus, savedTemplates) {
     dayBlock.querySelectorAll('.template-exercise-fields, .generated-exercises-list, .rest-message').forEach(el => el.remove());
     
     dayBlock.innerHTML += html;
+    
+    addTemplateControlListeners();
+}
+
+function addTemplateControlListeners() {
+    // 1. Слухач для кнопок кількості (+ / -)
+    document.querySelectorAll('.count-control-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const dayIndex = e.target.dataset.dayIndex;
+            const categoryName = e.target.dataset.category;
+            const step = parseInt(e.target.dataset.step);
+            
+            // Знаходимо відповідну кнопку-тег, щоб оновити її data-count
+            const templateButton = document.querySelector(`.template-category-button[data-day-index="${dayIndex}"][data-category="${categoryName}"]`);
+            
+            if (templateButton) {
+                let currentCount = parseInt(templateButton.dataset.count);
+                // Обмеження кількості вправ (від 0 до 5)
+                let newCount = Math.max(0, Math.min(5, currentCount + step)); 
+                
+                templateButton.dataset.count = newCount;
+                templateButton.innerHTML = `${categoryName} (${newCount})`;
+                templateButton.title = `Кількість вправ: ${newCount}. Натисніть для ручного вибору вправ.`;
+                
+                if (newCount > 0) {
+                    templateButton.classList.add('active-template');
+                } else {
+                    templateButton.classList.remove('active-template');
+                }
+                
+                // Після зміни кількості оновлюємо план (перегенерація)
+                updateCycleColors(true); 
+            }
+        });
+    });
+    
+    // 2. Слухач для кнопки "Додати вручну" (відкриває модальне вікно)
+    document.querySelectorAll('.add-manual-exercise-btn').forEach(btn => {
+         btn.addEventListener('click', (e) => {
+            // Ця кнопка відкриває модальне вікно для вибору
+            const { dayIndex, mdStatus, stage, category } = e.target.dataset;
+            openExerciseModal(dayIndex, mdStatus, stage, category);
+         });
+    });
+
+    // 3. Слухач для кнопки-тега (для ручного вибору, якщо клікнули не на +/-)
+    document.querySelectorAll('.template-category-button').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            // Перевіряємо, чи клік відбувся саме на кнопці, а не на її дочірньому елементі (для уникнення конфлікту з count-controls)
+            if (e.target === btn) {
+                 const { dayIndex, mdStatus, stage, category } = e.target.dataset;
+                 openExerciseModal(dayIndex, mdStatus, stage, category);
+            }
+        });
+    });
 }
 
 function displayGeneratedExercises(dayIndex, mdStatus, exercises) {
@@ -242,7 +299,7 @@ function displayGeneratedExercises(dayIndex, mdStatus, exercises) {
     let index = 0;
     
     if (exercises.length === 0 && mdStatus !== 'REST') {
-        html += '<p style="color:red;">❗ Немає згенерованих вправ. Перевірте вимоги шаблону вище.</p>';
+        html += '<p style="color:red;">❗ Немає згенерованих вправ. Встановіть кількість вище.</p>';
     } else {
         for (const stage of Object.keys(templateStages)) {
              const stageExercises = exercises.filter(ex => ex.stage === stage);
@@ -282,6 +339,7 @@ function addExerciseControlListeners(dayBlock) {
             const item = e.target.closest('.exercise-item');
             if (item && confirm('Видалити цю вправу зі списку?')) {
                 item.remove();
+                saveData(null, null); 
             }
         });
     });
@@ -302,6 +360,7 @@ function addExerciseControlListeners(dayBlock) {
                     item.dataset.category = category;
                     
                     alert(`Вправу успішно замінено на: ${newEx.name}`);
+                    saveData(null, null); 
                 } else {
                     alert(`Не вдалося знайти іншу вправу для категорії ${category}. Перевірте exercise_library.js.`);
                 }
@@ -339,11 +398,12 @@ function generateWeeklyPlan(mdStatuses, templates) {
             }
         }
         
-        // Перевіряємо, чи існують ручні зміни для цього дня (Пріоритет ручного редагування)
+        // Зберігаємо ручні зміни як пріоритет (якщо є)
         const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
         const manualPlanKey = `day_plan_${dayIndex}`;
         let finalExercises = generatedExercises;
         
+        // Якщо збережені вправи були, використовуємо їх, інакше використовуємо згенеровані
         if (savedData[manualPlanKey] && savedData[manualPlanKey].exercises.length > 0) {
             finalExercises = savedData[manualPlanKey].exercises;
         }
@@ -365,7 +425,6 @@ function generateWeeklyPlan(mdStatuses, templates) {
 // =========================================================
 // 4. ОСНОВНА ЛОГІКА ЦИКЛУ
 // =========================================================
-// ... (updateCycleColors, loadData - без змін у логіці циклу)
 
 function updateCycleColors(shouldGenerate = false) {
     const activitySelects = document.querySelectorAll('.activity-type-select');
@@ -521,7 +580,6 @@ function renderExerciseList(exercises) {
     }
 
     exercises.forEach(ex => {
-        // Ex містить stage та category, додані під час фільтрації
         listContainer.innerHTML += createExerciseHTML(ex, ex.stage, ex.category);
     });
 
@@ -617,18 +675,18 @@ function insertExerciseManually(dayIndex, mdStatus, stage, category, exercise) {
 
      let targetStageContainer = dayBlock.querySelector(`.generated-exercises-list`);
      
-     if (targetStageContainer) {
-         targetStageContainer.insertAdjacentHTML('beforeend', newExHtml);
-     } else {
+     if (!targetStageContainer) {
           const listContainer = document.createElement('div');
           listContainer.className = 'generated-exercises-list';
           listContainer.innerHTML = '<h4>Згенерований план (ручне редагування)</h4>';
-          listContainer.innerHTML += newExHtml;
           dayBlock.appendChild(listContainer);
+          targetStageContainer = listContainer;
      }
      
+     // Вставляємо вправу в кінець списку
+     targetStageContainer.insertAdjacentHTML('beforeend', newExHtml);
+     
      addExerciseControlListeners(dayBlock); 
-     // Збереження після ручного додавання
      saveData(null, null);
 }
 
@@ -661,20 +719,8 @@ document.addEventListener('DOMContentLoaded', () => {
          saveData(null, null);
     });
     
-    // ДЕЛЕГУВАННЯ СЛУХАЧІВ ДЛЯ ПОЛІВ ШАБЛОНУ (запобігає збоям при динамічному оновленні)
-    form.addEventListener('change', (e) => {
-        if (e.target.classList.contains('template-count-input')) {
-            updateCycleColors(true); 
-        }
-    });
-
-    // НОВЕ: Слухач для кнопки "Додати вручну"
-    document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('add-manual-exercise-btn')) {
-            const { dayIndex, mdStatus, stage, category } = e.target.dataset;
-            openExerciseModal(dayIndex, mdStatus, stage, category);
-        }
-    });
+    // Всі слухачі для динамічних елементів (+/- та ручне додавання) викликаються у addTemplateControlListeners,
+    // яка викликається у updateCycleColors.
     
     // Слухач для закриття модального вікна
     const modal = document.getElementById('exercise-selection-modal');
