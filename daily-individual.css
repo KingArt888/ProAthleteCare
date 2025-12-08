@@ -213,8 +213,8 @@ input[type="checkbox"]:checked::after {
         /* КОМПАКТНЕ РОЗТАШУВАННЯ ЕЛЕМЕНТІВ */
         display: flex;
         align-items: center; 
-        justify-content: flex-start; /* Вирівнюємо по лівому краю */
-        padding: 10px 60px 5px 10px; /* Достатньо місця справа для кнопки меню */
+        justify-content: flex-start;
+        padding: 10px 60px 5px 10px; /* Місце для кнопки */
     }
 
     /* ОБМЕЖЕННЯ РОЗМІРУ ОСНОВНОГО ЛОГОТИПУ У ШАПЦІ */
@@ -224,7 +224,7 @@ input[type="checkbox"]:checked::after {
     }
     
     header .project-title {
-        font-size: 1.1em; /* Зменшуємо розмір тексту */
+        font-size: 1.1em; 
         margin-left: 10px;
         flex-shrink: 1;
     }
@@ -235,29 +235,25 @@ input[type="checkbox"]:checked::after {
     
     /* ЗСУВАЄМО ОСНОВНИЙ КОНТЕНТ */
     .content-wrapper {
-        padding-top: 100px; /* Додаємо відступ, щоб контент не ховався під фіксованим header */
+        padding-top: 100px; /* Відступ під фіксований header */
         flex-direction: column; 
     }
     
-    /* Стилі для ЛОГОТИПУ-КНОПКИ */
+    /* СТИЛЬНА КНОПКА МЕНЮ (БУРГЕР) */
     .menu-toggle {
         display: block; 
         position: absolute; 
-        top: 10px; 
-        right: 10px;
-        background: none; 
+        top: 15px; 
+        right: 15px;
+        background: #FFD700; /* Золотий фон */
+        color: #000; /* Чорний символ */
         border: none;
-        padding: 0;
+        padding: 5px 10px;
+        font-size: 1.5em;
         cursor: pointer;
+        border-radius: 6px; /* Трохи заокруглені кути */
+        line-height: 1; 
         z-index: 1010; 
-    }
-
-    .menu-toggle .menu-logo-icon {
-        width: 40px; 
-        height: 40px;
-        border-radius: 50%; 
-        border: 2px solid #FFD700; 
-        object-fit: cover;
     }
     
     /* Фіксоване меню-оверлей */
