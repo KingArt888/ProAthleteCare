@@ -13,27 +13,18 @@ const COLOR_MAP = {
 
 const dayNames = ['Понеділок', 'Вівторок', 'Середа', 'Четвер', 'П’ятниця', 'Субота', 'Неділя'];
 
+// Допоміжна функція, яка повертає MD-статус дня за його індексом
+function getMdStatusByDayIndex(dayIndex) {
+    const mdStatusElement = document.querySelector(`#day-status-${dayIndex} .md-status`);
+    return mdStatusElement ? mdStatusElement.textContent : 'TRAIN';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     
     const activitySelects = document.querySelectorAll('.activity-type-select');
-    const dynamicMatchFields = document.getElementById('dynamic-match-fields');
     const dayCells = document.querySelectorAll('#md-colors-row .cycle-day');
     const form = document.getElementById('weekly-plan-form');
     const saveButton = document.querySelector('.save-button'); 
-
-    // Додаємо обробники для нових кнопок "Додати вправу"
-    document.querySelectorAll('.add-exercise-button').forEach(button => {
-        button.addEventListener('click', (event) => {
-            const dayIndex = event.target.dataset.dayIndex;
-            const stage = event.target.dataset.stage;
-            addExercise(dayIndex, stage, {
-                name: '',
-                videoKey: '',
-                description: ''
-            });
-            saveData();
-        });
-    });
 
     if (activitySelects.length === 0 || dayCells.length === 0 || !form) {
         console.error("Помилка: Не знайдено необхідних елементів таблиці або форми.");
@@ -41,17 +32,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // =========================================================
-    // 1. ФУНКЦІЇ ДЛЯ СТРУКТУРОВАНИХ ВПРАВ (НОВИЙ КОД)
+    // 1. ФУНКЦІЇ ДЛЯ СТРУКТУРОВАНИХ ВПРАВ (АДАПТОВАНО)
     // =========================================================
     
-    function getExerciseHtml(dayIndex, stage, index, exercise = {}) {
-        const idPrefix = `${dayIndex}_${stage.replace(/\s/g, '-')}_${index}`;
+    function getExerciseHtml(mdStatus, stage, index, exercise = {}) {
+        // ID тепер базується на MD-статусі, а не на індексі дня
+        const stageSlug = stage.replace(/\s/g, '-');
+        const idPrefix = `${mdStatus}_${stageSlug}_${index}`;
         
         return `
-            <div class="exercise-item" data-day-index="${dayIndex}" data-stage="${stage}" data-index="${index}">
+            <div class="exercise-item" data-md-status="${mdStatus}" data-stage="${stage}" data-index="${index}">
                 <div class="exercise-item-header">
                     <span class="exercise-number">${stage} #${index + 1}</span>
-                    <button type="button" class="remove-exercise-button" data-day-index="${dayIndex}" data-stage="${stage}" data-index="${index}">✖</button>
+                    <button type="button" class="remove-exercise-button" data-md-status="${mdStatus}" data-stage="${stage}" data-index="${index}">✖</button>
                 </div>
                 
                 <div class="exercise-fields">
@@ -69,15 +62,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function addExercise(dayIndex, stage, exercise) {
-        const containerId = `exercise-list-${dayIndex}`;
+        const mdStatus = getMdStatusByDayIndex(dayIndex);
+        const containerId = `exercise-list-${mdStatus}`; // Контейнер тепер прив'язаний до MD-статусу
         const container = document.getElementById(containerId);
         if (!container) return;
 
-        const existingItems = Array.from(container.querySelectorAll('.exercise-item')).filter(item => item.dataset.stage === stage);
+        const existingItems = Array.from(container.querySelectorAll(`.exercise-item[data-stage="${stage}"]`));
         const newIndex = existingItems.length;
 
         const newItem = document.createElement('div');
-        newItem.innerHTML = getExerciseHtml(dayIndex, stage, newIndex, exercise);
+        newItem.innerHTML = getExerciseHtml(mdStatus, stage, newIndex, exercise);
         
         // Знаходимо правильну кнопку "Додати" для цієї фази і вставляємо елемент перед нею
         const insertionPoint = document.querySelector(`.add-exercise-button[data-day-index="${dayIndex}"][data-stage="${stage}"]`);
@@ -88,11 +82,11 @@ document.addEventListener('DOMContentLoaded', () => {
             container.appendChild(newItem.firstElementChild);
         }
         
-        attachExerciseListeners(dayIndex);
+        attachExerciseListeners(mdStatus);
     }
     
-    function attachExerciseListeners(dayIndex) {
-        const container = document.getElementById(`exercise-list-${dayIndex}`);
+    function attachExerciseListeners(mdStatus) {
+        const container = document.getElementById(`exercise-list-${mdStatus}`);
         if (!container) return;
         
         container.querySelectorAll('input, textarea').forEach(input => {
@@ -107,15 +101,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const item = event.target.closest('.exercise-item');
                 if (item) {
                     item.remove();
-                    reindexExercises(dayIndex);
+                    reindexExercises(mdStatus);
                     saveData();
                 }
             };
         });
     }
     
-    function reindexExercises(dayIndex) {
-        const container = document.getElementById(`exercise-list-${dayIndex}`);
+    function reindexExercises(mdStatus) {
+        const container = document.getElementById(`exercise-list-${mdStatus}`);
         if (!container) return;
         
         // Збираємо та переіндексовуємо вправи, групуючи за фазою
@@ -131,7 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Оновлюємо відображення та імена полів
                 item.querySelector('.exercise-number').textContent = `${stage} #${stageIndex + 1}`;
                 
-                const idPrefix = `${dayIndex}_${stage.replace(/\s/g, '-')}_${stageIndex}`;
+                const stageSlug = stage.replace(/\s/g, '-');
+                const idPrefix = `${mdStatus}_${stageSlug}_${stageIndex}`;
                 
                 item.querySelectorAll('input, textarea').forEach(input => {
                     const nameParts = input.name.split('_');
@@ -146,54 +141,36 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+
+    // Додаємо обробники для нових кнопок "Додати вправу"
+    document.querySelectorAll('.add-exercise-button').forEach(button => {
+        button.addEventListener('click', (event) => {
+            event.preventDefault(); 
+            const dayIndex = event.target.dataset.dayIndex;
+            const stage = event.target.dataset.stage;
+            
+            addExercise(dayIndex, stage, {
+                name: '',
+                videoKey: '',
+                description: ''
+            });
+            saveData();
+        });
+    });
+
+
     // =========================================================
-    // 2. ФУНКЦІЇ МІКРОЦИКЛУ ТА ДІЙ (ВІДНОВЛЕНО)
+    // 2. ФУНКЦІЇ МІКРОЦИКЛУ ТА ДІЙ 
     // =========================================================
-    
-    function updateMatchDetails(dayIndex, activityType, savedValues = {}) {
-        const existingBlock = dynamicMatchFields.querySelector(`.match-detail-block[data-day-index="${dayIndex}"]`);
-        const dayName = dayNames[dayIndex];
-
-        if (activityType === 'MATCH' && dynamicMatchFields && !existingBlock) {
-             const detailsHTML = `
-                 <div class="match-detail-block" data-day-index="${dayIndex}">
-                     <h4>День ${dayIndex * 1 + 1}: ${dayName} (Матч)</h4>
-                     <label for="opponent-${dayIndex}">Суперник:</label>
-                     <input type="text" name="opponent_${dayIndex}" id="opponent-${dayIndex}" value="${savedValues[`opponent_${dayIndex}`] || ''}" required>
-                     <label for="venue-${dayIndex}">Місце проведення:</label>
-                     <select name="venue_${dayIndex}" id="venue-${dayIndex}">
-                         <option value="Home">Вдома</option>
-                         <option value="Away">На виїзді</option>
-                     </select>
-                     <label for="travel-km-${dayIndex}">Відстань поїздки (км):</label>
-                     <input type="number" name="travel_km_${dayIndex}" id="travel-km-${dayIndex}" value="${savedValues[`travel_km_${dayIndex}`] || '0'}" min="0">
-                 </div>
-             `;
-             dynamicMatchFields.insertAdjacentHTML('beforeend', detailsHTML);
-             
-             const venueSelect = document.getElementById(`venue-${dayIndex}`);
-             if (venueSelect && savedValues[`venue_${dayIndex}`]) {
-                 venueSelect.value = savedValues[`venue_${dayIndex}`];
-             }
-
-             document.querySelectorAll(`.match-detail-block[data-day-index="${dayIndex}"] input, .match-detail-block[data-day-index="${dayIndex}"] select`).forEach(input => {
-                 input.removeEventListener('change', saveData);
-                 input.removeEventListener('input', saveData);
-                 input.addEventListener('change', saveData); 
-                 input.addEventListener('input', saveData);
-             });
-
-        } else if (activityType !== 'MATCH' && existingBlock) {
-             existingBlock.remove();
-        }
-    }
 
     function updateCycleColors() {
         try {
+            // 1. Збір поточних типів активності (MD, TRAIN, REST)
             let activityTypes = Array.from(activitySelects).map(select => select.value);
             let dayStatuses = activityTypes.map(type => (type === 'MATCH' ? 'MD' : (type === 'REST' ? 'REST' : 'TRAIN'))); 
             const isPlanActive = activityTypes.includes('MATCH');
 
+            // Якщо матчів немає, просто встановлюємо REST або TRAIN
             if (!isPlanActive) {
                 dayCells.forEach((cell, index) => {
                      const finalStatusKey = activityTypes[index] === 'REST' ? 'REST' : 'TRAIN';
@@ -204,13 +181,13 @@ document.addEventListener('DOMContentLoaded', () => {
                      Object.values(COLOR_MAP).forEach(map => mdStatusElement.classList.remove(map.colorClass)); 
                      mdStatusElement.classList.add(style.colorClass); 
                      cell.title = `Фаза: ${style.status}`; 
-
-                     // Тут логіка відключення полів (тепер неактуальна, бо поля динамічні)
                  });
+                 // Після оновлення кольорів оновлюємо контейнери та завантажуємо/зберігаємо
+                 updateExerciseContainers(dayStatuses.map(s => s || 'TRAIN'));
                  return; 
             }
 
-            const mdMinusCycle = ['MD-1', 'MD-2', 'MD-3', 'MD-4', 'MD-5', 'MD-6']; 
+            // 2. Логіка розрахунку MD+
             const mdPlusMap = ['MD+1', 'MD+2', 'MD+3', 'MD+4', 'MD+5', 'MD+6']; 
             let matchIndices = dayStatuses.map((status, index) => status === 'MD' ? index : -1).filter(index => index !== -1);
 
@@ -219,12 +196,15 @@ document.addEventListener('DOMContentLoaded', () => {
                       const currentIdx = (matchIdx + j) % 7;
                       
                       if (activityTypes[currentIdx] !== 'REST' && dayStatuses[currentIdx] !== 'MD') {
-                           if (j === 1 || dayStatuses[currentIdx] !== 'MD+1') { 
-                              dayStatuses[currentIdx] = mdPlusMap[j - 1]; 
+                           if (!dayStatuses[currentIdx].startsWith('MD+')) {
+                                dayStatuses[currentIdx] = mdPlusMap[j - 1]; 
                            }
                       }
                  }
             }
+            
+            // 3. Логіка розрахунку MD-
+            const mdMinusCycle = ['MD-1', 'MD-2', 'MD-3', 'MD-4', 'MD-5', 'MD-6']; 
             
             for (const matchIdx of matchIndices) {
                  let currentMDMinus = 0;
@@ -237,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       }
                       
                       if (currentMDMinus < 4) {
-                           if (dayStatuses[i] !== 'MD+1' && dayStatuses[i] !== 'MD+2') {
+                           if (!dayStatuses[i].startsWith('MD+')) {
                                 dayStatuses[i] = mdMinusCycle[currentMDMinus];
                            }
                            currentMDMinus++;
@@ -247,6 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
                  }
             }
             
+            // 4. Оновлення відображення та контейнерів
             dayCells.forEach((cell, index) => {
                  let finalStatusKey = dayStatuses[index] || 'TRAIN'; 
                  
@@ -256,44 +237,110 @@ document.addEventListener('DOMContentLoaded', () => {
                       finalStatusKey = 'TRAIN'; 
                  }
 
-                 const currentActivity = activityTypes[index]; 
                  const style = COLOR_MAP[finalStatusKey] || COLOR_MAP['TRAIN'];
                  const mdStatusElement = cell.querySelector('.md-status');
 
-                 mdStatusElement.textContent = style.status;
-                 Object.values(COLOR_MAP).forEach(map => mdStatusElement.classList.remove(map.colorClass)); 
-                 mdStatusElement.classList.add(style.colorClass); 
-                 cell.title = `Фаза: ${style.status}`; 
-                 
-                 // Оновлюємо MD-статус у Local Storage при наступному збереженні
+                 if (mdStatusElement) {
+                     mdStatusElement.textContent = style.status;
+                     Object.values(COLOR_MAP).forEach(map => mdStatusElement.classList.remove(map.colorClass)); 
+                     mdStatusElement.classList.add(style.colorClass); 
+                     cell.title = `Фаза: ${style.status}`; 
+                 }
             });
+
+            updateExerciseContainers(dayStatuses.map(s => s || 'TRAIN'));
+
         } catch (e) {
             console.error("Критична помилка у updateCycleColors:", e);
         }
     }
 
+    // НОВА ФУНКЦІЯ: Динамічно змінює ID контейнерів та завантажує відповідні вправи
+    function updateExerciseContainers(newMdStatuses) {
+        const dayIndices = [0, 1, 2, 3, 4, 5, 6];
+        const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        
+        dayIndices.forEach(dayIndex => {
+            const currentDayBlock = document.querySelector(`.task-day-container[data-day-index="${dayIndex}"]`);
+            if (!currentDayBlock) return;
+            
+            const newMdStatus = newMdStatuses[dayIndex];
+            const oldContainer = currentDayBlock.querySelector('.exercise-list-container');
+            
+            // Якщо контейнер вже існує і має правильний ID, нічого не робимо
+            if (oldContainer && oldContainer.id === `exercise-list-${newMdStatus}`) {
+                return;
+            }
+
+            // 1. Створюємо новий контейнер з ID, прив'язаним до MD-статусу
+            const newContainer = document.createElement('div');
+            newContainer.className = 'exercise-list-container';
+            newContainer.id = `exercise-list-${newMdStatus}`;
+            
+            // 2. Завантажуємо вправи для цього MD-статусу
+            const planKey = `structured_plan_${newMdStatus}`;
+            const exercisesToLoad = (savedData[planKey] && savedData[planKey].exercises) || [];
+            
+            // 3. Заповнюємо новий контейнер вправами
+            exercisesToLoad.forEach(exercise => {
+                const stages = ['Pre-Training', 'Main Training', 'Post-Training'];
+                stages.forEach(stage => {
+                     // Створюємо HTML, використовуючи індекс 0, оскільки reindexExercises виправить його пізніше
+                     if (exercise.stage === stage) {
+                          const newItem = document.createElement('div');
+                          // Ми використовуємо MD-статус у getExerciseHtml, а не dayIndex
+                          newItem.innerHTML = getExerciseHtml(newMdStatus, exercise.stage, 0, exercise);
+                          newContainer.appendChild(newItem.firstElementChild);
+                     }
+                });
+            });
+            
+            // 4. Замінюємо старий контейнер новим
+            if (oldContainer) {
+                 currentDayBlock.replaceChild(newContainer, oldContainer);
+            } else {
+                 // Вставляємо перед першою кнопкою "Додати"
+                 const firstAddButton = currentDayBlock.querySelector('.add-exercise-button');
+                 if (firstAddButton) {
+                      currentDayBlock.insertBefore(newContainer, firstAddButton);
+                 }
+            }
+            
+            // 5. Переіндексовуємо та прив'язуємо слухачі
+            reindexExercises(newMdStatus);
+            attachExerciseListeners(newMdStatus);
+        });
+    }
+
 
     // =========================================================
-    // 3. ФУНКЦІЇ ЗБЕРЕЖЕННЯ/ЗАВАНТАЖЕННЯ (АДАПТОВАНО)
+    // 3. ФУНКЦІЇ ЗБЕРЕЖЕННЯ/ЗАВАНТАЖЕННЯ (ФІНАЛЬНО АДАПТОВАНО)
     // =========================================================
 
     function saveData() {
         try {
-            const flatData = {};
             const structuredPlanData = {};
 
-            document.querySelectorAll('#weekly-plan-form [name]').forEach(element => {
-                const name = element.name;
-                if (!name.startsWith('ex_')) {
-                   flatData[name] = element.value;
-                }
+            // 1. Збираємо унікальні MD-статуси, щоб зберегти план для кожного з них
+            const uniqueMdStatuses = new Set();
+            document.querySelectorAll('#md-colors-row .md-status').forEach(el => {
+                uniqueMdStatuses.add(el.textContent);
             });
-
-            const dayIndices = [0, 1, 2, 3, 4, 5, 6];
-            dayIndices.forEach(dayIndex => {
+            
+            // Включаємо також TRAIN та REST, якщо вони не є частиною MD-статусів
+            const allMdStatuses = Array.from(uniqueMdStatuses).filter(s => s && s !== 'TRAIN' && s !== 'REST');
+            if (!allMdStatuses.includes('TRAIN')) allMdStatuses.push('TRAIN');
+            if (!allMdStatuses.includes('REST')) allMdStatuses.push('REST');
+            
+            allMdStatuses.forEach(mdStatus => {
                 const dayExercises = [];
+                const containerId = `exercise-list-${mdStatus}`;
                 
-                document.querySelectorAll(`#exercise-list-${dayIndex} .exercise-item`).forEach(item => {
+                // Збираємо вправи лише з активного контейнера цього MD-статусу
+                const container = document.getElementById(containerId);
+                if (!container) return; 
+
+                container.querySelectorAll(`.exercise-item[data-md-status="${mdStatus}"]`).forEach(item => {
                     const stage = item.dataset.stage;
                     
                     const nameInput = item.querySelector('[name^="ex_name_"]');
@@ -310,18 +357,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
                 
-                const mdStatusElement = document.querySelector(`#day-status-${dayIndex} .md-status`);
-                const finalPhase = mdStatusElement ? mdStatusElement.textContent : 'TRAIN';
-
-                structuredPlanData[`structured_plan_${dayIndex}`] = {
-                    day: dayNames[dayIndex],
-                    phase: finalPhase, 
-                    activity: flatData[`activity_${dayIndex}`],
-                    exercises: dayExercises 
-                };
+                // Зберігаємо план під ключем MD-статусу
+                if (dayExercises.length > 0) {
+                   structuredPlanData[`structured_plan_${mdStatus}`] = {
+                       phase: mdStatus,
+                       exercises: dayExercises 
+                   };
+                }
             });
             
-            const combinedData = { ...flatData, ...structuredPlanData };
+            // 2. Зберігаємо типи активності окремо (для таблиці)
+            const activityData = {};
+            document.querySelectorAll('#weekly-plan-form [name^="activity_"]').forEach(element => {
+                activityData[element.name] = element.value;
+            });
+            
+            const combinedData = { ...activityData, ...structuredPlanData };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(combinedData));
             
             saveButton.textContent = 'Збережено! (✔)';
@@ -341,37 +392,17 @@ document.addEventListener('DOMContentLoaded', () => {
                  data = JSON.parse(savedData);
             }
 
-            let matchDetailsData = {};
-
-            document.querySelectorAll('#weekly-plan-form [name]').forEach(element => {
+            // 1. Завантажуємо типи активності для таблиці
+            document.querySelectorAll('#weekly-plan-form [name^="activity_"]').forEach(element => {
                  const name = element.name;
                  if (data[name] !== undefined) {
                      element.value = data[name];
-                     
-                     if (name.startsWith('opponent_') || name.startsWith('venue_') || name.startsWith('travel_km_')) {
-                          matchDetailsData[name] = data[name];
-                      }
                  }
             });
             
-            const dayIndices = [0, 1, 2, 3, 4, 5, 6];
-            dayIndices.forEach(dayIndex => {
-                const planKey = `structured_plan_${dayIndex}`;
-                if (data[planKey] && data[planKey].exercises) {
-                    const container = document.getElementById(`exercise-list-${dayIndex}`);
-                    if (container) container.innerHTML = ''; 
-                    
-                    data[planKey].exercises.forEach(exercise => {
-                        addExercise(dayIndex, exercise.stage, exercise);
-                    });
-                }
-            });
-
-            activitySelects.forEach((select, index) => {
-                 const activityType = select.value;
-                 updateMatchDetails(index, activityType, matchDetailsData);
-            });
-
+            // 2. Обчислюємо кольори (MD-статуси) та завантажуємо вправи
+            updateCycleColors(); 
+            // Вправи будуть завантажені всередині updateCycleColors через updateExerciseContainers
 
         } catch (e) {
             console.error("Помилка при завантаженні даних:", e);
@@ -381,29 +412,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === ІНІЦІАЛІЗАЦІЯ ОБРОБНИКІВ ===
     
-    activitySelects.forEach(select => {
-         select.addEventListener('change', (event) => {
-             const dayIndexElement = event.target.closest('td');
-             if (!dayIndexElement || dayIndexElement.dataset.dayIndex === undefined) return;
-             
-             const dayIndex = parseInt(dayIndexElement.dataset.dayIndex); 
-             const activityType = event.target.value;
-             
-             updateCycleColors(); // ЗАРАЗ ПРАЦЮЄ!
-             updateMatchDetails(dayIndex, activityType); 
+    activitySelects.forEach((select) => { 
+         select.addEventListener('change', () => {
+             updateCycleColors(); // Оновлює статуси, змінює ID контейнерів та завантажує вправи
              saveData();
          });
     });
 
-    document.querySelectorAll('input, select, textarea').forEach(input => {
-         if (input.name.startsWith('activity_') || input.name.startsWith('ex_')) {
-             return;
-         }
-
-         input.addEventListener('change', saveData);
-         input.addEventListener('input', saveData);
-    });
-
+    // Оновлення слухачів для полів вправ відбувається всередині attachExerciseListeners
     form.addEventListener('submit', (e) => {
          e.preventDefault();
          saveData(); 
@@ -411,5 +427,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === ПОЧАТКОВИЙ ЗАПУСК ===
     loadData();
-    updateCycleColors(); // ЗАРАЗ ПРАЦЮЄ!
 });
