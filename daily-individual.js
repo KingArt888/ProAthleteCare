@@ -3,7 +3,7 @@
 const STORAGE_KEY = 'weeklyPlanData';
 const YOUTUBE_EMBED_BASE = 'https://www.youtube.com/embed/';
 
-// Колірна палітра MD (потрібна для коректного відображення статусу)
+// Колірна палітра MD
 const COLOR_MAP = {
     'MD': { status: 'MD', colorClass: 'color-red' },
     'MD+1': { status: 'MD+1', colorClass: 'color-dark-green' }, 
@@ -34,9 +34,22 @@ const MD_RECOMMENDATIONS = {
  */
 function getCurrentDayIndex() {
     const today = new Date();
-    // JS: 0=Нд, 1=Пн. Нам потрібно: 0=Пн, ..., 6=Нд.
     const jsDay = today.getDay(); 
     return (jsDay === 0) ? 6 : jsDay - 1; 
+}
+
+/**
+ * Зберігає/оновлює статус виконання вправи в localStorage
+ */
+function toggleCompletion(id, isChecked) {
+    localStorage.setItem(id, isChecked);
+    // Додаткова логіка: зміна стилю виконаного блоку, якщо потрібно
+    const exerciseBlock = document.querySelector(`[data-exercise-id="${id}"]`);
+    if (exerciseBlock) {
+        // Додайте тут зміну стилю (наприклад, затемнення)
+        // exerciseBlock.style.opacity = isChecked ? 0.7 : 1; 
+    }
+    console.log(`Статус вправи ${id} встановлено: ${isChecked}`);
 }
 
 /**
@@ -45,7 +58,6 @@ function getCurrentDayIndex() {
 function calculateMdxRange(savedData) {
     const mdStatuses = [];
     
-    // Збираємо всі MD-статуси з тижневого плану
     for (let i = 0; i < 7; i++) {
         const planKey = `day_plan_${i}`;
         let status = '';
@@ -56,13 +68,11 @@ function calculateMdxRange(savedData) {
             status = savedData[`activity_${i}`] === 'MATCH' ? 'MD' : (savedData[`activity_${i}`] === 'REST' ? 'REST' : 'TRAIN');
         }
 
-        // Включаємо в MDX діапазон лише MD+, MD, MD- дні
         if (status.startsWith('MD')) {
              mdStatuses.push(status);
         }
     }
     
-    // Встановлюємо порядок MD-статусів (від найбільшого навантаження до найменшого)
     const mdOrder = [
         'MD+3', 'MD+2', 'MD+1', 'MD', 'MD-1', 'MD-2', 'MD-3', 'MD-4', 'MD-5', 'MD-6'
     ]; 
@@ -93,16 +103,20 @@ function calculateMdxRange(savedData) {
 /**
  * Генерує HTML для відображення однієї вправи
  */
-function createExerciseItemHTML(exercise) {
+function createExerciseItemHTML(exercise, index) {
+    const uniqueId = `ex-${getCurrentDayIndex()}-${index}`; 
+    const isCompleted = localStorage.getItem(uniqueId) === 'true' ? 'checked' : '';
+
     let mediaHtml = '';
 
+    // Розміри відео та зображення тепер контролюються CSS
     if (exercise.imageURL) {
-        mediaHtml += `<img src="${exercise.imageURL}" alt="${exercise.name}" style="max-width: 250px;">`;
+        mediaHtml += `<img src="${exercise.imageURL}" alt="${exercise.name}">`;
     }
 
     if (exercise.videoKey) {
         mediaHtml += `
-            <iframe width="300" height="180" 
+            <iframe 
                     src="${YOUTUBE_EMBED_BASE}${exercise.videoKey}" 
                     frameborder="0" allowfullscreen>
             </iframe>
@@ -113,14 +127,25 @@ function createExerciseItemHTML(exercise) {
     const categoryDisplay = exercise.category ? `<p><strong>Категорія:</strong> ${exercise.category}</p>` : '';
 
     return `
-        <div class="daily-exercise-item">
-            <h4>${exercise.name}</h4>
-            <div class="exercise-details">
-                ${stageDisplay}
-                ${categoryDisplay}
-                <p><strong>Параметри/Опис:</strong> ${exercise.description}</p>
+        <div class="daily-exercise-item" data-exercise-id="${uniqueId}">
+            
+            <div class="exercise-content">
+                <h4>${exercise.name}</h4>
+                <div class="exercise-details">
+                    ${stageDisplay}
+                    ${categoryDisplay}
+                    <p><strong>Параметри/Опис:</strong> ${exercise.description}</p>
+                </div>
             </div>
-            ${mediaHtml ? `<div class="media-container">${mediaHtml}</div>` : '<p style="color:#aaa; font-size:0.8em;">Медіа відсутнє</p>'}
+
+            <div class="media-container">
+                ${mediaHtml}
+                <div class="completion-section">
+                    <label for="${uniqueId}">Виконано:</label>
+                    <input type="checkbox" id="${uniqueId}" ${isCompleted} 
+                           onchange="toggleCompletion('${uniqueId}', this.checked)">
+                </div>
+            </div>
         </div>
     `;
 }
@@ -140,7 +165,7 @@ function loadAndDisplayDailyPlan() {
     const recommendationContainer = document.getElementById('md-recommendations'); 
     const mdxRangeDisplay = document.getElementById('mdx-range-display'); 
     
-    // Перевірка наявності основних елементів, щоб уникнути помилок Null
+    // Перевірка наявності основних елементів
     if (!statusDisplay || !listContainer || !dateDisplay || !recommendationContainer || !mdxRangeDisplay) {
         console.error("❌ Критична помилка: Не знайдено один або кілька контейнерів у daily-individual.html.");
         if (listContainer) {
@@ -163,10 +188,8 @@ function loadAndDisplayDailyPlan() {
             mdStatus = savedData[`activity_${todayIndex}`] === 'MATCH' ? 'MD' : (savedData[`activity_${todayIndex}`] === 'REST' ? 'REST' : 'TRAIN');
         }
 
-        // --- Відображення MDX ---
+        // --- Відображення MDX та статусу ---
         mdxRangeDisplay.textContent = calculateMdxRange(savedData);
-
-        // --- Оновлення MD-статусу ---
         const style = COLOR_MAP[mdStatus] || COLOR_MAP['TRAIN'];
         statusDisplay.textContent = style.status;
         Object.values(COLOR_MAP).forEach(map => statusDisplay.classList.remove(map.colorClass)); 
@@ -191,12 +214,12 @@ function loadAndDisplayDailyPlan() {
         let exercisesHtml = '';
         let currentStage = '';
 
-        todayPlan.exercises.forEach(exercise => {
+        todayPlan.exercises.forEach((exercise, index) => {
             if (exercise.stage && exercise.stage !== currentStage) {
                 currentStage = exercise.stage;
                 exercisesHtml += `<h3 class="stage-header">${currentStage.replace('-', ' ')}</h3>`;
             }
-            exercisesHtml += createExerciseItemHTML(exercise);
+            exercisesHtml += createExerciseItemHTML(exercise, index); // Передаємо індекс
         });
 
         listContainer.innerHTML = exercisesHtml;
