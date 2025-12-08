@@ -24,18 +24,25 @@ body {
     margin: 30px 0;
     padding: 10px;
     background-color: #000000;
-    border: 1px solid #1a1a1a; /* Дуже тонка темна рамка */
+    border: 1px solid #1a1a1a; 
     border-radius: 4px;
     transition: border-color 0.3s;
 }
 
 .task-item:hover {
-    border-color: #333; /* Невеликий акцент при наведенні */
+    border-color: #333; 
+}
+
+/* Стиль для головного блоку Main-Training */
+/* Додано акцентну рамку для головної частини */
+.task-item[data-stage="Main-Training"] {
+    border: 1px solid #FFD700; 
+    background-color: #0d0d0d;
 }
 
 /* Лівий блок: Відео */
 .task-video-container {
-    width: 25%; /* Відео займає менше місця */
+    width: 25%; 
     min-width: 150px;
     position: relative;
 }
@@ -43,9 +50,9 @@ body {
 .task-video-container iframe,
 .task-video-container .video-placeholder {
     width: 100%;
-    height: 100px; /* Фіксована висота, як на скріншоті */
-    aspect-ratio: 16 / 9;
-    border: 1px solid #FFD700; /* Золота рамка для відео */
+    height: 100px; 
+    /* aspect-ratio: 16 / 9; */ /* Вимкнено aspect-ratio, щоб залишити фіксовану висоту 100px */
+    border: 1px solid #FFD700; 
     border-radius: 4px;
     overflow: hidden;
 }
@@ -61,8 +68,15 @@ body {
     flex-direction: column;
 }
 .video-placeholder.video-active {
-    background-color: #333; /* Темне тло, якщо відео активне */
+    background-color: #333; 
     color: #FFD700;
+}
+.video-placeholder img {
+    /* Додаємо фільтр для іконки, щоб вона була золотою, як у style.css */
+    width: 30px;
+    height: 30px;
+    margin-right: 5px;
+    filter: invert(80%) sepia(80%) saturate(1000%) hue-rotate(0deg) brightness(120%); 
 }
 
 
@@ -75,7 +89,7 @@ body {
 
 /* Заголовок фази (Наприклад, "До тренування") */
 .stage-label-header {
-    color: #FFD700; /* Золотий */
+    color: #FFD700; 
     font-size: 1.2em;
     font-weight: bold;
     margin-bottom: 5px;
@@ -83,11 +97,11 @@ body {
 
 /* Заголовок протоколу (Наприклад, "Протокол TRAIN на Понеділок") */
 .task-title-phase {
-    color: #E0E0E0; /* Світло-сірий */
+    color: #E0E0E0; 
     font-size: 1.1em;
     font-weight: normal;
     margin: 0 0 10px 0;
-    display: none; /* Приховуємо, якщо ми використовуємо stage-label-header */
+    /* JS приховує цей елемент, якщо він не потрібен, але ми залишаємо його для Main Training */
 }
 
 /* Контейнер для нумерованого списку */
@@ -101,7 +115,7 @@ body {
     align-items: baseline;
     padding: 5px 0;
     font-size: 1em;
-    border-bottom: 1px solid #1a1a1a; /* Тонкий роздільник */
+    border-bottom: 1px solid #1a1a1a; 
 }
 
 .task-list-item:last-child {
@@ -110,15 +124,64 @@ body {
 
 /* Номер пункту */
 .task-list-item .list-number {
-    color: #FFD700; /* Золотий номер */
+    color: #FFD700; 
     font-weight: bold;
     margin-right: 10px;
     font-size: 1.1em;
+    min-width: 25px; /* Забезпечує вирівнювання двозначних чисел */
 }
 
 /* Текст завдання */
 .task-list-item .list-text {
     color: #D4D4D4;
+}
+
+/* ======================================================= */
+/* СЕКЦІЯ ЗВОРОТНОГО ЗВ'ЯЗКУ (FEEDBACK) - Додано */
+/* ======================================================= */
+
+.feedback-section {
+    margin-top: 50px;
+    padding: 20px;
+    border: 1px solid #333;
+    background-color: #111;
+    border-radius: 8px;
+}
+.feedback-box label {
+    display: block;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    color: #D4D4D4;
+}
+.feedback-box textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 10px;
+    background-color: #000;
+    border: 1px solid #444;
+    color: #E0E0E0;
+    resize: vertical;
+}
+
+.section-title-gold, .gold-text {
+    color: #FFD700 !important;
+    font-size: 1.5em;
+    margin-bottom: 15px;
+}
+
+.submit-button, .gold-button {
+    background-color: #FFD700;
+    color: #000000;
+    border: none;
+    padding: 10px 20px;
+    margin-top: 15px;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+.submit-button:hover, .gold-button:hover {
+    background-color: #ffe873;
 }
 
 /* Адаптивність */
