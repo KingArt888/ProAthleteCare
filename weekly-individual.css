@@ -70,26 +70,83 @@
     margin-bottom: 10px;
 }
 
-.template-row {
+/* ОНОВЛЕНІ СТИЛІ ДЛЯ КНОПОК-ТЕГІВ ТА ЛІЧИЛЬНИКІВ */
+
+.template-tag-row {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 5px;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 5px 0;
+    border-bottom: 1px dashed #333;
+    gap: 5px;
 }
 
-.template-row label {
-    flex-grow: 1;
-}
-
-.template-count-input {
-    width: 40px;
-    text-align: center;
-    margin-right: 5px;
-    background-color: #222;
+.template-category-button {
+    background-color: #555;
     color: white;
-    border: 1px solid #FFD700;
-    padding: 5px;
+    border: 1px solid #777;
+    padding: 6px 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 0.9em;
+    flex-grow: 1; 
+    text-align: left;
+    transition: background-color 0.2s, border-color 0.2s;
 }
+
+.template-category-button:hover {
+    background-color: #666;
+}
+
+/* Активний шаблон (кількість > 0) */
+.template-category-button.active-template {
+    background-color: #FFD700;
+    color: #333;
+    border-color: #FFD700;
+    font-weight: bold;
+}
+
+/* Контролери кількості */
+.count-controls {
+    display: flex;
+    margin: 0 5px;
+    flex-shrink: 0;
+}
+
+.count-control-btn {
+    width: 25px;
+    height: 25px;
+    background-color: #FFD700;
+    color: #333;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1em;
+    padding: 0;
+    margin: 0 2px;
+}
+
+.count-control-btn:hover {
+    opacity: 0.8;
+}
+
+/* Кнопка + (Додати вручну) */
+.add-manual-exercise-btn {
+    width: 25px;
+    height: 25px;
+    background-color: #008000; /* Зелений для додавання */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1em;
+    padding: 0;
+    flex-shrink: 0;
+}
+
 
 /* Стилі для згенерованих вправ (ручне редагування) */
 .generated-exercises-list {
