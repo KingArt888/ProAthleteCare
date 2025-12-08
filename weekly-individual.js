@@ -778,7 +778,35 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target.id === 'exercise-selection-modal' || e.target.classList.contains('close-modal-btn')) {
                 closeExerciseModal();
             }
+        });// ... (кінець функції closeExerciseModal)
+
+/**
+ * Логіка для перемикання бічної панелі на мобільних пристроях
+ */
+function setupMenuToggle() {
+    const toggleButton = document.getElementById('menu-toggle-button');
+    // Ми додали id="main-sidebar" у weekly-individual.html
+    const sidebar = document.getElementById('main-sidebar'); 
+
+    if (toggleButton && sidebar) {
+        toggleButton.addEventListener('click', () => {
+            sidebar.classList.toggle('active');
         });
+    }
+}
+
+
+// =========================================================
+// 5. ІНІЦІАЛІЗАЦІЯ ОБРОБНИКІВ
+// =========================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    // ... (існуючий код)
+    
+    // Ініціалізація бічної панелі
+    loadData();
+    setupMenuToggle(); // <--- НОВА ЛІНІЯ ДЛЯ ІНІЦІАЛІЗАЦІЇ
+});
     }
 
     loadData();
