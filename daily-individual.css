@@ -198,28 +198,45 @@ input[type="checkbox"]:checked::after {
 }
 
 
-/* --- СТИЛІ МЕНЮ (НА ВСІХ ЕКРАНАХ) --- */
-.menu-toggle {
-    display: none; 
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: #FFD700;
-    color: #000;
-    border: none;
-    padding: 10px 15px;
-    font-size: 1.5em;
-    cursor: pointer;
-    border-radius: 4px;
-    z-index: 1000; 
-}
-
-
-/* --- АДАПТИВНІСТЬ ДЛЯ МОБІЛЬНИХ (ДО 768px) --- */
+/* --- СТИЛІ МЕНЮ ТА ШАПКИ НА МОБІЛЬНИХ (ДО 768px) --- */
 @media (max-width: 768px) {
-    /* Відображаємо кнопку-бургер */
+    /* Робимо header фіксованим, щоб він був "липким" при прокручуванні */
+    header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1000; 
+        background-color: #000; 
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5); 
+        padding-bottom: 5px; 
+    }
+    
+    /* ЗСУВАЄМО ОСНОВНИЙ КОНТЕНТ */
+    .content-wrapper {
+        padding-top: 100px; /* Додаємо відступ, щоб контент не ховався під фіксованим header */
+        flex-direction: column; 
+    }
+    
+    /* Стилі для ЛОГОТИПУ-КНОПКИ */
     .menu-toggle {
         display: block; 
+        position: absolute; 
+        top: 10px; 
+        right: 10px;
+        background: none; 
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        z-index: 1010; 
+    }
+
+    .menu-toggle .menu-logo-icon {
+        width: 40px; 
+        height: 40px;
+        border-radius: 50%; 
+        border: 2px solid #FFD700; 
+        object-fit: cover;
     }
     
     /* Фіксоване меню-оверлей */
@@ -229,8 +246,8 @@ input[type="checkbox"]:checked::after {
         left: 0;
         width: 80%; 
         height: 100%;
-        padding-top: 80px; 
-        transform: translateX(-100%); /* Приховано */
+        padding-top: 80px; /* Відступ під шапку */
+        transform: translateX(-100%); 
         transition: transform 0.3s ease-in-out;
         z-index: 999;
         background-color: #111; 
@@ -244,10 +261,6 @@ input[type="checkbox"]:checked::after {
     }
     
     /* Робимо контент на всю ширину */
-    .content-wrapper {
-        flex-direction: column; 
-    }
-    
     .main-content {
         width: 100%; 
         padding: 10px; 
