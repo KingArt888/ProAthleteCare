@@ -200,7 +200,7 @@ input[type="checkbox"]:checked::after {
 
 /* --- СТИЛІ МЕНЮ ТА ШАПКИ НА МОБІЛЬНИХ (ДО 768px) --- */
 @media (max-width: 768px) {
-    /* Робимо header фіксованим, щоб він був "липким" при прокручуванні */
+    /* ФІКСОВАНА ШАПКА */
     header {
         position: fixed;
         top: 0;
@@ -209,7 +209,28 @@ input[type="checkbox"]:checked::after {
         z-index: 1000; 
         background-color: #000; 
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5); 
-        padding-bottom: 5px; 
+        
+        /* КОМПАКТНЕ РОЗТАШУВАННЯ ЕЛЕМЕНТІВ */
+        display: flex;
+        align-items: center; 
+        justify-content: flex-start; /* Вирівнюємо по лівому краю */
+        padding: 10px 60px 5px 10px; /* Достатньо місця справа для кнопки меню */
+    }
+
+    /* ОБМЕЖЕННЯ РОЗМІРУ ОСНОВНОГО ЛОГОТИПУ У ШАПЦІ */
+    header .logo { 
+        width: 40px; 
+        height: 40px;
+    }
+    
+    header .project-title {
+        font-size: 1.1em; /* Зменшуємо розмір тексту */
+        margin-left: 10px;
+        flex-shrink: 1;
+    }
+    
+    header .tagline {
+        display: none; /* Приховуємо слоган */
     }
     
     /* ЗСУВАЄМО ОСНОВНИЙ КОНТЕНТ */
@@ -246,7 +267,7 @@ input[type="checkbox"]:checked::after {
         left: 0;
         width: 80%; 
         height: 100%;
-        padding-top: 80px; /* Відступ під шапку */
+        padding-top: 80px; 
         transform: translateX(-100%); 
         transition: transform 0.3s ease-in-out;
         z-index: 999;
