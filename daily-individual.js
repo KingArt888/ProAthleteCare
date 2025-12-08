@@ -1,120 +1,211 @@
+// daily-individual.js
+
 const STORAGE_KEY = 'weeklyPlanData';
-const dayNames = ['Понеділок', 'Вівторок', 'Середа', 'Четвер', 'П’ятниця', 'Субота', 'Неділя'];
+const YOUTUBE_EMBED_BASE = 'https://www.youtube.com/embed/';
 
-document.addEventListener('DOMContentLoaded', () => {
-    
-    // Поточний день: 0 - Понеділок, 6 - Неділя
+// Колірна палітра MD (потрібна для коректного відображення статусу)
+const COLOR_MAP = {
+    'MD': { status: 'MD', colorClass: 'color-red' },
+    'MD+1': { status: 'MD+1', colorClass: 'color-dark-green' }, 
+    'MD+2': { status: 'MD+2', colorClass: 'color-green' }, 
+    'MD-1': { status: 'MD-1', colorClass: 'color-yellow' }, 
+    'MD-2': { status: 'MD-2', colorClass: 'color-deep-green' }, 
+    'MD-3': { status: 'MD-3', colorClass: 'color-orange' }, 
+    'MD-4': { status: 'MD-4', colorClass: 'color-blue' }, 
+    'REST': { status: 'REST', colorClass: 'color-neutral' }, 
+    'TRAIN': { status: 'TRAIN', colorClass: 'color-dark-grey' }, 
+};
+const dayNamesFull = ['Неділя', 'Понеділок', 'Вівторок', 'Середа', 'Четвер', 'П\'ятниця', 'Субота'];
+
+const MD_RECOMMENDATIONS = {
+    'MD': 'Сьогодні ігровий день. Зосередьтеся на швидкому відновленні, живленні та психологічній готовності. Уникайте важких фізичних навантажень, якщо вони не є частиною розминки.',
+    'MD+1': 'Високе навантаження! Це ключовий тренувальний день. Максимальна інтенсивність і концентрація. Обов’язково виконуйте відновлювальні процедури після тренування.',
+    'MD+2': 'Середнє навантаження. Хороший день для технічної роботи та помірної сили. Слідкуйте за самопочуттям, забезпечте якісний сон.',
+    'MD-1': 'Низьке навантаження. День перед матчем. Легке, активуюче тренування. Фокус на швидкості та тактиці. Відпочинок — пріоритет!',
+    'MD-2': 'Глибоке відновлення. Робота над якістю руху, мобільністю та м’язовою активацією. Використовуйте пінний ролик та стретчинг.',
+    'MD-3': 'Активний відпочинок або дуже низька інтенсивність. Прогулянка, плавання, легке кардіо. Важливо для ментального та фізичного розвантаження.',
+    'MD-4': 'Базове тренування/перехід. Можна включити легку загальнофізичну підготовку. Слідкуйте за тим, щоб не перевантажити м’язи.',
+    'REST': 'ПОВНИЙ ВІДПОЧИНОК. Не тренуватися. Харчування та сон — єдині завдання.',
+    'TRAIN': 'Стандартний тренувальний день без чіткої прив\'язки до матчу. Виконуйте заплановану програму згідно з вашим мікроциклом.'
+};
+
+/**
+ * Отримує індекс сьогоднішнього дня (0=Пн, 6=Нд)
+ */
+function getCurrentDayIndex() {
     const today = new Date();
-    const currentDayIndex = (today.getDay() + 6) % 7; 
+    // JS: 0=Нд, 1=Пн. Нам потрібно: 0=Пн, ..., 6=Нд.
+    const jsDay = today.getDay(); 
+    return (jsDay === 0) ? 6 : jsDay - 1; 
+}
 
-    const savedData = localStorage.getItem(STORAGE_KEY);
-    let data = {};
-    if (savedData) {
-        data = JSON.parse(savedData);
+/**
+ * Визначає тижневий діапазон MD-статусів (MDX)
+ */
+function calculateMdxRange(savedData) {
+    const mdStatuses = [];
+    
+    // Збираємо всі MD-статуси з тижневого плану
+    for (let i = 0; i < 7; i++) {
+        const planKey = `day_plan_${i}`;
+        let status = '';
+        
+        if (savedData[planKey] && savedData[planKey].mdStatus) {
+            status = savedData[planKey].mdStatus;
+        } else if (savedData[`activity_${i}`]) {
+            status = savedData[`activity_${i}`] === 'MATCH' ? 'MD' : (savedData[`activity_${i}`] === 'REST' ? 'REST' : 'TRAIN');
+        }
+
+        // Включаємо в MDX діапазон лише MD+, MD, MD- дні
+        if (status.startsWith('MD')) {
+             mdStatuses.push(status);
+        }
     }
     
-    const dayPlanKey = `structured_plan_${currentDayIndex}`;
-    const dayPlan = data[dayPlanKey];
-
-    displayTasks(dayPlan, currentDayIndex);
-});
-
-// =========================================================
-// ФУНКЦІЯ: displayTasks 
-// =========================================================
-function displayTasks(dayPlan, currentDayIndex) {
-    const tasksContainer = document.getElementById('daily-tasks-container');
-    const dayName = dayNames[currentDayIndex];
+    // Встановлюємо порядок MD-статусів (від найбільшого навантаження до найменшого)
+    const mdOrder = [
+        'MD+3', 'MD+2', 'MD+1', 'MD', 'MD-1', 'MD-2', 'MD-3', 'MD-4', 'MD-5', 'MD-6'
+    ]; 
     
-    if (!tasksContainer) {
-        console.error("Критична помилка: Не знайдено контейнер #daily-tasks-container.");
+    if (mdStatuses.length === 0) {
+        return "Базовий / REST";
+    }
+    
+    let minIndex = mdOrder.length; 
+    let maxIndex = -1;             
+    
+    mdStatuses.forEach(status => {
+        const index = mdOrder.indexOf(status);
+        if (index !== -1) {
+            if (index < minIndex) minIndex = index; 
+            if (index > maxIndex) maxIndex = index; 
+        }
+    });
+
+    if (minIndex <= maxIndex && minIndex < mdOrder.length) {
+        return `${mdOrder[minIndex]} до ${mdOrder[maxIndex]}`;
+    }
+    
+    return "Не визначено";
+}
+
+
+/**
+ * Генерує HTML для відображення однієї вправи
+ */
+function createExerciseItemHTML(exercise) {
+    let mediaHtml = '';
+
+    if (exercise.imageURL) {
+        mediaHtml += `<img src="${exercise.imageURL}" alt="${exercise.name}" style="max-width: 250px;">`;
+    }
+
+    if (exercise.videoKey) {
+        mediaHtml += `
+            <iframe width="300" height="180" 
+                    src="${YOUTUBE_EMBED_BASE}${exercise.videoKey}" 
+                    frameborder="0" allowfullscreen>
+            </iframe>
+        `;
+    }
+
+    const stageDisplay = exercise.stage ? `<p><strong>Етап:</strong> ${exercise.stage.replace('-', ' ')}</p>` : '';
+    const categoryDisplay = exercise.category ? `<p><strong>Категорія:</strong> ${exercise.category}</p>` : '';
+
+    return `
+        <div class="daily-exercise-item">
+            <h4>${exercise.name}</h4>
+            <div class="exercise-details">
+                ${stageDisplay}
+                ${categoryDisplay}
+                <p><strong>Параметри/Опис:</strong> ${exercise.description}</p>
+            </div>
+            ${mediaHtml ? `<div class="media-container">${mediaHtml}</div>` : '<p style="color:#aaa; font-size:0.8em;">Медіа відсутнє</p>'}
+        </div>
+    `;
+}
+
+
+/**
+ * Завантажує та відображає план на сьогоднішній день
+ */
+function loadAndDisplayDailyPlan() {
+    const todayIndex = getCurrentDayIndex(); 
+    const planKey = `day_plan_${todayIndex}`;
+    
+    // 1. Отримання елементів DOM
+    const statusDisplay = document.getElementById('md-status-display');
+    const listContainer = document.getElementById('daily-exercise-list');
+    const dateDisplay = document.getElementById('current-date-display');
+    const recommendationContainer = document.getElementById('md-recommendations'); 
+    const mdxRangeDisplay = document.getElementById('mdx-range-display'); 
+    
+    // Перевірка наявності основних елементів, щоб уникнути помилок Null
+    if (!statusDisplay || !listContainer || !dateDisplay || !recommendationContainer || !mdxRangeDisplay) {
+        console.error("❌ Критична помилка: Не знайдено один або кілька контейнерів у daily-individual.html.");
+        if (listContainer) {
+            listContainer.innerHTML = '<p style="color:red;">❌ Критична помилка: Не знайдено контейнери для відображення плану. Перевірте HTML.</p>';
+        }
         return;
     }
     
-    tasksContainer.innerHTML = ''; 
+    const today = new Date();
+    dateDisplay.textContent = `(${dayNamesFull[today.getDay()]}, ${today.toLocaleDateString('uk-UA')})`;
 
-    // Використовуємо id="main-protocol-header"
-    const header = document.getElementById('main-protocol-header');
-    if (header) {
-        header.innerHTML = `🔥 Daily Individual: Індивідуальний протокол на **${dayName}**`;
-    } 
-
-    if (!dayPlan || !dayPlan.tasks || dayPlan.tasks.length === 0) {
-        tasksContainer.innerHTML = `
-            <div class="warning-box">
-                <span class="icon-text">⚠️ План на ${dayName} відсутній</span>
-                <p>Не знайдено структурованих завдань. Переконайтеся, що ви зберегли дані у <a href="weekly-individual.html">Weekly Individual</a> у правильному структурованому форматі (використовуйте ключові слова: "Розминка", "Основна", "Завершення" та нумеровані списки).</p>
-            </div>`;
-        return;
-    }
-    
-    dayPlan.tasks.forEach(task => {
+    try {
+        const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        const todayPlan = savedData[planKey];
         
-        // Виправлено: Шлях до зображення
-        const videoHtml = task.video_key ? 
-            `<div class="video-placeholder video-active"><img src="AK_logo.png" alt="Video Icon"/> Відео ${task.video_key}</div>` : 
-            `<div class="video-placeholder">Відео недоступно</div>`;
-
-        let stageDisplay = '';
-        if (task.stage === 'Pre-Training') {
-            stageDisplay = 'До тренування';
-        } else if (task.stage === 'Main Training') {
-            stageDisplay = 'Основна Робота';
-        } else if (task.stage === 'Post-Training') {
-            stageDisplay = 'Після тренування';
-        } else {
-            stageDisplay = 'Завдання';
-        }
-        
-        // Логіка для розділення тексту на пункти (залишено лише 1., 2. формат)
-        const descriptionText = task.description
-            .replace(/\*+/g, '') 
-            .trim(); 
-        
-        let descriptionHTML = `<p class="list-text">${descriptionText}</p>`;
-        
-        const lines = descriptionText.split('\n');
-        // Перевірка на наявність нумерації
-        const isList = lines.some(line => /^\d+[\.\)]\s/.test(line.trim()));
-        
-        if (isList) {
-            descriptionHTML = `<div class="task-description-list">`;
-            lines.forEach(line => {
-                const match = line.trim().match(/^(\d+)[.\)]\s*(.*)/);
-                if (match) {
-                    descriptionHTML += `
-                        <div class="task-list-item">
-                            <span class="list-number">${match[1]}.</span> 
-                            <span class="list-text">${match[2].trim()}</span>
-                        </div>`;
-                } else if (line.trim().length > 0) {
-                     descriptionHTML += `<div class="task-list-item"><span class="list-text list-text-unstructured">${line.trim()}</span></div>`;
-                }
-            });
-            descriptionHTML += `</div>`;
+        let mdStatus = 'TRAIN';
+        if (todayPlan && todayPlan.mdStatus) {
+            mdStatus = todayPlan.mdStatus;
+        } else if (savedData[`activity_${todayIndex}`]) {
+            mdStatus = savedData[`activity_${todayIndex}`] === 'MATCH' ? 'MD' : (savedData[`activity_${todayIndex}`] === 'REST' ? 'REST' : 'TRAIN');
         }
 
-        const taskItem = document.createElement('div');
-        taskItem.className = 'task-item';
-        taskItem.dataset.stage = task.stage.replace(' ', '-');
+        // --- Відображення MDX ---
+        mdxRangeDisplay.textContent = calculateMdxRange(savedData);
+
+        // --- Оновлення MD-статусу ---
+        const style = COLOR_MAP[mdStatus] || COLOR_MAP['TRAIN'];
+        statusDisplay.textContent = style.status;
+        Object.values(COLOR_MAP).forEach(map => statusDisplay.classList.remove(map.colorClass)); 
+        statusDisplay.classList.add(style.colorClass); 
         
-        taskItem.innerHTML = `
-            <div class="task-video-container">
-                ${videoHtml}
-            </div>
-            
-            <div class="task-details-content">
-                <div class="stage-label-header">${stageDisplay}</div>
-                ${task.stage === 'Main Training' ? 
-                    `<h3 class="task-title-phase">Фаза: ${dayPlan.phase}</h3>` : 
-                    `<h3 class="task-title-phase" style="display:none;"></h3>`
-                }
-                <div class="task-description-wrapper">
-                    ${descriptionHTML}
-                </div>
-            </div>
+        // --- Відображення Рекомендацій ---
+        const recommendation = MD_RECOMMENDATIONS[mdStatus] || MD_RECOMMENDATIONS['TRAIN'];
+        recommendationContainer.innerHTML = `
+            <p><strong>Рекомендація:</strong> ${recommendation}</p>
         `;
 
-        tasksContainer.appendChild(taskItem);
-    });
+        if (!todayPlan || !todayPlan.exercises || todayPlan.exercises.length === 0) {
+            listContainer.innerHTML = `
+                <div class="note-info" style="color: #EEE; border: 1px solid #FFD700; padding: 15px; border-radius: 6px; background-color: #333;">
+                    <h3 style="color:#FFD700;">На сьогодні немає запланованих вправ.</h3>
+                    ${style.status === 'REST' ? '<p>Це день повного відновлення. Добре відновлюйтесь!</p>' : '<p>Зверніться до тренера (Weekly Individual), щоб запланувати тренування.</p>'}
+                </div>
+            `;
+            return;
+        }
+        
+        let exercisesHtml = '';
+        let currentStage = '';
+
+        todayPlan.exercises.forEach(exercise => {
+            if (exercise.stage && exercise.stage !== currentStage) {
+                currentStage = exercise.stage;
+                exercisesHtml += `<h3 class="stage-header">${currentStage.replace('-', ' ')}</h3>`;
+            }
+            exercisesHtml += createExerciseItemHTML(exercise);
+        });
+
+        listContainer.innerHTML = exercisesHtml;
+
+    } catch (e) {
+        console.error("Помилка при завантаженні щоденного плану:", e);
+        listContainer.innerHTML = '<p style="color:red;">❌ Виникла критична помилка при завантаженні плану тренувань. Перевірте console.</p>';
+    }
 }
+
+// Запуск при завантаженні сторінки
+document.addEventListener('DOMContentLoaded', loadAndDisplayDailyPlan);
