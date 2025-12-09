@@ -226,7 +226,7 @@ function initializeLoadSeason() {
 
     document.getElementById('load-form')?.addEventListener('submit', handleLoadFormSubmit);
     
-    // Встановлення поточної дати
+    // Встановлення поточної дати (КРИТИЧНА ПЕРЕВІРКА НА NULL ДЛЯ УНИКНЕННЯ ПОМИЛКИ)
     const dateInput = document.getElementById('load-date');
     if (dateInput) {
         dateInput.valueAsDate = new Date();
@@ -283,10 +283,12 @@ function setupMenuToggle() {
     const toggleButton = document.getElementById('menu-toggle-button');
     const sidebar = document.getElementById('main-sidebar'); 
 
+    // КРИТИЧНА ПЕРЕВІРКА НА NULL
     if (toggleButton && sidebar) {
         toggleButton.addEventListener('click', () => {
             sidebar.classList.toggle('active');
             
+            // Зміна іконки 
             if (sidebar.classList.contains('active')) {
                 toggleButton.textContent = '✕';
             } else {
@@ -294,6 +296,7 @@ function setupMenuToggle() {
             }
         });
         
+        // Закриття меню при кліку на пункт меню або за межами
         sidebar.addEventListener('click', (event) => {
             if (event.target.tagName === 'A') {
                  sidebar.classList.remove('active');
@@ -301,6 +304,7 @@ function setupMenuToggle() {
             }
         });
         
+        // Додаємо обробку кліку поза меню
         document.addEventListener('click', (event) => {
             const isClickInsideSidebar = sidebar.contains(event.target);
             const isClickOnToggle = toggleButton.contains(event.target);
@@ -317,5 +321,5 @@ function setupMenuToggle() {
 // Запуск при завантаженні сторінки
 document.addEventListener('DOMContentLoaded', () => {
     initializeLoadSeason();
-    setupMenuToggle();
+    setupMenuToggle(); // Запускаємо функціонал мобільного меню
 });
