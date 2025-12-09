@@ -22,9 +22,6 @@ let dailyLoadData = [
     { date: '2025-12-13', duration: 80, rpe: 8, distance: 10.0 },
 ];
 
-// ... (Ваші функції calculateSessionRPE, getWeekNumber, calculateACWR, updateACWRGauge, renderDistanceChart, renderLoadChart)
-// Я залишаю ці функції без змін, оскільки вони були надані раніше і є коректними.
-
 function calculateSessionRPE(duration, rpe) {
     return duration * rpe;
 }
@@ -75,7 +72,7 @@ function updateACWRGauge(acwrValue) {
     const acwrValueDisplay = document.getElementById('acwr-value');
     const statusText = document.getElementById('acwr-status');
 
-    if (!needle || !acwrValueDisplay || !statusText) return; // Захист від помилок
+    if (!needle || !acwrValueDisplay || !statusText) return; 
 
     let degree = 0;
     let status = 'Недостатньо даних';
@@ -229,7 +226,7 @@ function initializeLoadSeason() {
 
     document.getElementById('load-form')?.addEventListener('submit', handleLoadFormSubmit);
     
-    // Встановлення поточної дати (з захистом від помилок)
+    // Встановлення поточної дати (КРИТИЧНА ПЕРЕВІРКА НА NULL ДЛЯ УНИКНЕННЯ ПОМИЛКИ)
     const dateInput = document.getElementById('load-date');
     if (dateInput) {
         dateInput.valueAsDate = new Date();
@@ -248,8 +245,10 @@ function handleLoadFormSubmit(event) {
     const statusMessage = document.getElementById('form-status');
 
     if (!date || isNaN(duration) || isNaN(distance) || isNaN(rpe)) {
-        statusMessage.textContent = 'Будь ласка, заповніть всі поля коректно.';
-        statusMessage.className = 'status-box status-danger';
+        if (statusMessage) { // Додана перевірка на статус-бокс
+            statusMessage.textContent = 'Будь ласка, заповніть всі поля коректно.';
+            statusMessage.className = 'status-box status-danger';
+        }
         return;
     }
 
@@ -258,13 +257,19 @@ function handleLoadFormSubmit(event) {
     const existingIndex = dailyLoadData.findIndex(item => item.date === date);
     if (existingIndex > -1) {
         dailyLoadData[existingIndex] = newEntry;
-        statusMessage.textContent = `Дані за ${date} оновлено! Load: ${calculateSessionRPE(duration, rpe)}`;
+        if (statusMessage) {
+             statusMessage.textContent = `Дані за ${date} оновлено! Load: ${calculateSessionRPE(duration, rpe)}`;
+        }
     } else {
         dailyLoadData.push(newEntry);
-        statusMessage.textContent = `Тренування збережено! Load: ${calculateSessionRPE(duration, rpe)}`;
+        if (statusMessage) {
+            statusMessage.textContent = `Тренування збережено! Load: ${calculateSessionRPE(duration, rpe)}`;
+        }
     }
     
-    statusMessage.className = 'status-box status-safe';
+    if (statusMessage) {
+        statusMessage.className = 'status-box status-safe';
+    }
     
     dailyLoadData.sort((a, b) => new Date(a.date) - new Date(b.date));
     initializeLoadSeason(); 
@@ -278,6 +283,7 @@ function setupMenuToggle() {
     const toggleButton = document.getElementById('menu-toggle-button');
     const sidebar = document.getElementById('main-sidebar'); 
 
+    // КРИТИЧНА ПЕРЕВІРКА НА NULL
     if (toggleButton && sidebar) {
         toggleButton.addEventListener('click', () => {
             sidebar.classList.toggle('active');
