@@ -6,7 +6,6 @@ let dailyLoadData = [
     { date: '2025-11-27', duration: 70, rpe: 6, distance: 9.1 },
     { date: '2025-11-28', duration: 120, rpe: 9, distance: 15.0 },
     { date: '2025-11-29', duration: 60, rpe: 7, distance: 8.0 },
-    // Тиждень 2
     { date: '2025-11-30', duration: 60, rpe: 6, distance: 8.5 },
     { date: '2025-12-01', duration: 80, rpe: 7, distance: 10.0 },
     { date: '2025-12-02', duration: 50, rpe: 5, distance: 6.0 },
@@ -14,7 +13,6 @@ let dailyLoadData = [
     { date: '2025-12-04', duration: 40, rpe: 4, distance: 4.5 },
     { date: '2025-12-05', duration: 100, rpe: 9, distance: 14.0 },
     { date: '2025-12-06', duration: 60, rpe: 7, distance: 9.0 },
-    // Тиждень 3 (збільшення навантаження)
     { date: '2025-12-07', duration: 75, rpe: 8, distance: 10.0 },
     { date: '2025-12-08', duration: 95, rpe: 9, distance: 15.0 },
     { date: '2025-12-09', duration: 65, rpe: 7, distance: 8.0 },
@@ -24,7 +22,8 @@ let dailyLoadData = [
     { date: '2025-12-13', duration: 80, rpe: 8, distance: 10.0 },
 ];
 
-const FORM_DAYS_TO_DISPLAY = 21; 
+// ... (Ваші функції calculateSessionRPE, getWeekNumber, calculateACWR, updateACWRGauge, renderDistanceChart, renderLoadChart)
+// Я залишаю ці функції без змін, оскільки вони були надані раніше і є коректними.
 
 function calculateSessionRPE(duration, rpe) {
     return duration * rpe;
@@ -75,6 +74,8 @@ function updateACWRGauge(acwrValue) {
     const needle = document.getElementById('gauge-needle');
     const acwrValueDisplay = document.getElementById('acwr-value');
     const statusText = document.getElementById('acwr-status');
+
+    if (!needle || !acwrValueDisplay || !statusText) return; // Захист від помилок
 
     let degree = 0;
     let status = 'Недостатньо даних';
@@ -129,7 +130,9 @@ function formatDistanceDataForChart() {
 
 let distanceChart;
 function renderDistanceChart() {
-    const ctx = document.getElementById('distanceChart').getContext('2d');
+    const ctx = document.getElementById('distanceChart')?.getContext('2d');
+    if (!ctx) return;
+
     const { labels, data } = formatDistanceDataForChart();
 
     if (distanceChart) {
@@ -166,7 +169,8 @@ function renderDistanceChart() {
 
 let loadChart;
 function renderLoadChart(acuteLoad, chronicLoad) {
-    const ctx = document.getElementById('loadChart').getContext('2d');
+    const ctx = document.getElementById('loadChart')?.getContext('2d');
+    if (!ctx) return;
     
     const demoLabels = ['4 тижні тому', '3 тижні тому', '2 тижні тому', 'Поточний'];
     const demoAcute = [500, 650, 800, acuteLoad];
@@ -223,9 +227,13 @@ function initializeLoadSeason() {
     renderDistanceChart();
     renderLoadChart(acuteLoad, chronicLoad);
 
-    document.getElementById('load-form').addEventListener('submit', handleLoadFormSubmit);
+    document.getElementById('load-form')?.addEventListener('submit', handleLoadFormSubmit);
     
-    document.getElementById('load-date').valueAsDate = new Date();
+    // Встановлення поточної дати (з захистом від помилок)
+    const dateInput = document.getElementById('load-date');
+    if (dateInput) {
+        dateInput.valueAsDate = new Date();
+    }
 }
 
 function handleLoadFormSubmit(event) {
@@ -263,4 +271,49 @@ function handleLoadFormSubmit(event) {
 }
 
 
-document.addEventListener('DOMContentLoaded', initializeLoadSeason);
+/**
+ * Логіка для перемикання бічної панелі на мобільних пристроях
+ */
+function setupMenuToggle() {
+    const toggleButton = document.getElementById('menu-toggle-button');
+    const sidebar = document.getElementById('main-sidebar'); 
+
+    if (toggleButton && sidebar) {
+        toggleButton.addEventListener('click', () => {
+            sidebar.classList.toggle('active');
+            
+            // Зміна іконки 
+            if (sidebar.classList.contains('active')) {
+                toggleButton.textContent = '✕';
+            } else {
+                toggleButton.textContent = '☰';
+            }
+        });
+        
+        // Закриття меню при кліку на пункт меню або за межами
+        sidebar.addEventListener('click', (event) => {
+            if (event.target.tagName === 'A') {
+                 sidebar.classList.remove('active');
+                 toggleButton.textContent = '☰';
+            }
+        });
+        
+        // Додаємо обробку кліку поза меню
+        document.addEventListener('click', (event) => {
+            const isClickInsideSidebar = sidebar.contains(event.target);
+            const isClickOnToggle = toggleButton.contains(event.target);
+            
+            if (!isClickInsideSidebar && !isClickOnToggle && sidebar.classList.contains('active')) {
+                sidebar.classList.remove('active');
+                toggleButton.textContent = '☰';
+            }
+        });
+    }
+}
+
+
+// Запуск при завантаженні сторінки
+document.addEventListener('DOMContentLoaded', () => {
+    initializeLoadSeason();
+    setupMenuToggle(); // Запускаємо функціонал мобільного меню
+});
