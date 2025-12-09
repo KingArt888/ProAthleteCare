@@ -1,0 +1,63 @@
+/* navigation-mobile.css */
+
+/* --- 1. КНОПКА МЕНЮ (ПРИХОВАНА ЗА ЗМОВЧУВАННЯМ НА DESKTOP) --- */
+.menu-toggle {
+    display: none; /* ПРИХОВУЄМО КНОПКУ на великих екранах */
+}
+
+/* --- 2. БІЧНА ПАНЕЛЬ (ПОЗИЦІОНУВАННЯ НА DESKTOP) --- */
+.sidebar {
+    /* Робимо її висотою 100% на десктопі, як у твоєму дизайні */
+    position: sticky; 
+    top: 0;
+    height: 100vh;
+}
+
+/* --- 3. АДАПТИВНІСТЬ: MEDIA QUERY (MOBILE VIEW) --- */
+@media (max-width: 900px) { /* Стандартний мобільний breakpoint */
+
+    /* КНОПКА МЕНЮ СТАЄ ВИДИМОЮ */
+    .menu-toggle {
+        display: block; 
+        position: fixed; 
+        top: 20px;
+        right: 20px;
+        z-index: 1001; 
+        
+        /* Чорно-золотий стиль для ProAtletCare */
+        background-color: #0d0d0d;
+        color: #FFC72C; /* Золотий */
+        border: 2px solid #FFC72C;
+        padding: 8px 12px;
+        font-size: 1.2em;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+    
+    /* БІЧНА ПАНЕЛЬ ПРИХОВАНА/ЗСУНУТА З ЕКРАНУ */
+    .content-wrapper {
+        display: block; /* Змінюємо Flexbox на Block для мобільного */
+    }
+    
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -250px; /* Зсуваємо за межі екрану */
+        width: 250px;
+        height: 100%; 
+        z-index: 1000;
+        transition: left 0.3s ease; 
+        box-shadow: 5px 0 15px rgba(0, 0, 0, 0.7);
+    }
+    
+    /* АКТИВНИЙ СТАН: ПАНЕЛЬ ВИЇЖДЖАЄ */
+    .sidebar.active {
+        left: 0; 
+    }
+    
+    /* ОСНОВНИЙ КОНТЕНТ */
+    .main-content {
+        margin-left: 0; /* Контент займає всю ширину */
+        padding: 20px 15px; 
+    }
+}
