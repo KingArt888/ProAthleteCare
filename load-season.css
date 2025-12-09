@@ -76,7 +76,7 @@ input[type="date"]:focus, input[type="number"]:focus {
     display: flex;
     flex-direction: row-reverse; 
     justify-content: flex-end; 
-    align-items: flex-start; /* Змінено: для вирівнювання цифр */
+    align-items: flex-start;
     margin-bottom: 20px;
     background-color: #1a1a1a;
     padding: 5px;
@@ -89,36 +89,35 @@ input[type="date"]:focus, input[type="number"]:focus {
 }
 
 .rpe-group label {
-    cursor: pointer;
-    font-size: 1.5em; 
-    
-    /* ЗМІНА 1: Додаємо min-width та фіксовану height */
-    min-width: 30px; /* Гарантуємо, що мінімальна ширина є */
-    height: 40px;    /* Фіксуємо висоту, щоб запобігти вертикальним стрибкам */
+    cursor: pointer;
+    font-size: 1.5em; 
     
-    width: 8%; /* Можна залишити 8% для великих екранів */
-    padding: 5px 0 0 0; 
-    margin: 0; 
-    text-align: center;
-    transition: color 0.3s, transform 0.2s;
-    color: #456545; 
-    position: relative; 
-    display: block; 
+    /* ВИПРАВЛЕННЯ РУХУ: Фіксуємо ширину та висоту в пікселях */
+    width: 30px;
+    height: 40px; 
+    flex-shrink: 0; /* Додатково забороняємо стискатися */
+    
+    padding: 5px 0 0 0; 
+    margin: 0; 
+    text-align: center;
+    transition: color 0.3s, transform 0.2s;
+    color: #456545; 
+    position: relative; 
+    display: block; 
 }
 
 /* --- СТИЛЬ ЦИФР ЗВЕРХУ --- */
 .rpe-group label::after {
-    content: attr(data-rpe); 
-    position: absolute;
-    top: -15px; 
-    left: 50%;
-    transform: translateX(-50%);
-    /* НОВЕ: Забезпечуємо, що цифра не рухатиметься через z-index */
-    z-index: 5; 
-    font-size: 0.6em; 
-    font-weight: bold;
-    color: #888888; 
-    transition: color 0.3s;
+    content: attr(data-rpe); /* ПОВЕРНЕННЯ ЦИФР */
+    position: absolute;
+    top: -15px; 
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.6em; 
+    font-weight: bold;
+    color: #888888; 
+    transition: color 0.3s;
+    z-index: 5; /* Гарантуємо, що цифри видно */
 }
 
 /* Стиль самої іконки */
@@ -135,7 +134,7 @@ input[type="date"]:focus, input[type="number"]:focus {
 .rpe-group input[value="2"]:checked ~ label,
 .rpe-group input[value="3"]:checked ~ label,
 .rpe-group input[value="4"]:checked ~ label {
-    color: #5cb85c; /* Green - блискавка */
+    color: #5cb85c; 
 }
 
 /* Підсвічуємо цифри відповідним кольором */
@@ -151,7 +150,7 @@ input[type="date"]:focus, input[type="number"]:focus {
 .rpe-group input[value="5"]:checked ~ label,
 .rpe-group input[value="6"]:checked ~ label,
 .rpe-group input[value="7"]:checked ~ label{
-    color: #f0ad4e; /* Orange - блискавка */
+    color: #f0ad4e; 
 }
 .rpe-group input[value="5"]:checked ~ label::after,
 .rpe-group input[value="6"]:checked ~ label::after,
@@ -163,7 +162,7 @@ input[type="date"]:focus, input[type="number"]:focus {
 .rpe-group input[value="8"]:checked ~ label, 
 .rpe-group input[value="9"]:checked ~ label,
 .rpe-group input[value="10"]:checked ~ label {
-    color: #d9534f; /* Red - блискавка */
+    color: #d9534f; 
 }
 .rpe-group input[value="8"]:checked ~ label::after, 
 .rpe-group input[value="9"]:checked ~ label::after,
@@ -173,11 +172,9 @@ input[type="date"]:focus, input[type="number"]:focus {
 
 /* 4. ЕФЕКТНИЙ ВІЗУАЛ (Застосовуємо до вибраної мітки) */
 .rpe-group input:checked + label {
-    /* ВИДАЛЯЄМО transform: scale(1.15); */
+    /* ЗАЛИШАЄМО transform: none; та додаємо тінь */
     transform: none; 
-    
-    /* Замінюємо на більш помітну тінь, щоб показати активність */
-    text-shadow: 0 0 10px currentColor, 0 0 20px rgba(255, 255, 255, 0.5); /* Більш яскрава тінь */
+    text-shadow: 0 0 10px currentColor, 0 0 20px rgba(255, 255, 255, 0.5); 
 }
 
 /* При наведенні (Hover) робимо світло-зеленою */
@@ -196,7 +193,7 @@ input[type="date"]:focus, input[type="number"]:focus {
     color: inherit; 
 }
 /* =========================================================================
-   4. СТИЛІ СПІДОМЕТРА ACWR (НОВИЙ МІНІМАЛІСТИЧНИЙ ДИЗАЙН)
+   4. СТИЛІ СПІДОМЕТРА ACWR 
    ========================================================================= */
 
 .speedometer-widget {
@@ -229,7 +226,7 @@ input[type="date"]:focus, input[type="number"]:focus {
     left: 0;
     
     background: transparent;
-    border: 20px solid #333; /* Базовий темний колір для дуги */
+    border: 20px solid #333; 
     
     z-index: 5;
     clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%);
@@ -248,11 +245,11 @@ input[type="date"]:focus, input[type="number"]:focus {
     
     /* КОЛЬОРОВИЙ ГРАДІЄНТ */
     background: conic-gradient(
-        #d9534f 0% 15%,     
-        #f0ad4e 15% 30%,    
-        #5cb85c 30% 65%,    
-        #f0ad4e 65% 85%,    
-        #d9534f 85% 100%    
+        #d9534f 0% 15%, 
+        #f0ad4e 15% 30%, 
+        #5cb85c 30% 65%, 
+        #f0ad4e 65% 85%, 
+        #d9534f 85% 100% 
     );
     
     /* Маскуємо, залишаючи лише товщину кільця */
