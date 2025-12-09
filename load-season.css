@@ -1,5 +1,5 @@
 /* =========================================================================
-    МОБІЛЬНА КНОПКА: ПРИХОВАНА ЗА ЗАМОВЧУВАННЯМ НА ДЕСКТОПІ (ВИПРАВЛЕННЯ)
+    МОБІЛЬНА КНОПКА: ПРИХОВАНА ЗА ЗАМОВЧУВАННЯМ НА ДЕСКТОПІ
     ========================================================================= */
 .menu-toggle {
     display: none; 
@@ -330,7 +330,7 @@ input[type="date"]:focus, input[type="number"]:focus {
 }
 
 /* =========================================================================
-    7. АДАПТИВНІСТЬ (МОБІЛЬНИЙ ВИГЛЯД ТА ВИПРАВЛЕННЯ ГАМБУРГЕРА)
+    7. АДАПТИВНІСТЬ (МОБІЛЬНИЙ ВИГЛЯД ТА ВИПРАВЛЕННЯ ПОЗИЦІЇ КНОПКИ)
     ========================================================================= */
 
 /* БРЕЙКПОЙНТ ДЛЯ КОНСОЛІ (Усунення миготіння) */
@@ -359,9 +359,10 @@ input[type="date"]:focus, input[type="number"]:focus {
         
         display: flex;
         align-items: center;
-        /* !!! ВИПРАВЛЕННЯ: Розділяємо ліву групу та кнопку-гамбургер !!! */
+        /* Розділяємо ліву групу та кнопку-гамбургер */
         justify-content: space-between; 
-        padding: 10px 15px 5px 10px;
+        /* Зменшуємо правий padding */
+        padding: 10px 10px 5px 10px;
     }
 
     /* ОБМЕЖЕННЯ РОЗМІРУ ОСНОВНОГО ЛОГОТИПУ У ШАПЦІ */
@@ -375,7 +376,7 @@ input[type="date"]:focus, input[type="number"]:focus {
         font-size: 1.1em; 
         margin-left: 10px;
         flex-shrink: 1;
-        flex-grow: 1; /* Займає простір */
+        flex-grow: 1; 
     }
     
     header .tagline {
@@ -385,7 +386,6 @@ input[type="date"]:focus, input[type="number"]:focus {
     /* СТИЛЬНА КНОПКА МЕНЮ (БУРГЕР) */
     .menu-toggle {
         display: block !important;
-        /* !!! ВИПРАВЛЕННЯ: ВИДАЛЕНО position: fixed; top; right; !!! */
         z-index: 1010;
         background: #FFD700;
         color: #000;
@@ -395,13 +395,16 @@ input[type="date"]:focus, input[type="number"]:focus {
         cursor: pointer;
         border-radius: 6px; 
         line-height: 1; 
+        
+        /* !!! ВИПРАВЛЕННЯ: Зміщуємо кнопку вліво від краю на 20px !!! */
         margin-left: 10px;
+        margin-right: 20px; 
         flex-shrink: 0;
     }
     
     /* ЗСУВАЄМО ОСНОВНИЙ КОНТЕНТ */
     .content-wrapper {
-        padding-top: 65px; /* Висота фіксованого header */
+        padding-top: 65px; 
         flex-direction: column;
         width: 100%;
     }
