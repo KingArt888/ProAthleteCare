@@ -89,29 +89,36 @@ input[type="date"]:focus, input[type="number"]:focus {
 }
 
 .rpe-group label {
-    cursor: pointer;
-    font-size: 1.5em; 
-    width: 8%; 
-    padding: 5px 0 0 0; /* Зменшено нижній padding для підйому цифр */
-    margin: 0; 
-    text-align: center;
-    transition: color 0.3s, transform 0.2s;
-    color: #456545; /* Колір неактивної іконки - темно-зелений */
-    position: relative; /* Додано для позиціонування цифри */
-    display: block; /* Важливо для flexbox та позиціонування */
+    cursor: pointer;
+    font-size: 1.5em; 
+    
+    /* ЗМІНА 1: Додаємо min-width та фіксовану height */
+    min-width: 30px; /* Гарантуємо, що мінімальна ширина є */
+    height: 40px;    /* Фіксуємо висоту, щоб запобігти вертикальним стрибкам */
+    
+    width: 8%; /* Можна залишити 8% для великих екранів */
+    padding: 5px 0 0 0; 
+    margin: 0; 
+    text-align: center;
+    transition: color 0.3s, transform 0.2s;
+    color: #456545; 
+    position: relative; 
+    display: block; 
 }
 
 /* --- СТИЛЬ ЦИФР ЗВЕРХУ --- */
 .rpe-group label::after {
-    content: attr(data-rpe); /* Беремо вміст з HTML-атрибуту */
-    position: absolute;
-    top: -15px; /* Піднімаємо цифру над блискавкою */
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.6em; /* Дуже маленький розмір */
-    font-weight: bold;
-    color: #888888; /* Сірий колір для неактивних цифр */
-    transition: color 0.3s;
+    content: attr(data-rpe); 
+    position: absolute;
+    top: -15px; 
+    left: 50%;
+    transform: translateX(-50%);
+    /* НОВЕ: Забезпечуємо, що цифра не рухатиметься через z-index */
+    z-index: 5; 
+    font-size: 0.6em; 
+    font-weight: bold;
+    color: #888888; 
+    transition: color 0.3s;
 }
 
 /* Стиль самої іконки */
