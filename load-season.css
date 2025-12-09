@@ -6,7 +6,7 @@
 }
 
 /* =========================================================================
-    1. ОСНОВНА СТРУКТУРА ТА КАРТКИ
+    1. ОСНОВНА СТРУКТУРА ТА КАРТКИ (ВИПРАВЛЕНО ШИРИНУ)
     ========================================================================= */
 
 .dashboard-container {
@@ -24,15 +24,17 @@
     margin-bottom: 20px;
 }
 
+/* !!! ВИПРАВЛЕННЯ: РОБИМО КОЛОНКИ ОДНАКОВИМИ (50% МІНУС ПОЛОВИНА GAP) !!! */
 .form-container {
-    width: 40%; 
+    flex: 1 1 calc(50% - 15px); 
     min-width: 320px; 
 }
 
 .stats-container {
-    flex: 1; 
+    flex: 1 1 calc(50% - 15px); 
     min-width: 350px; 
 }
+/* ========================================================================= */
 
 /* =========================================================================
     2. СТИЛІ ФОРМИ ТА КНОПОК
@@ -338,9 +340,11 @@ input[type="date"]:focus, input[type="number"]:focus {
     .dashboard-container {
         flex-direction: column;
     }
-
+    
+    /* На мобільних пристроях, нехай вони займають 100% */
     .form-container, .stats-container {
         width: 100%;
+        flex: 1 1 100%; /* Займає всю ширину на мобільному */
         min-width: unset;
     }
 }
@@ -359,13 +363,10 @@ input[type="date"]:focus, input[type="number"]:focus {
         
         display: flex;
         align-items: center;
-        /* Розділяємо ліву групу та кнопку-гамбургер */
         justify-content: space-between; 
-        /* Зменшуємо правий padding */
         padding: 10px 10px 5px 10px;
     }
 
-    /* ОБМЕЖЕННЯ РОЗМІРУ ОСНОВНОГО ЛОГОТИПУ У ШАПЦІ */
     header .logo { 
         width: 40px; 
         height: 40px;
@@ -396,7 +397,7 @@ input[type="date"]:focus, input[type="number"]:focus {
         border-radius: 6px; 
         line-height: 1; 
         
-        /* !!! ВИПРАВЛЕННЯ: Зміщуємо кнопку вліво від краю на 20px !!! */
+        /* Зміщуємо кнопку вліво від краю */
         margin-left: 10px;
         margin-right: 20px; 
         flex-shrink: 0;
@@ -444,10 +445,6 @@ input[type="date"]:focus, input[type="number"]:focus {
     }
     .dashboard-container {
         gap: 15px;
-    }
-    .form-container, .stats-container {
-        min-width: unset;
-        width: 100%;
     }
 }
 
