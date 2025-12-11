@@ -2,10 +2,7 @@
 
 /* --- ЗАГАЛЬНІ СТИЛІ --- */
 
-/* 1. ПРИХОВУЄМО КНОПКУ МЕНЮ НА ДЕСКТОПІ ПРИМУСОВО */
-.menu-toggle {
-    display: none !important; 
-}
+
 
 .daily-plan-header {
     display: flex;
