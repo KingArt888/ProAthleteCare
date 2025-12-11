@@ -326,5 +326,4 @@ function setupMenuToggle() {
 // Запуск при завантаженні сторінки
 document.addEventListener('DOMContentLoaded', () => {
     loadAndDisplayDailyPlan();
-    setupMenuToggle(); 
 });
