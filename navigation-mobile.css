@@ -48,7 +48,7 @@
     .menu-toggle {
         display: block !important; 
         position: fixed; 
-        top: 5px; /* ✅ ПІДНЯТИ КНОПКУ */
+        top: 15px; /* ✅ ПІДНЯТИ КНОПКУ */
         right: 15px;
         z-index: 1010; 
         background: #FFD700; 
