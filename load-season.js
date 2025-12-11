@@ -321,5 +321,5 @@ function setupMenuToggle() {
 // Запуск при завантаженні сторінки
 document.addEventListener('DOMContentLoaded', () => {
     initializeLoadSeason();
-    setupMenuToggle(); // Запускаємо функціонал мобільного меню
+   
 });
