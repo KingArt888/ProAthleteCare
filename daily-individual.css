@@ -2,12 +2,7 @@
 
 /* --- ЗАГАЛЬНІ СТИЛІ --- */
 
-.dashboard-container {
-    display: flex;
-    gap: 30px;
-    margin-top: 20px;
-    flex-wrap: wrap;
-}
+
 
 .daily-plan-header {
     display: flex;
