@@ -2,8 +2,6 @@
 
 /* --- ЗАГАЛЬНІ СТИЛІ --- */
 
-
-
 .daily-plan-header {
     display: flex;
     align-items: center;
@@ -108,6 +106,7 @@
     font-weight: bold;
     font-size: 1.1em;
 }
+/* Стилі чекбоксів */
 input[type="checkbox"] {
     appearance: none;
     width: 25px;
@@ -175,22 +174,29 @@ input[type="checkbox"]:checked::after {
 }
 
 
+/* ======================================================= */
+/* МОБІЛЬНА АДАПТАЦІЯ КОНТЕНТУ (Daily Individual) */
+/* ======================================================= */
+@media (max-width: 900px) {
+
     /* Вертикальний макет для вправ */
     .daily-exercise-item {
         flex-direction: column; 
         gap: 15px;
     }
+    
     .media-container {
         width: 100%; 
         min-width: 100%;
         align-items: center; 
-        order: -1; 
+        order: -1; /* Відео/медіа йде над текстом */
     }
     .media-container img, .media-container iframe {
         width: 100%;
         height: auto;
         max-height: 200px;
     }
+    
     .feedback-form input[type="range"] {
         width: 95%; 
     }
