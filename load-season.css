@@ -23,14 +23,15 @@
     margin-bottom: 20px;
 }
 
+/* --- УНІФІКАЦІЯ РОЗМІРІВ КОНТЕЙНЕРІВ --- */
 .form-container {
-    width: 45%; 
+    width: 35%; 
     min-width: 350px;
 }
 
 .stats-container {
-    flex: 1; 
-    min-width: 300px;
+    flex-grow: 1; /* Аналог flex: 1, але більш явний */
+    min-width: 400px; /* Залишаємо для адаптивності */
 }
 
 /* Стилі для елементів форми */
@@ -58,24 +59,24 @@ input[type="date"]:focus, input[type="number"]:focus {
     outline: none;
 }
 
-/* --- ЗОЛОТА КНОПКА ЗБЕРЕГТИ --- */
 .submit-button {
-    background-color: #FFD700; 
-    color: #121212; 
-    padding: 12px 20px;
+    background-color: #FFC72C; /* Як у wellness.css */
+    color: #000000; /* Як у wellness.css */
+    padding: 12px 25px; /* Як у wellness.css */
     border: none;
     border-radius: 5px;
     cursor: pointer;
     font-size: 1.1em;
     font-weight: bold; 
     width: 100%;
-    transition: background-color 0.3s, box-shadow 0.3s;
-    margin-top: 10px;
+    transition: background-color 0.3s;
+    margin-top: 30px; /* Трохи більший відступ як у wellness.css */
+    /* Видалено: box-shadow 0.3s */
 }
 
 .submit-button:hover {
-    background-color: #E6B800; 
-    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); 
+    background-color: #E6B800; /* Як у wellness.css */
+    /* Видалено: box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); */
 }
 
 /* =========================================================================
