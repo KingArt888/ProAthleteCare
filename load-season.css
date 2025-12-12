@@ -2,21 +2,29 @@
    PROATLETCARE: LOAD-SEASON.CSS - УНІФІКОВАНИЙ СТИЛЬ (ЧОРНО-ЗОЛОТИЙ)
    ========================================================================= */
 
+/* ГЛОБАЛЬНЕ ВИПРАВЛЕННЯ: box-sizing, щоб padding не викликав переповнення */
+* {
+    box-sizing: border-box; 
+}
+
 .dashboard-container {
     display: flex;
     gap: 30px;
     flex-wrap: wrap; 
+    /* Додаємо max-width, щоб запобігти виходу за межі батьківського контейнера */
+    max-width: 100%;
 }
 
-/* --- 1. ОБ'ЄДНАНИЙ СТИЛЬ КАРТОК (Уніфіковано з wellness.css) --- */
+/* --- 1. ОБ'ЄДНАНИЙ СТИЛЬ КАРТОК --- */
 .form-card, .stats-card, .chart-card {
-    /* Стиль уніфікованої картки (з wellness.css) */
     background-color: #0d0d0d;
     border: 1px solid #1a1a1a;
     border-radius: 10px;
     padding: 25px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); 
     margin-bottom: 20px;
+    /* Гарантуємо, що картки не перевищують 100% ширини, якщо вони єдині в рядку */
+    max-width: 100%; 
 }
 
 /* Стиль заголовків h3 та h4 (Золотий колір) */
@@ -24,7 +32,7 @@
 .form-card h4, .stats-card h4, .chart-card h4 {
     color: #FFC72C; 
     margin-top: 0;
-    border-bottom: 1px solid #333333; /* Уніфікований роздільник */
+    border-bottom: 1px solid #333333; 
     padding-bottom: 10px;
     margin-bottom: 20px;
 }
@@ -68,7 +76,7 @@ input[type="date"]:focus, input[type="number"]:focus {
     outline: none;
 }
 
-/* --- 4. ЗОЛОТА КНОПКА ЗБЕРЕГТИ (Уніфіковано з wellness.css) --- */
+/* --- 4. ЗОЛОТА КНОПКА ЗБЕРЕГТИ --- */
 .submit-button {
     background-color: #FFC72C; 
     color: #000000; 
@@ -90,7 +98,7 @@ input[type="date"]:focus, input[type="number"]:focus {
 }
 
 /* =========================================================================
-   5. СТИЛІ RPE GROUP (1-10 - ВОГНИКИ З ЦИФРАМИ) - ВИПРАВЛЕНО ШИРИНУ
+   5. СТИЛІ RPE GROUP 
    ========================================================================= */
 
 .rpe-group {
@@ -140,7 +148,7 @@ input[type="date"]:focus, input[type="number"]:focus {
     display: block;
 }
 
-/* --- КОЛЬОРОВА ЛОГІКА RPE (АКТИВНИЙ СТАН) --- */
+/* --- КОЛЬОРОВА ЛОГІКА RPE --- */
 .rpe-group input[value="1"]:checked ~ label,
 .rpe-group input[value="2"]:checked ~ label,
 .rpe-group input[value="3"]:checked ~ label,
@@ -196,7 +204,7 @@ input[type="date"]:focus, input[type="number"]:focus {
 }
 
 /* =========================================================================
-   6. СТИЛІ СПІДОМЕТРА ACWR (Уніфіковано)
+   6. СТИЛІ СПІДОМЕТРА ACWR 
    ========================================================================= */
 
 .speedometer-widget {
@@ -341,7 +349,7 @@ input[type="date"]:focus, input[type="number"]:focus {
 }
 
 /* =========================================================================
-   7. АДАПТИВНІСТЬ
+   7. АДАПТИВНІСТЬ (ЗМЕНШУЄМО MIN-WIDTH ДЛЯ СТАТИСТИКИ НА МОБІЛЬНИХ)
    ========================================================================= */
 
 @media (max-width: 1000px) {
@@ -351,12 +359,22 @@ input[type="date"]:focus, input[type="number"]:focus {
 
     .form-container, .stats-container, .chart-container { 
         width: 100%;
-        min-width: unset;
+        min-width: unset; /* Знімаємо мінімальну ширину */
+    }
+}
+
+/* Якщо .stats-container та .chart-container розташовані поруч, і ширина менше 850px, вони можуть викликати горизонтальний скрол. */
+@media (max-width: 850px) {
+     .stats-container, .chart-container { 
+        min-width: 300px; /* Дозволяємо їм бути вужчими, якщо вони поруч */
     }
 }
 
 @media (max-width: 600px) {
     .main-content {
         padding: 15px;
+    }
+     .stats-container, .chart-container { 
+        min-width: 100%; /* На дуже маленьких екранах змушуємо їх переноситися */
     }
 }
