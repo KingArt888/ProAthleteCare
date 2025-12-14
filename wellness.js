@@ -15,6 +15,31 @@ function getTodayDateString() {
 
 
 // ==============================================
+// --- ФУНКЦІЇ ДЛЯ ЗБЕРЕЖЕННЯ ІСТОРІЇ WELLNESS ---
+// ==============================================
+
+/**
+ * Завантажує всю історію оцінок Wellness з LocalStorage.
+ * @returns {Object<string, Object>} Об'єкт, де ключ — дата (YYYY-MM-DD), а значення — оцінки.
+ */
+function loadWellnessHistory() {
+    const data = localStorage.getItem('wellnessHistory');
+    return data ? JSON.parse(data) : {};
+}
+
+/**
+ * Зберігає щоденні оцінки у LocalStorage.
+ * @param {string} date - Поточна дата (YYYY-MM-DD).
+ * @param {Object} scores - Об'єкт з оцінками (напр., {sleep: 7, soreness: 4, ...}).
+ */
+function saveWellnessHistory(date, scores) {
+    const history = loadWellnessHistory();
+    history[date] = scores;
+    localStorage.setItem('wellnessHistory', JSON.stringify(history));
+}
+
+
+// ==============================================
 // 1. КОД ДЛЯ ГРАФІКІВ (ТІЛЬКИ ДЛЯ wellness.html)
 // ==============================================
 function initCharts() {
@@ -33,33 +58,72 @@ function initCharts() {
     const LIME_AREA = 'rgba(50, 205, 50, 0.4)';
 
     const GREY_GRID = '#CCCCCC';
-
-    // Шаблон даних для міні-графіків (За замовчуванням Золотий)
-    const dataTemplate = {
-        labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'],
-        datasets: [{
-            label: 'Поточний тиждень',
-            data: [7, 8, 7, 6, 8, 9, 7],
-            borderColor: GOLD_COLOR,
-            backgroundColor: GOLD_AREA,
-            tension: 0.3,
-            fill: true,
-            pointRadius: 3, 
-            pointHoverRadius: 5
-        }]
+    const WELLNESS_FIELDS = ['sleep', 'soreness', 'mood', 'water', 'stress', 'ready'];
+    const FIELD_LABELS = {
+        sleep: 'Сон', soreness: 'Біль', mood: 'Настрій', 
+        water: 'Гідратація', stress: 'Стрес', ready: 'Готовність'
+    };
+    
+    const colorsMap = {
+        sleep: { color: GOLD_COLOR, area: GOLD_AREA },
+        soreness: { color: RED_COLOR, area: RED_AREA },
+        mood: { color: PURPLE_COLOR, area: PURPLE_AREA },
+        water: { color: BLUE_COLOR, area: BLUE_AREA },
+        stress: { color: ORANGE_COLOR, area: ORANGE_AREA },
+        ready: { color: LIME_COLOR, area: LIME_AREA },
     };
 
+
+    // ----------------------------------------------------
+    // --- ДИНАМІЧНЕ ЗАВАНТАЖЕННЯ ТА ПІДГОТОВКА ДАНИХ ---
+    // ----------------------------------------------------
+    const history = loadWellnessHistory();
+    // Сортуємо дати, щоб графік завжди був хронологічним
+    const sortedDates = Object.keys(history).sort(); 
+
+    // Якщо даних немає, виходимо і показуємо заглушку
+    if (sortedDates.length === 0) {
+        const chartArea = document.querySelector('.chart-area');
+        if (chartArea) {
+            chartArea.innerHTML = '<p class="placeholder-text">Жодного запису ще не збережено. Заповніть форму, щоб почати бачити графіки!</p>';
+        }
+        // Очищаємо всі міні-графіки, якщо вони існують
+        WELLNESS_FIELDS.forEach(field => {
+            if (window[`chart_${field}`]) window[`chart_${field}`].destroy();
+        });
+        if (window.wellnessChart) window.wellnessChart.destroy();
+        return; 
+    }
+
+    // Створюємо загальні масиви міток та точок
+    const chartLabels = sortedDates.map(date => {
+        // Форматуємо дату для осі X: MM/DD
+        const parts = date.split('-');
+        return `${parts[1]}/${parts[2]}`;
+    });
+    
+    // Створюємо масив даних для кожного показника
+    const chartData = {};
+    WELLNESS_FIELDS.forEach(field => {
+        chartData[field] = sortedDates.map(date => history[date][field]);
+    });
+    
+    // ----------------------------------------------------
+    // --- КОНФІГУРАЦІЇ ГРАФІКІВ ---
+    // ----------------------------------------------------
+    
     // Базова конфігурація для міні-графіків
     const config = {
         type: 'line',
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
+             responsive: true,
+             maintainAspectRatio: false,
+             animation: false, // Вимикаємо загальну анімацію
+             scales: {
                 y: {
                     min: 1,
                     max: 10,
-                    // Залишаємо відображення шкал та сітки для осі Y у базовій конфігурації
+                    title: { display: false },
                     ticks: { stepSize: 1, color: 'white' }, 
                     grid: { color: 'rgba(255, 255, 255, 0.1)' } 
                 },
@@ -67,7 +131,7 @@ function initCharts() {
                     grid: { color: 'rgba(255, 255, 255, 0.1)' },
                     ticks: { color: 'rgba(255, 255, 255, 0.5)' }
                 }
-            },
+             },
             plugins: {
                 legend: { display: false },
                 title: { display: false },
@@ -77,46 +141,67 @@ function initCharts() {
     };
 
     // Створення маленьких графіків з індивідуальними кольорами
-    const charts = [
-        { id: 'chart-sleep', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [7, 8, 7, 6, 8, 9, 7], label: 'Сон' }] } },
-        { id: 'chart-soreness', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [4, 5, 3, 6, 5, 2, 4], label: 'Біль', borderColor: RED_COLOR, backgroundColor: RED_AREA }] } },
-        { id: 'chart-mood', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [9, 8, 9, 7, 8, 10, 9], label: 'Настрій', borderColor: PURPLE_COLOR, backgroundColor: PURPLE_AREA }] } },
-        { id: 'chart-water', data: {
-            ...dataTemplate,
-            datasets: [{
-                ...dataTemplate.datasets[0],
-                data: [8, 9, 7, 8, 9, 9, 8],
-                label: 'Гідратація',
-                borderColor: BLUE_COLOR,
-                backgroundColor: BLUE_AREA
-            }]
-        } },
-        { id: 'chart-stress', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [3, 4, 5, 5, 4, 2, 3], label: 'Стрес', borderColor: ORANGE_COLOR, backgroundColor: ORANGE_AREA }] } },
-        { id: 'chart-ready', data: { ...dataTemplate, datasets: [{ ...dataTemplate.datasets[0], data: [9, 8, 8, 7, 9, 10, 9], label: 'Готовність', borderColor: LIME_COLOR, backgroundColor: LIME_AREA }] } },
-    ];
-
-    charts.forEach(chart => {
-        const ctx = document.getElementById(chart.id);
-        const miniConfig = JSON.parse(JSON.stringify(config)); 
+    WELLNESS_FIELDS.forEach(field => {
+        const ctx = document.getElementById(`chart-${field}`);
         
-        // Виправлення: Вимикаємо лише підписи днів тижня (ось X), 
-        // але залишаємо шкалу 1-10 (ось Y)
-        miniConfig.options.scales.x.ticks.display = false; 
-        miniConfig.options.scales.x.grid.display = false; 
+        // Видаляємо старий графік, якщо існує, щоб уникнути конфліктів
+        if (window[`chart_${field}`]) {
+            window[`chart_${field}`].destroy();
+        }
+        
+        if (ctx) {
+            const chartDataConfig = {
+                labels: chartLabels,
+                datasets: [{
+                    label: FIELD_LABELS[field],
+                    data: chartData[field],
+                    borderColor: colorsMap[field].color,
+                    backgroundColor: colorsMap[field].area,
+                    tension: 0.3,
+                    fill: true,
+                    pointRadius: 3, 
+                    pointHoverRadius: 5,
+                    // Ефект "Заповнення"
+                    transition: {
+                         show: {
+                             animations: {
+                                 x: { from: 0 },
+                                 y: { from: 0 }
+                             }
+                         }
+                    }
+                }]
+            };
 
-        if (ctx) new Chart(ctx, { ...miniConfig, data: chart.data });
+            const miniConfig = JSON.parse(JSON.stringify(config));
+            // Приховуємо підписи осі X для компактності
+            miniConfig.options.scales.x.ticks.display = false; 
+            miniConfig.options.scales.x.grid.display = false; 
+            miniConfig.options.scales.y.ticks.display = false; // Приховуємо числа 1-10
+            miniConfig.options.scales.y.grid.display = false; // Приховуємо сітку Y
+
+            window[`chart_${field}`] = new Chart(ctx, { ...miniConfig, data: chartDataConfig });
+        }
     });
 
     // Створення великого зведеного графіку (Radar Chart)
     const mainCtx = document.getElementById('wellnessChart');
     if (mainCtx) {
-        new Chart(mainCtx, {
+        // Беремо останній запис для відображення поточного стану
+        const latestData = history[sortedDates[sortedDates.length - 1]];
+        const radarData = WELLNESS_FIELDS.map(field => latestData[field]);
+        
+        if (window.wellnessChart) {
+            window.wellnessChart.destroy();
+        }
+
+        window.wellnessChart = new Chart(mainCtx, {
             type: 'radar',
             data: {
-                labels: ['Сон', 'Біль', 'Настрій', 'Гідратація', 'Стрес', 'Готовність'],
+                labels: Object.values(FIELD_LABELS),
                 datasets: [{
-                    label: 'Поточний стан (середній бал)',
-                    data: [7.5, 4.5, 8.5, 8.3, 3.8, 8.8],
+                    label: `Поточний стан (оцінки за ${chartLabels[chartLabels.length - 1]})`,
+                    data: radarData,
                     backgroundColor: GOLD_AREA,
                     borderColor: 'rgb(51, 51, 51)',
                     pointBackgroundColor: 'rgb(51, 51, 51)',
@@ -133,24 +218,10 @@ function initCharts() {
                 },
                 scales: {
                     r: {
-                        grid: {
-                            color: GREY_GRID,
-                        },
-                        angleLines: {
-                            display: true,
-                            color: GREY_GRID
-                        },
-                        pointLabels: {
-                            color: 'white',
-                            font: { size: 12 }
-                        },
-                        ticks: {
-                            color: 'white',
-                            backdropColor: 'rgba(0, 0, 0, 0)',
-                            stepSize: 1,
-                            min: 0,
-                            max: 10,
-                        },
+                        grid: { color: GREY_GRID },
+                        angleLines: { display: true, color: GREY_GRID },
+                        pointLabels: { color: 'white', font: { size: 12 } },
+                        ticks: { color: 'white', backdropColor: 'rgba(0, 0, 0, 0)', stepSize: 1, min: 0, max: 10 },
                         suggestedMin: 1,
                         suggestedMax: 10
                     }
@@ -159,9 +230,7 @@ function initCharts() {
                     legend: {
                         display: true,
                         position: 'top',
-                        labels: {
-                            color: 'white'
-                        }
+                        labels: { color: 'white' }
                     },
                     title: { display: false }
                 }
@@ -169,6 +238,7 @@ function initCharts() {
         });
     }
 }
+
 
 // ==============================================
 // Функція перевірки та застосування обмеження "раз на день"
@@ -179,6 +249,7 @@ function checkDailyRestriction() {
     const lastDate = localStorage.getItem('lastWellnessSubmissionDate');
     const today = getTodayDateString(); 
 
+    // Якщо ми вже відправляли дані сьогодні
     if (form && lastDate === today) {
         const inputs = form.querySelectorAll('input, button');
         inputs.forEach(input => {
@@ -204,10 +275,16 @@ function checkDailyRestriction() {
 }
 
 
+// ==============================================
+// 2. АКТИВАЦІЯ ФУНКЦІОНАЛУ Wellness (Тільки на сторінці wellness.html)
+// ==============================================
+document.addEventListener('DOMContentLoaded', function() {
+    // currentPath використовується для перевірки, чи ми на правильній сторінці
+    const currentPath = window.location.pathname.split('/').pop().split('?')[0]; 
 
-
-    // Ініціалізація графіків та обмежень, якщо ми на сторінці Wellness Control
     if (currentPath === 'wellness.html') {
+        
+        // Ініціалізуємо графіки з наявними даними
         initCharts();
         
         // Перевірка обмеження при завантаженні сторінки
@@ -218,6 +295,7 @@ function checkDailyRestriction() {
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
+                // Перевірка, чи форма вже відправлена сьогодні
                 if (checkDailyRestriction()) {
                     return;
                 }
@@ -240,15 +318,18 @@ function checkDailyRestriction() {
                 
                 const submissionData = {};
                 form.querySelectorAll('input[type="radio"]:checked').forEach(input => {
-                    submissionData[input.name] = input.value;
+                    submissionData[input.name] = parseInt(input.value, 10);
                 });
-                console.log("Дані для відправки:", submissionData);
-
-
-                // 1. Збереження дати відправки в localStorage
-                localStorage.setItem('lastWellnessSubmissionDate', getTodayDateString());
                 
-                // 2. Застосування обмеження (вимикаємо форму)
+                const todayDate = getTodayDateString();
+                
+                // 1. Зберігаємо дані в історію
+                saveWellnessHistory(todayDate, submissionData);
+                // 2. Зберігаємо дату останньої відправки
+                localStorage.setItem('lastWellnessSubmissionDate', todayDate);
+                
+                // 3. Оновлюємо графіки та застосовуємо обмеження
+                initCharts(); 
                 checkDailyRestriction();
                 
                 alert("Ваші дані Wellness успішно записані!");
