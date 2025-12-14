@@ -133,10 +133,8 @@
 .rating-group label::after {
     display: block;
     position: absolute;
-    /* ЗМІНА: Зменшення розміру та відступу */
-    top: -10px;             /* Ближче до іконки */
-    font-size: 0.6em;       /* Зменшений шрифт */
-    /* ------------------------------------ */
+    top: -10px;             
+    font-size: 0.6em;       
     left: 50%;
     transform: translateX(-50%);
     color: #555; 
@@ -179,6 +177,11 @@
     content: '●'; 
     font-size: 1.3em; 
 }
+/* ФІКС ВІДСТУПУ ДЛЯ НОМЕРА М'ЯЧИКІВ */
+.pain-group label::after { 
+    top: -12px; 
+}
+/* ---------------------------------- */
 .pain-group input:checked ~ label::before,
 .pain-group label:hover::before,
 .pain-group label:hover ~ label::before {
