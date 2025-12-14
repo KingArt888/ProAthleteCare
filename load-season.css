@@ -10,7 +10,10 @@
 }
 .sidebar a.active img {
     filter: none; 
-}
+/* =========================================================================
+   PROATLETCARE: LOAD-SEASON.CSS - ФІНАЛЬНА ВЕРСІЯ ДВОХ КОЛОНОК
+   ========================================================================= */
+
 * {
     box-sizing: border-box; 
 }
@@ -22,8 +25,6 @@
     flex-wrap: wrap; 
     max-width: 100%;
     align-items: stretch; /* Щоб ліва та права колонка були однакової висоти */
-    /* Центрування для мобільних пристроїв, якщо елементи не займають 100% */
-    justify-content: center; 
 }
 
 /* --- 1. СТИЛІ КАРТОК --- */
@@ -45,152 +46,265 @@
     margin-bottom: 20px;
 }
 
-/* --- 2. СТИЛІ КОЛОНОК --- */
-.left-column {
-    flex: 0 0 350px; /* Фіксована ширина лівої колонки на десктопі */
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
+
+/* --- 2. РОЗМІРИ КОЛОНОК --- */
+
+/* 2.1. ЛІВА КОЛОНКА: ФОРМА */
+.form-container {
+    width: 35%; /* Форма займає ~35% ширини */
+    min-width: 350px;
 }
 
-.right-column {
-    flex: 1 1 0%; /* Права колонка займає решту простору */
+/* 2.2. ПРАВА КОЛОНКА: СТАТИСТИКА + ГРАФІКИ */
+.info-column {
+    flex: 1; /* Займає всю решту ширини */
     display: flex;
-    flex-direction: column;
-    gap: 30px;
-    min-width: 300px;
+    flex-direction: column; /* КРИТИЧНО: Вирівнює вміст у стовпець */
+    gap: 30px; /* Відступи між спідометром і графіками */
+    min-width: 450px;
 }
 
-/* ======================================================= */
-/* 3. СТИЛІ ДЛЯ ФОРМИ ВВЕДЕННЯ ДАНИХ (LEFT COLUMN) */
-/* ======================================================= */
-.form-group label {
+/* 2.3. СТИЛІ ЕЛЕМЕНТІВ У ПРАВІЙ КОЛОНЦІ */
+.stats-container, .chart-card {
+    width: 100%; /* Займе 100% ширини правої колонки */
+    margin-bottom: 0; 
+}
+
+.chart-card {
+    /* КРИТИЧНО: Фіксуємо висоту для стабільності Chart.js на десктопі */
+    height: 400px; 
+}
+
+/* Гарантуємо, що canvas займає повну висоту картки */
+.chart-card canvas {
+    max-height: 100%; 
+    height: 100%;
+}
+
+
+/* --- 3. СТИЛІ ЕЛЕМЕНТІВ ФОРМИ --- */
+label {
     display: block;
-    margin-bottom: 5px;
-    color: #CCCCCC;
-    font-size: 0.9em;
+    margin-bottom: 8px;
+    color: #AAAAAA;
+    font-weight: 500;
 }
 
-input[type="date"],
-input[type="number"] {
+input[type="date"], input[type="number"] {
     width: 100%;
-    padding: 8px;
-    margin-bottom: 15px;
-    background-color: #1a1a1a;
+    padding: 10px;
+    margin-bottom: 20px;
+    background-color: #1a1a1a; 
     border: 1px solid #333;
     color: #CCCCCC;
     border-radius: 5px;
-    box-sizing: border-box; 
+    box-sizing: border-box;
+    transition: border-color 0.3s;
 }
 
-.gold-button {
-    background-color: #FFC72C;
-    color: #000000;
+input[type="date"]:focus, input[type="number"]:focus {
+    border-color: #FFD700; 
+    outline: none;
+}
+
+.submit-button {
+    background-color: #FFC72C; 
+    color: #000000; 
+    padding: 12px 25px; 
     border: none;
-    padding: 12px 25px;
     border-radius: 5px;
-    margin-top: 15px;
     cursor: pointer;
     font-size: 1.1em;
-    font-weight: bold;
-    transition: background-color 0.3s;
-    width: 100%; /* Кнопка на всю ширину форми */
-}
-.gold-button:hover {
-    background-color: #E6B800;
-}
-
-/* ======================================================= */
-/* 4. СТИЛІ ДЛЯ ГРАФІКІВ (RIGHT COLUMN) */
-/* ======================================================= */
-.chart-card {
-    min-height: 250px; 
-}
-
-/* --- СТИЛІ ДЛЯ GAUGE (Стрілочний індикатор ACWR) --- */
-.gauge-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 150px; /* Висота контейнера для візуалізації */
-    position: relative;
-    overflow: hidden; 
-    margin-top: 15px;
-    margin-bottom: 25px;
-}
-
-.gauge-body {
-    position: relative;
-    width: 250px; 
-    height: 125px; 
-    border-radius: 125px 125px 0 0;
-    background: transparent;
-    overflow: hidden;
-}
-
-/* Сектори Gauge (для кольору) */
-.gauge-sector {
-    position: absolute;
+    font-weight: bold; 
     width: 100%;
-    height: 100%;
-    transform-origin: bottom center;
+    transition: background-color 0.3s;
+    margin-top: 30px; 
+    box-shadow: none;
 }
 
-.sector-danger {
-    background-color: #DA3E52; /* Червоний */
-    clip-path: polygon(50% 100%, 0% 100%, 50% 0%); 
-    transform: rotate(-90deg);
+.submit-button:hover {
+    background-color: #E6B800; 
+    box-shadow: none;
 }
 
-.sector-warning-low {
-    background-color: #FFC72C; /* Жовтий */
-    clip-path: polygon(50% 100%, 0% 100%, 50% 0%);
-    transform: rotate(-50deg); 
+/* --- 4. СТИЛІ RPE GROUP (Без змін) --- */
+
+.rpe-group {
+    display: flex;
+    flex-direction: row-reverse; 
+    justify-content: flex-end; 
+    align-items: flex-start; 
+    margin-bottom: 20px;
+    background-color: #1a1a1a;
+    padding: 5px;
+    border-radius: 5px;
+    flex-wrap: wrap; 
 }
 
-.sector-safe {
-    background-color: #5cb85c; /* Зелений */
-    clip-path: polygon(50% 100%, 0% 100%, 50% 0%);
-    transform: rotate(-10deg);
+.rpe-group input[type="radio"] {
+    display: none;
 }
 
-.sector-warning-high {
-    background-color: #FFC72C; /* Жовтий */
-    clip-path: polygon(50% 100%, 0% 100%, 50% 0%);
-    transform: rotate(30deg); 
+.rpe-group label {
+    cursor: pointer;
+    font-size: 1.5em; 
+    width: 10%; 
+    padding: 5px 0 0 0; 
+    margin: 0; 
+    text-align: center;
+    transition: color 0.3s, transform 0.2s;
+    color: #456545; 
+    position: relative; 
+    display: block; 
 }
 
-.sector-danger-high {
-    background-color: #DA3E52; /* Червоний */
-    clip-path: polygon(50% 100%, 0% 100%, 50% 0%);
-    transform: rotate(70deg);
+.rpe-group label::after {
+    content: attr(data-rpe); 
+    position: absolute;
+    top: -15px; 
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.6em; 
+    font-weight: bold;
+    color: #888888; 
+    transition: color 0.3s;
+}
+
+.rpe-group label::before {
+    content: '⚡'; 
+    padding: 0 1px;
+    display: block;
+}
+
+/* --- КОЛЬОРОВА ЛОГІКА RPE --- */
+.rpe-group input[value="1"]:checked ~ label,
+.rpe-group input[value="2"]:checked ~ label,
+.rpe-group input[value="3"]:checked ~ label,
+.rpe-group input[value="4"]:checked ~ label,
+.rpe-group input[value="5"]:checked ~ label {
+    color: #5cb85c; 
+}
+.rpe-group input[value="1"]:checked ~ label::after,
+.rpe-group input[value="2"]:checked ~ label::after,
+.rpe-group input[value="3"]:checked ~ label::after,
+.rpe-group input[value="4"]:checked ~ label::after,
+.rpe-group input[value="5"]:checked ~ label::after {
+    color: #5cb85c; 
+}
+
+.rpe-group input[value="6"]:checked ~ label,
+.rpe-group input[value="7"]:checked ~ label,
+.rpe-group input[value="8"]:checked ~ label {
+    color: #f0ad4e; 
+}
+.rpe-group input[value="6"]:checked ~ label::after,
+.rpe-group input[value="7"]:checked ~ label::after,
+.rpe-group input[value="8"]:checked ~ label::after {
+    color: #f0ad4e; 
+}
+
+.rpe-group input[value="9"]:checked ~ label,
+.rpe-group input[value="10"]:checked ~ label {
+    color: #d9534f; 
+}
+.rpe-group input[value="9"]:checked ~ label::after,
+.rpe-group input[value="10"]:checked ~ label::after {
+    color: #d9534f; 
+}
+
+.rpe-group input:checked + label {
+    transform: scale(1.15); 
+    text-shadow: 0 0 5px currentColor; 
+}
+
+.rpe-group label:hover {
+    color: #5cb85c; 
+}
+.rpe-group label:hover::after {
+    color: #5cb85c;
+}
+
+.rpe-group input:checked ~ label:hover {
+    color: inherit; 
+}
+.rpe-group input:checked ~ label:hover::after {
+    color: inherit; 
 }
 
 
-/* Коло, яке перекриває сектори, щоб створити ефект обода */
-.gauge-overlay {
+/* --- 5. СТИЛІ СПІДОМЕТРА ACWR (Без змін) --- */
+
+.speedometer-widget {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 30px;
+    padding: 0; 
+    border: none; 
+    border-radius: 10px;
+    background-color: transparent; 
+    box-shadow: none; 
+}
+
+.gauge-display {
+    position: relative;
+    width: 280px; 
+    height: 140px; 
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.gauge-arc {
+    position: absolute;
+    width: 280px; 
+    height: 280px;
+    border-radius: 50%;
+    top: 0;
+    left: 0;
+    background: transparent;
+    border: 20px solid #333; 
+    z-index: 5;
+    clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%);
+    transform: rotate(270deg); 
+}
+
+.gauge-arc::before {
+    content: '';
+    position: absolute;
+    top: -20px; 
+    left: -20px;
+    width: 280px; 
+    height: 280px;
+    border-radius: 50%;
+    
+    background: conic-gradient(
+        #d9534f 0% 15%,     
+        #f0ad4e 15% 30%,    
+        #5cb85c 30% 65%,    
+        #f0ad4e 65% 85%,    
+        #d9534f 85% 100%    
+    );
+    
+    mask: radial-gradient(transparent 120px, black 120px, black 140px, transparent 140px);
+    -webkit-mask: radial-gradient(transparent 120px, black 120px, black 140px, transparent 140px);
+    
+    z-index: 6;
+    clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%);
+    transform: rotate(0deg); 
+}
+
+.gauge-needle-pivot {
     position: absolute;
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 230px; 
-    height: 115px; 
-    border-radius: 115px 115px 0 0;
-    background-color: #0d0d0d;
-    border: 3px solid #1a1a1a; 
-}
-
-/* Вказівник (стрілка) */
-.gauge-needle-pivot {
-    position: absolute;
-    bottom: 0; 
-    left: 50%;
-    width: 20px; 
-    height: 20px; 
-    border-radius: 50%;
+    width: 18px; 
+    height: 18px;
     background-color: #FFD700; 
-    transform: translateX(-50%);
+    border-radius: 50%;
     z-index: 10;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+    border: 3px solid #1a1a1a; 
 }
 
 .gauge-needle {
@@ -237,38 +351,76 @@ input[type="number"] {
 }
 
 .status-safe {
-    color: #5cb85c;
+    color: #5cb85c; 
     font-weight: bold;
 }
+
 .status-warning {
-    color: #FFC72C;
+    color: #f0ad4e; 
     font-weight: bold;
 }
+
 .status-danger {
-    color: #DA3E52;
+    color: #d9534f; 
     font-weight: bold;
 }
 
-/* ======================================================= */
-/* 5. АДАПТИВНІСТЬ ДЛЯ МОБІЛЬНИХ (ДО 900PX) - НОВЕ */
-/* ======================================================= */
-@media (max-width: 900px) {
+/* --- 6. АДАПТИВНІСТЬ --- */
+
+@media (max-width: 1200px) { /* ЗМІНА: Порогове значення збільшено до 1200px для десктопу */
     
-    /* Ліва колонка має стати повною шириною на мобільному */
-    .left-column {
-        flex: 1 1 100%; /* Тепер займає всю доступну ширину */
-        min-width: 0; 
-        max-width: 100%;
-    }
-    
-    /* Права колонка (щоб гарантовано зайняти всю ширину) */
-    .right-column {
-        min-width: 100%;
-        max-width: 100%;
+    /* На невеликих екранах все розташовуємо у стовпець */
+    .dashboard-container, .info-column {
+        flex-direction: column; 
+        gap: 20px;
     }
 
-    /* Гарантуємо, що всі картки теж займають повну ширину */
-    .form-card, .stats-card, .chart-card {
-        max-width: 100%;
+    /* Всі основні контейнери займають 100% ширини */
+    .form-container, .info-column, .stats-card, .chart-card { /* ДОДАНО: .stats-card для повноти */
+        width: 100%;
+        min-width: unset; 
+        max-width: 100%; 
     }
+    
+    /* ФІКСАЦІЯ ГРАФІКІВ: Знімаємо фіксовану висоту для адаптації */
+    .chart-card {
+        height: auto; /* Знімаємо жорстку висоту */
+        min-height: 300px; /* Забезпечуємо мінімальну висоту */
+    }
+}
+
+@media (max-width: 600px) {
+    .main-content {
+        padding: 15px;
+    }
+
+    /* Додаткове стиснення спідометра на малих екранах */
+    .gauge-display {
+        width: 250px; 
+        height: 125px;
+        margin-bottom: 10px;
+    }
+    .gauge-arc {
+        width: 250px;
+        height: 250px;
+    }
+    .gauge-arc::before {
+        width: 250px;
+        height: 250px;
+        /* Регулюємо маску для зменшеного розміру */
+        mask: radial-gradient(transparent 105px, black 105px, black 125px, transparent 125px);
+        -webkit-mask: radial-gradient(transparent 105px, black 105px, black 125px, transparent 125px);
+    }
+    .gauge-needle-pivot {
+        width: 16px; 
+        height: 16px;
+    }
+    .gauge-needle {
+        height: 125px;
+        bottom: 8px;
+    }
+    #acwr-value {
+        font-size: 2.5em; 
+    }
+    
 }
