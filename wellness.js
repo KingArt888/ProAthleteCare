@@ -1,331 +1,343 @@
-// ... (Функції getTodayDateString, loadWellnessHistory, saveWellnessHistory, КОНСТАНТИ - без змін)
+// --- КОНСТАНТИ ---
+const WELLNESS_KEY = 'proatletcare_wellness_data';
+const LAST_SUBMISSION_KEY = 'proatletcare_last_submission_date';
+const FORM_ID = 'wellness-form';
+const SUBMIT_BUTTON_SELECTOR = '.gold-button';
 
-// ==============================================
-// 2. ФУНКЦІЯ ДЛЯ ОНОВЛЕННЯ СТАТИСТИКИ (ПІД ГРАФІКАМИ)
-// ==============================================
+// Назви показників та їх кольори
+const METRICS = [
+    { id: 'sleep', label: 'Якість сну', color: '#FFC72C', max: 10, isPositive: true },
+    { id: 'soreness', label: "Біль / Втома", color: '#DA3E52', max: 10, isPositive: false }, // Обернена шкала (чим менше, тим краще)
+    { id: 'mood', label: 'Настрій / Енергія', color: '#4CAF50', max: 10, isPositive: true },
+    { id: 'water', label: 'Гідратація', color: '#2196F3', max: 10, isPositive: true },
+    { id: 'stress', label: 'Псих. Стрес', color: '#F44336', max: 10, isPositive: false }, // Обернена шкала
+    { id: 'ready', label: 'Готовність', color: '#9C27B0', max: 10, isPositive: true }
+];
 
-/**
- * Відображає останній бал під кожним міні-графіком.
- */
-function updateWellnessStats(latestData) {
-    // ... (без змін)
-    WELLNESS_FIELDS.forEach(field => {
-        const statElement = document.getElementById(`stat-${field}`);
-        if (statElement) {
-            const score = latestData[field] !== undefined ? latestData[field] : 0; 
-            statElement.textContent = `Оцінка: ${score} / 10`;
-            statElement.style.color = score >= 7 ? LIME_COLOR : (score >= 4 ? ORANGE_COLOR : RED_COLOR);
+// --- ДОПОМІЖНІ ФУНКЦІЇ ---
+
+// Отримує дані з LocalStorage
+function getWellnessData() {
+    const data = localStorage.getItem(WELLNESS_KEY);
+    return data ? JSON.parse(data) : [];
+}
+
+// Зберігає нові дані
+function saveWellnessData(data) {
+    localStorage.setItem(WELLNESS_KEY, JSON.stringify(data));
+}
+
+// Форматує дату для відображення
+function formatDate(timestamp) {
+    return new Date(timestamp).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' });
+}
+
+// Перевіряє, чи було вже подано форму сьогодні
+function hasSubmittedToday() {
+    const lastSubmission = localStorage.getItem(LAST_SUBMISSION_KEY);
+    if (!lastSubmission) return false;
+
+    const today = new Date().toDateString();
+    const lastDate = new Date(lastSubmission).toDateString();
+    
+    return today === lastDate;
+}
+
+// --- ІНІЦІАЛІЗАЦІЯ ГРАФІКІВ ---
+
+let mainChart;
+let smallCharts = {};
+
+// Створює налаштування для Chart.js (однакові для всіх графіків)
+function createChartConfig(chartData, metric, type = 'line') {
+    return {
+        type: type,
+        data: {
+            labels: chartData.dates.map(formatDate),
+            datasets: [{
+                label: metric.label,
+                data: chartData.values,
+                borderColor: metric.color,
+                backgroundColor: metric.color + '33', // 20% непрозорості
+                tension: 0.4,
+                fill: true,
+                pointRadius: 3,
+                pointHoverRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    min: 1,
+                    max: metric.max,
+                    ticks: {
+                        color: '#CCCCCC'
+                    },
+                    grid: {
+                        color: '#333333'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#CCCCCC',
+                        maxRotation: 0,
+                        minRotation: 0,
+                        autoSkipPadding: 10
+                    },
+                    grid: {
+                        color: '#333333'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        title: (context) => formatDate(chartData.dates[context[0].dataIndex]),
+                        label: (context) => `${context.dataset.label}: ${context.parsed.y}`
+                    }
+                }
+            }
+        }
+    };
+}
+
+// Ініціалізує всі малі графіки
+function initSmallCharts(data) {
+    METRICS.forEach(metric => {
+        const chartElement = document.getElementById(`chart-${metric.id}`);
+        if (chartElement) {
+            const chartData = {
+                dates: data.map(d => d.timestamp),
+                values: data.map(d => d[metric.id])
+            };
+
+            const config = createChartConfig(chartData, metric, 'line');
+            config.options.scales.y.display = false; // Приховуємо вісь Y на малих графіках
+            config.options.scales.x.display = false; // Приховуємо вісь X на малих графіках
+            config.options.plugins.tooltip.enabled = false; // Приховуємо тултіпи
+
+            smallCharts[metric.id] = new Chart(chartElement, config);
         }
     });
 }
 
 
-// ==============================================
-// 3. КОД ДЛЯ ГРАФІКІВ
-// ==============================================
-function initCharts() {
-    
-    // --- ДИНАМІЧНЕ ЗАВАНТАЖЕННЯ ТА ПІДГОТОВКА ДАНИХ ---
-    const history = loadWellnessHistory();
-    const sortedDates = Object.keys(history).sort(); 
+// Ініціалізує головний графік (середнє значення)
+function initMainChart(data) {
+    const mainChartElement = document.getElementById('wellnessChart');
+    if (!mainChartElement) return;
 
-    // -----------------------------------------------------------------
-    // --- ЗНИЩЕННЯ ІСНУЮЧИХ ГРАФІКІВ (ВИПРАВЛЕННЯ Type Error) ---
-    // -----------------------------------------------------------------
-    // Знищуємо міні-графіки
-    WELLNESS_FIELDS.forEach(field => {
-        // Перевіряємо, чи існує глобальна змінна для кожного міні-графіка
-        if (window[`chart_${field}`] && typeof window[`chart_${field}`].destroy === 'function') {
-            window[`chart_${field}`].destroy();
-            window[`chart_${field}`] = null;
-        }
-    });
-    // Знищуємо Радар графік
-    if (window.wellnessChart && typeof window.wellnessChart.destroy === 'function') {
-        window.wellnessChart.destroy();
-        window.wellnessChart = null;
-    }
-
-
-    // Якщо даних немає, показуємо заглушку
-    if (sortedDates.length === 0) {
-        // ... (код для повідомлення про відсутність даних - без змін)
-        updateWellnessStats({});
+    // Розрахунок середнього значення (Average Wellness Score)
+    const avgData = data.map(d => {
+        let total = 0;
+        let count = 0;
         
-        const formCard = document.querySelector('.form-card');
-        const existingMessage = document.getElementById('no-data-message');
+        METRICS.forEach(metric => {
+            let value = d[metric.id];
+            
+            // Інвертуємо значення для негативних шкал (біль/стрес), щоб 10 завжди було "краще"
+            if (!metric.isPositive) {
+                value = metric.max + 1 - value; // Перетворює 10 (біль) на 1 (добре), а 1 (біль) на 10 (добре)
+            }
+            total += value;
+            count++;
+        });
 
-        if (!existingMessage && formCard) {
-             const message = document.createElement('p');
-             message.id = 'no-data-message';
-             message.className = 'placeholder-text'; 
-             message.style.textAlign = 'center';
-             message.textContent = 'Жодного запису ще не збережено. Заповніть форму, щоб почати бачити графіки!';
-             formCard.append(message);
-        }
-        
-        const chartArea = document.querySelector('.chart-area');
-        if (chartArea) {
-             chartArea.innerHTML = '<canvas id="wellnessChart"></canvas>'; 
-        }
-        return; 
-    }
-    
-    // Видаляємо повідомлення, якщо дані є
-    const noDataMessage = document.getElementById('no-data-message');
-    if (noDataMessage) noDataMessage.remove();
-
-
-    // Створюємо загальні масиви міток та точок
-    const chartLabels = sortedDates.map(date => {
-        const parts = date.split('-');
-        return `${parts[1]}/${parts[2]}`;
+        return total / count;
     });
-    
-    // Створюємо масив даних для кожного показника
-    const chartData = {};
-    WELLNESS_FIELDS.forEach(field => {
-        chartData[field] = sortedDates.map(date => history[date][field] || 0); 
-    });
-    
-    // ----------------------------------------------------
-    // --- КОНФІГУРАЦІЇ ГРАФІКІВ ---
-    // ----------------------------------------------------
-    
-    // Базова конфігурація для міні-графіків
-    const config = {
+
+    const chartData = {
+        dates: data.map(d => d.timestamp),
+        values: avgData
+    };
+
+    const mainConfig = {
         type: 'line',
+        data: {
+            labels: chartData.dates.map(formatDate),
+            datasets: [{
+                label: 'Середній рівень Wellness',
+                data: chartData.values,
+                borderColor: '#FFC72C',
+                backgroundColor: '#FFC72C33',
+                tension: 0.4,
+                fill: true,
+                pointRadius: 5,
+                pointHoverRadius: 8
+            }]
+        },
         options: {
-             responsive: true,
-             maintainAspectRatio: false,
-             animation: true, 
-             scales: {
-                 y: {
-                     min: 1,
-                     max: 10,
-                     title: { display: false },
-                     ticks: { stepSize: 1, color: 'white', display: false }, 
-                     grid: { color: 'rgba(255, 255, 255, 0.1)', display: false } 
-                 },
-                 x: {
-                     grid: { color: 'rgba(255, 255, 255, 0.1)', display: false }, 
-                     ticks: { color: 'rgba(255, 255, 255, 0.5)', display: false } 
-                 }
-             },
-             plugins: {
-                 legend: { display: false },
-                 title: { display: false },
-                 tooltip: { enabled: true }
-             }
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    min: 1,
+                    max: 10,
+                    title: {
+                        display: true,
+                        text: 'Середній бал (1-10)',
+                        color: '#CCCCCC'
+                    },
+                    ticks: {
+                        color: '#CCCCCC'
+                    },
+                    grid: {
+                        color: '#333333'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#CCCCCC',
+                        maxRotation: 45,
+                        minRotation: 0
+                    },
+                    grid: {
+                        color: '#333333'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: {
+                        color: '#CCCCCC'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        title: (context) => formatDate(chartData.dates[context[0].dataIndex]),
+                        label: (context) => `${context.dataset.label}: ${context.parsed.y.toFixed(2)}`
+                    }
+                }
+            }
         }
     };
 
-    // Створення маленьких графіків
-    WELLNESS_FIELDS.forEach(field => {
-        // *** ВИПРАВЛЕННЯ: Динамічне створення контейнера Canvas, якщо його немає ***
-        let ctx = document.getElementById(`chart-${field}`);
-
-        if (ctx) {
-             // Якщо canvas вже існує, але має старий контекст Chart, ми його вже знищили вище.
-
-            const chartDataConfig = {
-                labels: chartLabels,
-                datasets: [{
-                    label: FIELD_LABELS[field],
-                    data: chartData[field],
-                    borderColor: colorsMap[field].color,
-                    backgroundColor: colorsMap[field].area,
-                    tension: 0.3,
-                    fill: true,
-                    pointRadius: 3, 
-                    pointHoverRadius: 5,
-                }]
-            };
-
-            const miniConfig = JSON.parse(JSON.stringify(config));
-            
-            // Створюємо новий графік і зберігаємо його посилання в window
-            window[`chart_${field}`] = new Chart(ctx, { ...miniConfig, data: chartDataConfig });
-        }
-    });
-
-    // ----------------------------------------------------
-    // --- РАДАР ГРАФІК ТА СТАТИСТИКА ---
-    // ----------------------------------------------------
+    // Прибираємо заглушку, якщо є дані
+    const chartArea = document.querySelector('.chart-area');
+    chartArea.innerHTML = data.length > 0 ? '<canvas id="wellnessChart"></canvas>' : '<p class="placeholder-text">Даних поки що немає. Заповніть форму, щоб побачити графік.</p>';
     
-    const latestData = history[sortedDates[sortedDates.length - 1]];
+    // Перевіряємо, чи існує canvas після оновлення
+    const newMainChartElement = document.getElementById('wellnessChart');
+    if (newMainChartElement) {
+        if (mainChart) mainChart.destroy(); // Знищуємо попередній екземпляр
+        mainChart = new Chart(newMainChartElement, mainConfig);
+    }
+}
 
-    // Оновлюємо статистику під питаннями
-    updateWellnessStats(latestData);
 
-    const mainCtx = document.getElementById('wellnessChart');
+// Оновлює графіки та статистику
+function updateDashboard() {
+    const data = getWellnessData();
+    
+    // Показуємо тільки останні 7 записів для графіків
+    const recentData = data.slice(-7); 
 
-    if (mainCtx) {
-        // ... (Радар графік - без змін)
-        const radarData = WELLNESS_FIELDS.map(field => latestData[field]);
-        
-        window.wellnessChart = new Chart(mainCtx, {
-            type: 'radar',
-            data: {
-                labels: Object.values(FIELD_LABELS),
-                datasets: [{
-                    label: `Поточний стан (оцінки за ${chartLabels[chartLabels.length - 1]})`,
-                    data: radarData,
-                    backgroundColor: GOLD_AREA,
-                    borderColor: 'rgb(51, 51, 51)',
-                    pointBackgroundColor: 'rgb(51, 51, 51)',
-                    pointBorderColor: '#fff',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: 'rgb(51, 51, 51)'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                elements: {
-                    line: { borderWidth: 3 }
-                },
-                scales: {
-                    r: {
-                        grid: { color: GREY_GRID },
-                        angleLines: { display: true, color: GREY_GRID },
-                        pointLabels: { color: 'white', font: { size: 12 } },
-                        ticks: { color: 'white', backdropColor: 'rgba(0, 0, 0, 0)', stepSize: 1, min: 0, max: 10 },
-                        suggestedMin: 1,
-                        suggestedMax: 10
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: { color: 'white' }
-                    },
-                    title: { display: false }
-                }
+    initMainChart(recentData);
+    initSmallCharts(recentData);
+    
+    // Оновлення поточної статистики (якщо дані є)
+    if (data.length > 0) {
+        const lastEntry = data[data.length - 1];
+        METRICS.forEach(metric => {
+            const statElement = document.getElementById(`stat-${metric.id}`);
+            if (statElement) {
+                statElement.textContent = `Останнє значення: ${lastEntry[metric.id]}/10`;
             }
         });
     }
 }
 
 
-// ==============================================
-// Функція перевірки та застосування обмеження "раз на день"
-// ==============================================
-function checkDailyRestriction() {
-    // ... (без змін)
-    const form = document.getElementById('wellness-form');
-    const button = document.querySelector('.gold-button');
-    const lastDate = localStorage.getItem('lastWellnessSubmissionDate');
-    const today = getTodayDateString(); 
+// --- ОБРОБКА ФОРМИ ---
 
-    if (!form || !button) return false;
+function handleFormSubmit(event) {
+    event.preventDefault();
 
-    if (lastDate === today) {
-        // ... (блокування - без змін)
-        const inputs = form.querySelectorAll('input');
-        inputs.forEach(input => {
+    if (hasSubmittedToday()) {
+        alert('Ви вже надсилали звіт сьогодні. Повторне подання можливе лише завтра.');
+        return;
+    }
+
+    const form = event.target;
+    const formData = new FormData(form);
+    const newEntry = {
+        timestamp: new Date().getTime()
+    };
+    
+    let allValid = true;
+
+    // Збір даних
+    METRICS.forEach(metric => {
+        const value = formData.get(metric.id);
+        if (!value) {
+            allValid = false;
+        }
+        newEntry[metric.id] = parseInt(value);
+    });
+
+    if (!allValid) {
+        alert('Будь ласка, оцініть всі показники (1-10) перед відправкою.');
+        return;
+    }
+
+    // Зберігання
+    const currentData = getWellnessData();
+    currentData.push(newEntry);
+    saveWellnessData(currentData);
+    
+    // Блокування на сьогодні
+    localStorage.setItem(LAST_SUBMISSION_KEY, new Date().toISOString());
+    
+    // Оновлення інтерфейсу
+    checkSubmissionStatus();
+    updateDashboard();
+
+    alert('Дані Wellness успішно записано!');
+}
+
+// Перевіряє статус подання та блокує кнопку, якщо потрібно
+function checkSubmissionStatus() {
+    const submitButton = document.querySelector(SUBMIT_BUTTON_SELECTOR);
+    const form = document.getElementById(FORM_ID);
+    
+    if (hasSubmittedToday()) {
+        submitButton.textContent = 'Звіт на сьогодні подано';
+        submitButton.classList.add('disabled-button');
+        submitButton.disabled = true;
+        // Блокуємо всі input'и форми
+        form.querySelectorAll('input[type="radio"]').forEach(input => {
             input.disabled = true;
         });
-        
-        button.disabled = true;
-        button.textContent = "Дані на сьогодні вже записані.";
-        button.classList.add('disabled-button'); 
-        button.style.backgroundColor = ''; 
-        button.style.cursor = '';
-        
-        if (!document.getElementById('restriction-message')) {
-            const message = document.createElement('p');
-            message.id = 'restriction-message';
-            message.style.marginTop = '15px';
-            message.style.color = '#dc3545';
-            message.style.fontWeight = 'bold';
-            message.textContent = "Ви можете надіслати опитування лише раз на день. Приходьте завтра!";
-            form.prepend(message);
-        }
-        return true;
+
     } else {
-        // ... (розблокування - без змін)
-        const inputs = form.querySelectorAll('input');
-        inputs.forEach(input => {
+        submitButton.textContent = 'Записати 6 точок даних';
+        submitButton.classList.remove('disabled-button');
+        submitButton.disabled = false;
+        // Розблоковуємо input'и
+        form.querySelectorAll('input[type="radio"]').forEach(input => {
             input.disabled = false;
-            input.checked = false; 
         });
-        
-        button.disabled = false;
-        button.textContent = "Записати 6 точок даних";
-        button.classList.remove('disabled-button'); 
-        button.style.backgroundColor = ''; 
-        button.style.cursor = '';
-        
-        const message = document.getElementById('restriction-message');
-        if (message) message.remove();
-        
-        return false;
     }
 }
 
 
-// ==============================================
-// 4. АКТИВАЦІЯ ФУНКЦІОНАЛУ Wellness 
-// ==============================================
-document.addEventListener('DOMContentLoaded', function() {
-    
-    const isWellnessPage = window.location.pathname.includes('wellness.html');
-
-    if (isWellnessPage) {
-        
-        initCharts();
-        checkDailyRestriction();
-
-        const form = document.getElementById('wellness-form');
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                if (checkDailyRestriction()) {
-                    return;
-                }
-                
-                // --- ВАЛІДАЦІЯ ---
-                const requiredRatings = form.querySelectorAll('.rating-group');
-                let allChecked = true;
-                requiredRatings.forEach(group => {
-                    if (!group.querySelector('input:checked')) {
-                        allChecked = false;
-                    }
-                });
-
-                if (!allChecked) {
-                    alert("Будь ласка, заповніть усі 6 точок даних перед відправкою.");
-                    return;
-                }
-                
-                // --- ЛОГІКА ЗБЕРЕЖЕННЯ ---
-                
-                const submissionData = {};
-                form.querySelectorAll('input[type="radio"]:checked').forEach(input => {
-                    submissionData[input.name] = parseInt(input.value, 10);
-                });
-                
-                const todayDate = getTodayDateString();
-                
-                saveWellnessHistory(todayDate, submissionData);
-                localStorage.setItem('lastWellnessSubmissionDate', todayDate);
-                
-                // *** ВИПРАВЛЕННЯ: Додано невелику затримку для оновлення DOM/відображення
-                // Це може допомогти, якщо браузер не встигає повністю оновити DOM 
-                // перед ініціалізацією Chart.js, особливо на мобільних пристроях. ***
-                setTimeout(() => {
-                    initCharts(); 
-                    checkDailyRestriction();
-                    alert("Ваші дані Wellness успішно записані!");
-                }, 100); 
-
-                // initCharts(); // Стара логіка
-                // checkDailyRestriction(); // Стара логіка
-                // alert("Ваші дані Wellness успішно записані!"); // Стара логіка
-            });
-        }
+// --- ЗАПУСК ---
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Прив'язуємо обробник подій до форми
+    const form = document.getElementById(FORM_ID);
+    if (form) {
+        form.addEventListener('submit', handleFormSubmit);
     }
+    
+    // 2. Перевіряємо статус кнопки/форми
+    checkSubmissionStatus();
+
+    // 3. Ініціалізуємо графіки на основі існуючих даних
+    updateDashboard();
 });
