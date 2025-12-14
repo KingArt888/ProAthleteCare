@@ -9,6 +9,8 @@
 .sidebar a.active img {
     filter: none; 
 }
+/* --- СТИЛІ ДЛЯ СТОРІНКИ INJURY STORY (УНІКАЛЬНІ + КОМПОНЕНТИ) --- */
+
 /* ============================================== */
 /* 1. СТИЛІ МАКЕТА ТА КАРТОК */
 /* ============================================== */
@@ -54,9 +56,9 @@
     margin-bottom: 20px;
 }
 
-/* Стилі для форми, щоб центрувати кнопку */
+/* Стилі для форми, щоб центрувати кнопку та рейтинг */
 #injury-form {
-    text-align: center; /* ЦЕНТРУВАННЯ КНОПКИ */
+    text-align: center; /* ЦЕНТРУВАННЯ КНОПКИ ТА БЛОКУ РЕЙТИНГУ */
 }
 
 /* Стилі для полів вводу */
@@ -104,10 +106,10 @@ textarea {
 }
 
 /* ============================================== */
-/* 2. СТИЛІ РЕЙТИНГІВ (ШКАЛА БОЛЮ) */
+/* 2. СТИЛІ РЕЙТИНГІВ (ШКАЛА БОЛЮ) - ОНОВЛЕНО */
 /* ============================================== */
 .rating-group {
-    display: flex;
+    display: inline-flex; /* ЗМІНА: для центрування всього блоку */
     flex-direction: row-reverse;
     justify-content: flex-end;
     direction: ltr;
@@ -115,11 +117,45 @@ textarea {
     margin: 10px 0 20px 0;
 }
 .rating-group input { display: none; }
-.rating-group label { color: #333; cursor: pointer; transition: color 0.2s; }
-.pain-group label:before { content: '✖'; margin-right: 5px; }
-.pain-group input:checked ~ label:before,
-.pain-group label:hover:before,
-.pain-group label:hover ~ label:before { color: #DA3E52; }
+
+/* Базові стилі для Label */
+.rating-group label { 
+    color: #333; 
+    cursor: pointer; 
+    transition: color 0.2s; 
+    position: relative; /* ДОДАНО: Для позиціонування номера */
+    padding: 0 4px; /* Додаємо невеликий відступ між м'ячиками */
+    display: inline-block;
+}
+
+/* 2. М'ячі (Біль/Втома) - СИМВОЛ М'ЯЧИКА */
+.pain-group label::before { 
+    content: '●'; /* ЗМІНА: З "✖" на "●" */
+    font-size: 1.7em; /* Розмір м'ячика */
+    margin-right: 5px; 
+    position: relative;
+    z-index: 10;
+}
+
+/* СТИЛІ ДЛЯ НОМЕРА ВСЕРЕДИНІ М'ЯЧИКА */
+.pain-group label::after {
+    content: attr(title); /* Відображаємо номер (1-10) з title атрибута */
+    position: absolute;
+    left: 50%;
+    top: 50%; /* ЦЕНТРУВАННЯ ВЕРТИКАЛЬНО */
+    transform: translate(-50%, -50%); 
+    font-size: 0.6em; /* Розмір тексту */
+    color: #000; /* Чорний текст для контрасту */
+    pointer-events: none;
+    z-index: 20;
+    font-weight: bold;
+}
+
+.pain-group input:checked ~ label::before,
+.pain-group label:hover::before,
+.pain-group label:hover ~ label::before { 
+    color: #DA3E52; /* Червоний колір активного м'ячика */
+}
 
 /* ============================================== */
 /* 3. УНІКАЛЬНІ СТИЛІ КАРТИ ТІЛА */
