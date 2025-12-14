@@ -56,7 +56,10 @@
     border: none;
     padding: 12px 25px;
     border-radius: 5px;
-    margin-top: 30px;
+    /* ЗМІНА: Центрування кнопки */
+    display: block;
+    margin: 30px auto 0 auto; 
+    /* ------------------------ */
     cursor: pointer;
     font-size: 1.1em;
     font-weight: bold;
@@ -106,7 +109,7 @@
     flex-direction: row-reverse; 
     justify-content: center; 
     direction: ltr; 
-    font-size: 1.5em; /* однаковий базовий розмір для всіх */
+    font-size: 1.5em; 
     margin: 10px 0 20px 0;
 }
 .rating-group input {
@@ -121,11 +124,10 @@
     text-align: center;    /* Центрування по горизонталі */
     padding: 0;            /* Видаляємо внутрішній відступ */
     /* ********************************************************* */
-    color: #888; /* Уніфікований сірий колір для неактивних символів */
+    color: #888; 
     cursor: pointer;
     transition: color 0.2s;
 }
-/* Скидаємо колір для емодзі-груп, які використовують фільтри */
 .energy-group label, .hydration-group label, .stress-group label, .ready-group label {
     color: inherit;
 }
@@ -134,9 +136,7 @@
 /* 1. Зірки (Сон) */
 .star-group label:before {
     content: '★'; 
-    /* Відступи видалені, оскільки ширина задана на label */
 }
-/* Активні: застосовуємо золотий колір */
 .star-group input:checked ~ label:before,
 .star-group label:hover:before,
 .star-group label:hover ~ label:before {
@@ -146,10 +146,8 @@
 /* 2. М'ячі (Біль/Втома) */
 .pain-group label:before {
     content: '●'; 
-    /* ФІКС РОЗМІРУ: Збільшення, щоб візуально відповідати іншим символам */
-    font-size: 1.3em; 
+    font-size: 1.3em; /* Корекція розміру, щоб візуально відповідати іншим символам */
 }
-/* Активні: застосовуємо червоний колір */
 .pain-group input:checked ~ label:before,
 .pain-group label:hover:before,
 .pain-group label:hover ~ label:before {
@@ -159,10 +157,8 @@
 /* 3. Блискавки (Енергія/Настрій) */
 .energy-group label:before {
     content: '⚡'; 
-    /* Неактивні: робимо сірими через фільтр */
     filter: grayscale(100%); 
 }
-/* Активні: прибираємо фільтр */
 .energy-group input:checked ~ label:before,
 .energy-group label:hover:before,
 .energy-group label:hover ~ label:before {
@@ -172,10 +168,8 @@
 /* 4. Краплі (Гідратація) */
 .hydration-group label:before {
     content: '💧'; 
-    /* Неактивні: робимо сірими через фільтр */
     filter: grayscale(100%); 
 }
-/* Активні: прибираємо фільтр */
 .hydration-group input:checked ~ label:before,
 .hydration-group label:hover:before,
 .hydration-group label:hover ~ label:before {
@@ -185,10 +179,8 @@
 /* 5. Вогник (Стрес) */
 .stress-group label:before {
     content: '🔥'; 
-    /* Неактивні: робимо сірими через фільтр */
     filter: grayscale(100%); 
 }
-/* Активні: прибираємо фільтр */
 .stress-group input:checked ~ label:before,
 .stress-group label:hover:before,
 .stress-group label:hover ~ label:before {
@@ -198,10 +190,8 @@
 /* 6. Галочка (Готовність) */
 .ready-group label:before {
     content: '✅'; 
-    /* Неактивні: робимо сірими через фільтр */
     filter: grayscale(100%); 
 }
-/* Активні: прибираємо фільтр */
 .ready-group input:checked ~ label:before,
 .ready-group label:hover:before,
 .ready-group label:hover ~ label:before {
@@ -222,8 +212,8 @@ footer {
 @media (max-width: 768px) {
     /* *** ФІКС: Забезпечення повної ширини для карток форми та графіка *** */
     .form-card, .chart-card {
-        width: 100%;       /* Картки займають 100% ширини, коли стоять одна під одною */
-        max-width: 100%;   /* Перекриваємо будь-які обмеження max-width */
+        width: 100%;       
+        max-width: 100%;   
         min-width: 0;      
     }
     /* *************************************************************** */
