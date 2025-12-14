@@ -10,39 +10,30 @@
     filter: none; 
 }
 
-/* 1. КОНТЕЙНЕРИ І КАРТКИ */
+/* Контейнер для форми та графіка */
 .dashboard-container {
     display: flex;
     gap: 30px;
     margin-top: 20px;
     flex-wrap: wrap; 
-    justify-content: center; /* Центруємо картки в контейнері */
 }
 
+/* Картки для форми та графіка */
 .form-card, .chart-card {
     background-color: #0d0d0d;
     border: 1px solid #1a1a1a;
     border-radius: 10px;
     padding: 25px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-    /* Визначаємо базовий розмір для flex-елементів: */
-    flex: 1 1 350px; 
 }
-
-/* --- КЛЮЧОВІ ЗМІНИ ДЛЯ ДЕСКТОПУ (Великі екрани) --- */
-/* Форма займає фіксовану ширину, але не більше 450px */
 .form-card {
-     max-width: 450px; 
-     flex-grow: 1; /* Зменшуємо пріоритет зростання, щоб не розтягувати занадто сильно */
+    width: 35%; 
+    min-width: 350px;
 }
-
-/* Графік займає решту простору */
 .chart-card {
-    flex-grow: 1.5; /* Більший пріоритет зростання, щоб зайняти вільне місце */
-    max-width: 650px; /* Додаткове обмеження, якщо потрібно */
+    flex-grow: 1; 
+    max-width: 500px; /* Обмежити максимальну ширину */
 }
-/* ------------------------------------------------ */
-
 
 .form-card h3, .chart-card h3 {
     color: #FFC72C;
@@ -50,7 +41,6 @@
     border-bottom: 1px solid #333333;
     padding-bottom: 10px;
     margin-bottom: 20px;
-    text-align: center; 
 }
 
 /* Стилі для форми */
@@ -60,8 +50,8 @@
     margin-top: 15px;
     margin-bottom: 5px;
     font-weight: bold;
-    text-align: left; 
 }
+
 .gold-button {
     background-color: #FFC72C;
     color: #000000;
@@ -73,13 +63,12 @@
     font-size: 1.1em;
     font-weight: bold;
     transition: background-color 0.3s;
-    display: block;
-    margin-left: auto;
-    margin-right: auto; 
 }
 .gold-button:hover {
     background-color: #E6B800;
 }
+
+/* Стиль для ВИМКНЕНОЇ (disabled) кнопки після щоденного подання */
 .disabled-button {
     background-color: #333333 !important;
     color: #999999 !important;
@@ -88,7 +77,7 @@
 
 /* Місце для графіка */
 .chart-area {
-    min-height: 350px; 
+    min-height: 350px; /* Збільшено для кращого вигляду основного графіка */
     background-color: #000000;
     border: 1px solid #333333;
     border-radius: 5px;
@@ -102,37 +91,28 @@
     font-size: 1.2em;
 }
 
-/* --- СТИЛІ СТАТИСТИКИ ТА МАЛИХ ГРАФІКІВ --- */
+/* --- НОВІ СТИЛІ ДЛЯ МАЛИХ ГРАФІКІВ У ФОРМІ --- */
 .small-chart-container {
-    height: 80px; 
+    height: 80px; /* Фіксована висота для міні-графіка (подібно до питання) */
     width: 100%;
-    margin-top: -10px; 
+    margin-top: -10px; /* Зменшуємо відступ від рейтингу */
     margin-bottom: 20px;
     padding: 5px;
     background-color: #000000;
     border-radius: 5px;
 }
-.wellness-stat {
-    text-align: center; 
-    margin: 5px 0 10px 0;
-    font-size: 0.9em; 
-    font-weight: normal; 
-    color: #888888; 
-    min-height: 20px; 
-    transition: color 0.3s ease; 
-}
 
-/* 2. СТИЛІ РЕЙТИНГІВ: ФУНКЦІОНАЛЬНИЙ LTR (1-10) */
-/* Це забезпечує відображення 1-10 зліва направо, зберігаючи логіку вибору */
+/* --- ОНОВЛЕНІ СТИЛІ ДЛЯ РЕЙТИНГІВ ІКОНОК (ЗАГАЛЬНІ) --- */
+/* Головна зміна: justify-content: center; для центрування. 
+   flex-direction: row-reverse та direction: ltr залишені для коректної роботи логіки активації зліва направо. */
 .rating-group {
     display: flex;
-    flex-direction: row-reverse; /* Ключовий елемент для роботи кліку з HTML 10..1 */
-    justify-content: flex-start; /* Вирівнює '1' до лівого краю контейнера */
+    flex-direction: row-reverse; /* Забезпечує коректну активацію іконок зліва направо */
+    justify-content: center; /* ЦЕНТРУВАННЯ ГРУПИ ІКОНОК */
     direction: ltr; 
-    font-size: 1.5em; 
-    margin: 10px 0 20px 0; 
-    flex-wrap: nowrap;
-    width: 100%; 
+    font-size: 1.5em; /* Однаковий розмір */
+    margin: 10px 0 20px 0;
+    width: 100%; /* Гарантуємо, що контейнер займає всю доступну ширину для центрування */
 }
 .rating-group input {
     display: none; 
@@ -141,44 +121,80 @@
     color: #333; 
     cursor: pointer;
     transition: color 0.2s;
+    /* Додаємо однаковий padding для кращого центрування та адаптивності */
+    padding: 0 5px; 
 }
 
-/* ІКОНКИ ТА КОЛЬОРИ */
-.rating-group label:before {
-    margin-right: 15px; 
-    font-size: 1.25em; /* Уніфікуємо розмір іконок */
-}
 
-/* 1. Зірки (Сон) */
-.star-group label:before { 
+/* Зірки (Сон) */
+.star-group label:before {
     content: '★'; 
+    margin-right: 19px;
 }
-.star-group input:checked ~ label:before, .star-group label:hover:before, .star-group label:hover ~ label:before { color: #FFC72C; }
+.star-group input:checked ~ label:before,
+.star-group label:hover:before,
+.star-group label:hover ~ label:before {
+    color: #FFC72C; 
+}
 
-/* 2. Червоний Кружок (Біль/Втома) - змінено з '✖' на '🔴' */
-.pain-group label:before { 
-    content: '🔴'; 
+/* Хрестики (Біль/Втома) */
+.pain-group label:before {
+    content: '✖'; 
+    margin-right: 19px;
+}
+.pain-group input:checked ~ label:before,
+.pain-group label:hover:before,
+.pain-group label:hover ~ label:before {
+    color: #DA3E52; 
+}
+
+/* Блискавки (Енергія/Настрій) */
+.energy-group label:before {
+    content: '⚡'; 
+    margin-right: 5px;
     filter: grayscale(100%); 
 }
-.pain-group input:checked ~ label:before, .pain-group label:hover:before, .pain-group label:hover ~ label:before { 
+.energy-group input:checked ~ label:before,
+.energy-group label:hover:before,
+.energy-group label:hover ~ label:before {
     filter: none; 
 }
 
-/* 3. Блискавки (Енергія/Настрій) */
-.energy-group label:before { content: '⚡'; filter: grayscale(100%); }
-.energy-group input:checked ~ label:before, .energy-group label:hover:before, .energy-group label:hover ~ label:before { filter: none; }
+/* Краплі (Гідратація) */
+.hydration-group label:before {
+    content: '💧'; 
+    margin-right: 5px;
+    filter: grayscale(100%); 
+}
+.hydration-group input:checked ~ label:before,
+.hydration-group label:hover:before,
+.hydration-group label:hover ~ label:before {
+    filter: none; 
+}
 
-/* 4. Краплі (Гідратація) */
-.hydration-group label:before { content: '💧'; filter: grayscale(100%); }
-.hydration-group input:checked ~ label:before, .hydration-group label:hover:before, .hydration-group label:hover ~ label:before { filter: none; }
+/* Вогник (Стрес) */
+.stress-group label:before {
+    content: '🔥'; 
+    margin-right: 5px;
+    filter: grayscale(100%); 
+}
+.stress-group input:checked ~ label:before,
+.stress-group label:hover:before,
+.stress-group label:hover ~ label:before {
+    filter: none; 
+}
 
-/* 5. Вогник (Стрес) */
-.stress-group label:before { content: '🔥'; filter: grayscale(100%); }
-.stress-group input:checked ~ label:before, .stress-group label:hover:before, .stress-group label:hover ~ label:before { filter: none; }
-
-/* 6. Галочка (Готовність) */
-.ready-group label:before { content: '✅'; filter: grayscale(100%); }
-.ready-group input:checked ~ label:before, .ready-group label:hover:before, .ready-group label:hover ~ label:before { filter: none; }
+/* Галочка (Готовність) */
+.ready-group label:before {
+    content: '✅'; 
+    margin-right: 5px;
+    filter: grayscale(100%); 
+}
+.ready-group input:checked ~ label:before,
+.ready-group label:hover:before,
+.ready-group label:hover ~ label:before {
+    filter: none; 
+}
 
 /* Футер */
 footer {
@@ -190,60 +206,82 @@ footer {
     border-top: 1px solid #1a1a1a;
 }
 
-
-/* 3. МЕДІА-ЗАПИТИ ДЛЯ АДАПТИВНОСТІ */
-
-/* СТИЛІ МЕНЮ ТА ШАПКИ НА ПЛАНШЕТАХ/МОБІЛЬНИХ (ДО 768px) */
+/* --- СТИЛІ МЕНЮ ТА ШАПКИ НА МОБІЛЬНИХ (ДО 768px) --- */
 @media (max-width: 768px) {
-    /* --- Адаптація компонентів --- */
-    /* скидаємо десктопні обмеження */
-    .form-card, .chart-card {
-        flex: 1 1 100%; /* Займають повну ширину на мобільних */
-        max-width: none;
+    /* ФІКСОВАНА ШАПКА */
+    header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1000; 
+        background-color: #000; 
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5); 
+        
+        /* КОМПАКТНЕ РОЗТАШУВАННЯ ЕЛЕМЕНТІВ */
+        display: flex;
+        align-items: center; 
+        justify-content: flex-start;
+        padding: 10px 60px 5px 10px; 
     }
-    .dashboard-container {
+
+    /* ОБМЕЖЕННЯ РОЗМІРУ ОСНОВНОГО ЛОГОТИПУ У ШАПЦІ */
+    header .logo { 
+        width: 40px; 
+        height: 40px;
+    }
+    
+    header .project-title {
+        font-size: 1.1em; 
+        margin-left: 10px;
+        flex-shrink: 1;
+    }
+    
+    header .tagline {
+        display: none; /* Приховуємо слоган */
+    }
+    
+    /* ЗСУВАЄМО ОСНОВНИЙ КОНТЕНТ */
+    .content-wrapper {
+        padding-top: 100px; /* Відступ під фіксований header */
         flex-direction: column; 
     }
     
-    /* --- Адаптація рейтингу для МОБІЛЬНОГО (дуже вузькі екрани) --- */
-    @media (max-width: 480px) {
-        /* Прибираємо row-reverse, щоб отримати 1-10, і стискаємо */
-        .rating-group {
-            flex-direction: row; 
-            justify-content: space-between; 
-            font-size: 1.3em; 
-        }
-        .rating-group label:before {
-            margin-right: 0px !important; 
-        }
-        .rating-group label {
-            margin: 0 0.5px; 
-        }
-        /* Прибираємо цифри, залишаючи тільки іконки */
-        .rating-group label:after {
-            content: none !important;
-        }
+    /* СТИЛЬНА КНОПКА МЕНЮ (БУРГЕР): ВІДОБРАЖАЄМО ТА ФІКСУЄМО */
+    .menu-toggle {
+        display: block !important; /* ГАРАНТУЄМО ВІДОБРАЖЕННЯ */
+        position: fixed; /* ФІКСУЄМО ЇЇ НА ЕКРАНІ */
+        top: 15px; 
+        right: 15px;
+        z-index: 1010; /* ПЕРЕВІС У ШАРІ */
+        background: #FFD700; 
+        color: #000; 
+        border: none;
+        padding: 5px 10px;
+        font-size: 1.5em;
+        cursor: pointer;
+        border-radius: 6px; 
+        line-height: 1; 
     }
     
-    /* --- Фіксоване меню та шапка (як ви просили) --- */
-    header {
-        position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; background-color: #000; 
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5); display: flex; align-items: center; 
-        justify-content: flex-start; padding: 10px 60px 5px 10px; 
+    /* Фіксоване меню-оверлей */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 80%; 
+        height: 100%;
+        padding-top: 80px; 
+        transform: translateX(-100%); 
+        transition: transform 0.3s ease-in-out;
+        z-index: 999;
+        background-color: #111; 
+        display: flex; 
+        flex-direction: column;
     }
-    header .logo { width: 40px; height: 40px; }
-    header .project-title { font-size: 1.1em; margin-left: 10px; flex-shrink: 1; }
-    header .tagline { display: none; }
-    
-    .content-wrapper { padding-top: 100px; flex-direction: column; }
-    
-    .menu-toggle { display: block !important; position: fixed; top: 15px; right: 15px; z-index: 1010; 
-        background: #FFD700; color: #000; border: none; padding: 5px 10px; font-size: 1.5em; 
-        cursor: pointer; border-radius: 6px; line-height: 1; 
+
+    /* Клас для відображення меню */
+    .sidebar.active {
+        transform: translateX(0); 
     }
-    .sidebar { position: fixed; top: 0; left: 0; width: 80%; height: 100%; padding-top: 80px; 
-        transform: translateX(-100%); transition: transform 0.3s ease-in-out; z-index: 999; 
-        background-color: #111; display: flex; flex-direction: column; 
-    }
-    .sidebar.active { transform: translateX(0); }
 }
