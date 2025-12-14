@@ -204,20 +204,7 @@ function checkDailyRestriction() {
 }
 
 
-// ==============================================
-// 2. АКТИВАЦІЯ МЕНЮ ТА ІНІЦІАЛІЗАЦІЯ
-// ==============================================
-document.addEventListener('DOMContentLoaded', function() {
-    const currentPath = window.location.pathname.split('/').pop();
-    const sidebarLinks = document.querySelectorAll('.sidebar a');
 
-    // Логіка підсвічування активного пункту меню
-    sidebarLinks.forEach(link => {
-        link.classList.remove('active');
-        if (link.getAttribute('href') === currentPath || (!currentPath && link.getAttribute('href') === 'index.html')) {
-            link.classList.add('active');
-        }
-    });
 
     // Ініціалізація графіків та обмежень, якщо ми на сторінці Wellness Control
     if (currentPath === 'wellness.html') {
