@@ -25,15 +25,24 @@
     border-radius: 10px;
     padding: 25px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-    flex: 1 1 350px; /* Адаптивність */
+    /* Визначаємо базовий розмір для flex-елементів: */
+    flex: 1 1 350px; 
 }
-.chart-card {
-    flex-grow: 1.5; 
-    max-width: 500px; 
-}
+
+/* --- КЛЮЧОВІ ЗМІНИ ДЛЯ ДЕСКТОПУ (Великі екрани) --- */
+/* Форма займає фіксовану ширину, але не більше 450px */
 .form-card {
      max-width: 450px; 
+     flex-grow: 1; /* Зменшуємо пріоритет зростання, щоб не розтягувати занадто сильно */
 }
+
+/* Графік займає решту простору */
+.chart-card {
+    flex-grow: 1.5; /* Більший пріоритет зростання, щоб зайняти вільне місце */
+    max-width: 650px; /* Додаткове обмеження, якщо потрібно */
+}
+/* ------------------------------------------------ */
+
 
 .form-card h3, .chart-card h3 {
     color: #FFC72C;
@@ -41,7 +50,7 @@
     border-bottom: 1px solid #333333;
     padding-bottom: 10px;
     margin-bottom: 20px;
-    text-align: center; /* Центруємо заголовки карток */
+    text-align: center; 
 }
 
 /* Стилі для форми */
@@ -51,7 +60,7 @@
     margin-top: 15px;
     margin-bottom: 5px;
     font-weight: bold;
-    text-align: left; /* Мітки над рейтингами завжди зліва */
+    text-align: left; 
 }
 .gold-button {
     background-color: #FFC72C;
@@ -66,7 +75,7 @@
     transition: background-color 0.3s;
     display: block;
     margin-left: auto;
-    margin-right: auto; /* Центруємо кнопку */
+    margin-right: auto; 
 }
 .gold-button:hover {
     background-color: #E6B800;
@@ -113,7 +122,8 @@
     transition: color 0.3s ease; 
 }
 
-/* 2. СТИЛІ РЕЙТИНГІВ: ФУНКЦІОНАЛЬНИЙ LTR (1-10) ДЛЯ ДЕСКТОПА */
+/* 2. СТИЛІ РЕЙТИНГІВ: ФУНКЦІОНАЛЬНИЙ LTR (1-10) */
+/* Це забезпечує відображення 1-10 зліва направо, зберігаючи логіку вибору */
 .rating-group {
     display: flex;
     flex-direction: row-reverse; /* Ключовий елемент для роботи кліку з HTML 10..1 */
@@ -134,19 +144,18 @@
 }
 
 /* ІКОНКИ ТА КОЛЬОРИ */
-/* Уніфікований відступ між іконками */
 .rating-group label:before {
     margin-right: 15px; 
+    font-size: 1.25em; /* Уніфікуємо розмір іконок */
 }
 
 /* 1. Зірки (Сон) */
 .star-group label:before { 
     content: '★'; 
-    font-size: 1.25em; 
 }
 .star-group input:checked ~ label:before, .star-group label:hover:before, .star-group label:hover ~ label:before { color: #FFC72C; }
 
-/* 2. Червоний Кружок (Біль/Втома) */
+/* 2. Червоний Кружок (Біль/Втома) - змінено з '✖' на '🔴' */
 .pain-group label:before { 
     content: '🔴'; 
     filter: grayscale(100%); 
@@ -186,7 +195,37 @@ footer {
 
 /* СТИЛІ МЕНЮ ТА ШАПКИ НА ПЛАНШЕТАХ/МОБІЛЬНИХ (ДО 768px) */
 @media (max-width: 768px) {
-    /* ... стилі меню та шапки залишаються без змін ... */
+    /* --- Адаптація компонентів --- */
+    /* скидаємо десктопні обмеження */
+    .form-card, .chart-card {
+        flex: 1 1 100%; /* Займають повну ширину на мобільних */
+        max-width: none;
+    }
+    .dashboard-container {
+        flex-direction: column; 
+    }
+    
+    /* --- Адаптація рейтингу для МОБІЛЬНОГО (дуже вузькі екрани) --- */
+    @media (max-width: 480px) {
+        /* Прибираємо row-reverse, щоб отримати 1-10, і стискаємо */
+        .rating-group {
+            flex-direction: row; 
+            justify-content: space-between; 
+            font-size: 1.3em; 
+        }
+        .rating-group label:before {
+            margin-right: 0px !important; 
+        }
+        .rating-group label {
+            margin: 0 0.5px; 
+        }
+        /* Прибираємо цифри, залишаючи тільки іконки */
+        .rating-group label:after {
+            content: none !important;
+        }
+    }
+    
+    /* --- Фіксоване меню та шапка (як ви просили) --- */
     header {
         position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; background-color: #000; 
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5); display: flex; align-items: center; 
@@ -207,39 +246,4 @@ footer {
         background-color: #111; display: flex; flex-direction: column; 
     }
     .sidebar.active { transform: translateX(0); }
-    
-    /* Змушуємо картки займати повну ширину */
-    .dashboard-container {
-        flex-direction: column; 
-    }
-    .form-card, .chart-card {
-        width: 100%;
-        max-width: none; 
-        min-width: unset;
-    }
-    .form-card {
-        max-width: none;
-    }
-}
-
-
-/* АДАПТАЦІЯ РЕЙТИНГІВ НА НАЙМЕНШИХ ЕКРАНАХ (ДО 480px) */
-@media (max-width: 480px) {
-    /* Тут рейтинг йде ЗЛІВА НАПРАВО (1-10) і стиснутий */
-    .rating-group {
-        flex-direction: row; 
-        justify-content: space-between; 
-        font-size: 1.3em; 
-        width: 100%; 
-        margin: 10px 0 20px 0;
-    }
-    .rating-group label:before {
-        margin-right: 0px !important; 
-    }
-    .rating-group label {
-        margin: 0 0.5px; 
-    }
-    .rating-group label:after {
-        content: none !important;
-    }
 }
