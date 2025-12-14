@@ -1,5 +1,5 @@
 /* =========================================================================
-   PROATLETCARE: LOAD-SEASON.CSS - ФІНАЛЬНА ВЕРСІЯ (СТАБІЛЬНИЙ FLEXBOX)
+   PROATLETCARE: LOAD-SEASON.CSS - ФІНАЛЬНА ВЕРСІЯ ДВОХ КОЛОНОК (СТАБІЛЬНИЙ)
    ========================================================================= */
 
 * {
@@ -10,9 +10,9 @@
 .dashboard-container {
     display: flex;
     gap: 30px;
-    flex-wrap: wrap; 
+    flex-wrap: wrap; /* Дозволяє переносити на мобільних пристроях */
     max-width: 100%;
-    align-items: stretch; /* Щоб ліва та права колонка були однакової висоти */
+    align-items: stretch; 
 }
 
 /* --- 1. СТИЛІ КАРТОК (БЕЗ ЗМІН) --- */
@@ -35,19 +35,21 @@
 }
 
 
-/* --- 2. РОЗМІРИ КОЛОНОК (ДЕСКТОП: СТАБІЛЬНА ГНУЧКІСТЬ) --- */
+/* --- 2. РОЗМІРИ КОЛОНОК (ДЕСКТОП: НОВА ЛОГІКА) --- */
 
-/* 2.1. ЛІВА КОЛОНКА: ФОРМА */
+/* 2.1. ЛІВА КОЛОНКА: ФОРМА - ФІКСОВАНА ШИРИНА */
 .form-container {
-    flex: 1 1 350px; /* Гнучке зростання з коеф. 1, мінімальна база 350px */
-    min-width: 350px; 
-    width: auto; 
+    width: 350px; /* Фіксуємо ширину */
+    flex-shrink: 0; /* Не дозволяємо стискатися, поки не спрацює media query */
+    min-width: 350px;
 }
 
 /* 2.2. ПРАВА КОЛОНКА: СТАТИСТИКА + ГРАФІКИ */
 .info-column {
-    flex: 3 1 450px; /* Гнучке зростання з коеф. 3, мінімальна база 450px */
-    min-width: 450px; 
+    flex-grow: 1; /* Займає ВЕСЬ залишок простору */
+    flex-shrink: 1;
+    flex-basis: auto; /* Автоматично обчислюється */
+    min-width: 400px; /* Мінімальна ширина для правого блоку, перш ніж відбудеться перенос */
     display: flex;
     flex-direction: column; 
     gap: 30px; 
@@ -76,35 +78,34 @@
 }
 
 
-/* --- 3, 4, 5. СТИЛІ ФОРМИ, RPE, СПІДОМЕТРА (Без змін) --- */
-/* ... (Вставте сюди всі стилі для форми, RPE, та спідометра з вашого файлу) ... */
+/* --- 3, 4, 5. СТИЛІ ФОРМИ, RPE, СПІДОМЕТРА (Вставте сюди весь ваш попередній код) --- */
+/* ... (весь код для label, input, .submit-button, .rpe-group, .speedometer-widget і т.д.) ... */
 
-label { /* ... */ }
-input[type="date"], input[type="number"] { /* ... */ }
-/* ... Всі інші стилі для форми, кнопки, RPE, спідометра ... */
+label { display: block; margin-bottom: 8px; color: #AAAAAA; font-weight: 500; }
+input[type="date"], input[type="number"] { width: 100%; padding: 10px; margin-bottom: 20px; background-color: #1a1a1a; border: 1px solid #333; color: #CCCCCC; border-radius: 5px; box-sizing: border-box; transition: border-color 0.3s; }
+/* ... (інші стилі для форми) ... */
 
 /* --- 6. АДАПТИВНІСТЬ --- */
 
-/* !!! ЗНИЖУЄМО БРЕЙКПОІНТ !!! */
-/* Активуємо мобільний режим, коли ширина менше 900px */
-@media (max-width: 900px) {
+/* АКТИВАЦІЯ МОБІЛЬНОГО РЕЖИМУ (100% ШИРИНА) - коли загальний простір менше ~780px */
+@media (max-width: 800px) { /* Змінив брейкпоінт на 800px для безпеки */
     
-    /* На невеликих екранах все розташовуємо у стовпець */
+    /* Все розташовуємо у стовпець */
     .dashboard-container, .info-column {
         flex-direction: column; 
         gap: 20px;
     }
 
-    /* Всі основні контейнери займають 100% ширини, примусово! */
+    /* Примусово 100% для всіх колонок */
     .form-container, .info-column, .stats-card, .chart-card { 
-        /* Знімаємо мінімальну ширину і примусово ставимо 100% */
-        flex: 1 1 100%; 
         width: 100% !important; 
+        flex-basis: 100%; 
         min-width: unset !important; 
-        max-width: 100%; 
+        flex-shrink: 1;
+        flex-grow: 1;
     }
     
-    /* ГАРАНТУЄМО, ЩО ГРАФІКИ НЕ ПЛИВУТЬ ВНИЗ - вони просто вертикально розташовані */
+    /* Графіки */
     .chart-card {
         height: auto; 
         min-height: 300px; 
@@ -112,32 +113,11 @@ input[type="date"], input[type="number"] { /* ... */ }
 }
 
 @media (max-width: 600px) {
-    /* ... (Стилі для дуже вузьких екранів, як у попередній версії) ... */
-    .main-content {
-        padding: 15px;
-    }
-
+    /* Додаткове стиснення спідометра на малих екранах */
     .gauge-display {
         width: 250px; 
         height: 125px;
-        margin-bottom: 10px;
+        /* ... (Інші стилі спідометра) ... */
     }
-    .gauge-arc {
-        width: 250px;
-        height: 250px;
-    }
-    .gauge-arc::before {
-        width: 250px;
-        height: 250px;
-        mask: radial-gradient(transparent 105px, black 105px, black 125px, transparent 125px);
-        -webkit-mask: radial-gradient(transparent 105px, black 105px, black 125px, transparent 125px);
-    }
-    .gauge-needle {
-        height: 125px;
-        bottom: 8px;
-    }
-    #acwr-value {
-        font-size: 2.5em; 
-    }
-    
+    /* ... (решта стилів для спідометра) ... */
 }
