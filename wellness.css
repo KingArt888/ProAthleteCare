@@ -46,7 +46,7 @@
 
 /* Стилі для форми */
 #wellness-form {
-    text-align: center; /* Центруємо ВЕСЬ контент форми */
+    /* ЗАЛИШАЄМО ПУСТИМ, щоб не впливати на вирівнювання рейтингу */
 }
 #wellness-form label {
     display: block;
@@ -54,7 +54,7 @@
     margin-top: 15px;
     margin-bottom: 5px;
     font-weight: bold;
-    text-align: left; /* Мітки над рейтингами залишаємо зліва для читабельності */
+    text-align: left; /* Мітки над рейтингами завжди зліва */
 }
 .gold-button {
     background-color: #FFC72C;
@@ -117,17 +117,34 @@
     transition: color 0.3s ease; 
 }
 
-/* 2. СТИЛІ РЕЙТИНГІВ: ЗЛІВА НАПРАВО */
+/* 2. СТИЛІ РЕЙТИНГІВ: ЗЛІВА НАПРАВО (1-10) */
 .rating-group {
     display: flex;
-    flex-direction: row; /* Зліва направо 1...10 */
-    justify-content: flex-start; 
+    flex-direction: row; /* КЛЮЧОВЕ ЗМІНА: Зліва направо (1, 2, 3...) */
+    justify-content: flex-start; /* Вирівнювання по лівому краю */
     direction: ltr; 
     font-size: 1.5em; 
-    margin: 10px auto 20px auto; /* Центруємо групу */
+    margin: 10px 0 20px 0; 
     flex-wrap: nowrap;
-    width: fit-content; 
+    width: 100%; 
 }
+
+/* КЛЮЧОВЕ ДЛЯ ЗІРОК (Сон): ПЕРЕХОДЯТЬ ЗЛІВА НАПРАВО */
+.star-group {
+    flex-direction: row; /* Зірки зліва направо */
+    justify-content: flex-start;
+}
+.star-group input:checked ~ label:before, 
+.star-group label:hover:before, 
+.star-group label:hover ~ label:before { 
+    color: #333; /* Початковий сірий колір, який покриває усі, крім обраних */
+}
+/* Перевизначаємо логіку, щоб зірки активувалися лише ті, що зліва від курсору/вибору */
+.star-group input:checked ~ label:before, 
+.star-group label:hover:before { 
+    color: #FFC72C; 
+}
+
 .rating-group input {
     display: none; 
 }
@@ -137,27 +154,26 @@
     transition: color 0.2s;
 }
 
-/* ІКОНКИ ТА КОЛЬОРИ (ЗАГАЛЬНІ) */
-
+/* ІКОНКИ ТА КОЛЬОРИ */
 /* Уніфікований відступ між іконками */
 .rating-group label:before {
-    margin-right: 5px; 
+    margin-right: 15px; 
 }
 
-/* 1. Зірки (Сон) - ВИПРАВЛЕНО РОЗМІР */
+/* 1. Зірки (Сон) - однаковий розмір */
 .star-group label:before { 
     content: '★'; 
-    font-size: 1.25em; /* ЗБІЛЬШЕНО, щоб відповідати візуальному розміру емодзі */
+    font-size: 1.25em; 
 }
-.star-group input:checked ~ label:before, .star-group label:hover:before, .star-group label:hover ~ label:before { color: #FFC72C; }
 
-/* 2. Червоний Кружок (Біль/Втома) - ВИПРАВЛЕНО ПОЧАТКОВИЙ СТАН */
+
+/* 2. Червоний Кружок (Біль/Втома) - сірий, потім червоний */
 .pain-group label:before { 
     content: '🔴'; 
-    filter: grayscale(100%); /* КЛЮЧОВЕ: Робить його сірим/темним спочатку */
+    filter: grayscale(100%); 
 }
 .pain-group input:checked ~ label:before, .pain-group label:hover:before, .pain-group label:hover ~ label:before { 
-    filter: none; /* Активний стан повертає колір */
+    filter: none; 
 }
 
 /* 3. Блискавки (Енергія/Настрій) */
@@ -187,7 +203,7 @@ footer {
 }
 
 
-/* 3. МЕДІА-ЗАПИТИ ДЛЯ АДАПТИВНОСТІ */
+/* 3. МЕДІА-ЗАПИТИ ДЛЯ АДАПТИВНОСТІ (Для мобільного залишається зліва направо) */
 
 /* СТИЛІ МЕНЮ ТА ШАПКИ НА ПЛАНШЕТАХ/МОБІЛЬНИХ (ДО 768px) */
 @media (max-width: 768px) {
@@ -232,9 +248,10 @@ footer {
 @media (max-width: 480px) {
     /* Стиснення іконок на мобільному для розміщення в один рядок */
     .rating-group {
+        flex-direction: row; 
+        justify-content: space-between; 
         font-size: 1.3em; 
         width: 100%; 
-        justify-content: space-between; 
         margin: 10px 0 20px 0;
     }
     .rating-group label:before {
@@ -243,7 +260,6 @@ footer {
     .rating-group label {
         margin: 0 0.5px; 
     }
-    /* Видалення додаткового тексту, якщо він був */
     .rating-group label:after {
         content: none !important;
     }
