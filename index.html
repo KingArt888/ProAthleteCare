@@ -2,15 +2,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ProAthleteCare | Артем Кулик</title>
-    <link rel="stylesheet" href="style.css"></head><body>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="navigation-mobile.css">
+</head>
+<body>
     <header>
         <img src="AK_logo.png" alt="ProAthleteCare Logo" class="logo">
         <h1 class="project-title">ProAthleteCare</h1>
         <p class="tagline">Онлайн-тренінг та професійний супровід атлетів</p>
+
+        <button class="menu-toggle" id="menu-toggle-button" aria-label="Toggle Navigation">
+            ☰
+        </button>
     </header>
     
     <div class="content-wrapper">
-       <nav class="sidebar">
+       <nav class="sidebar" id="main-sidebar">
     <a href="wellness.html">Wellness Control <img src="AK_logo.png" class="menu-icon" alt="АК"></a> 
     
     <a href="injury.html">Injury Story <img src="AK_logo.png" class="menu-icon" alt="АК"></a>
@@ -39,5 +46,11 @@
     </div>
     
     <footer>
-        &copy; 2025 ProAthleteCare. Створено з Gemini.
-    </footer></body></html>
+        &copy; 2025 ProAthleteCare. 
+    </footer>
+
+    <script src="navigation-common.js"></script>
+    
+</body>
+</html>
+
