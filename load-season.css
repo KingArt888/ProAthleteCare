@@ -355,7 +355,11 @@ input[type="date"]:focus, input[type="number"]:focus {
 
 /* --- 6. АДАПТИВНІСТЬ (ВИПРАВЛЕНА) --- */
 
-@media (max-width: 1200px) { /* ЗМІНА: Порогове значення збільшено до 1200px для запобігання стисненню меню */
+@media (max-width: 1200px) { 
+    
+    /* ЗМІНА: Максимальний breakpoint збільшено до 1200px. 
+       Це гарантує, що контент адаптується раніше на невеликих 
+       десктопах і не стискає бокове меню, яке має ширину 250px. */
     
     /* На невеликих екранах все розташовуємо у стовпець */
     .dashboard-container, .info-column {
@@ -366,14 +370,8 @@ input[type="date"]:focus, input[type="number"]:focus {
     /* Всі основні контейнери займають 100% ширини */
     .form-container, .info-column, .stats-card, .chart-card { 
         width: 100%;
-        min-width: unset; 
+        min-width: unset; /* Знімаємо мінімальні обмеження */
         max-width: 100%; 
-    }
-    
-    /* ФІКСАЦІЯ ГРАФІКІВ: Знімаємо жорстку висоту для адаптації */
-    .chart-card {
-        height: auto; 
-        min-height: 300px; /* Забезпечуємо мінімальну висоту для графіків */
     }
 }
 
@@ -381,34 +379,4 @@ input[type="date"]:focus, input[type="number"]:focus {
     .main-content {
         padding: 15px;
     }
-
-    /* Додаткове стиснення спідометра на малих екранах */
-    .gauge-display {
-        width: 250px; 
-        height: 125px;
-        margin-bottom: 10px;
-    }
-    .gauge-arc {
-        width: 250px;
-        height: 250px;
-    }
-    .gauge-arc::before {
-        width: 250px;
-        height: 250px;
-        /* Регулюємо маску для зменшеного розміру */
-        mask: radial-gradient(transparent 105px, black 105px, black 125px, transparent 125px);
-        -webkit-mask: radial-gradient(transparent 105px, black 105px, black 125px, transparent 125px);
-    }
-    .gauge-needle-pivot {
-        width: 16px; 
-        height: 16px;
-    }
-    .gauge-needle {
-        height: 125px;
-        bottom: 8px;
-    }
-    #acwr-value {
-        font-size: 2.5em; 
-    }
-    
 }
