@@ -16,6 +16,7 @@
     gap: 30px;
     margin-top: 20px;
     flex-wrap: wrap; 
+    align-items: flex-start; /* Вирівнювання по верху */
 }
 
 /* Картки для форми та графіка */
@@ -56,7 +57,6 @@
     border: none;
     padding: 12px 25px;
     border-radius: 5px;
-    /* Центрування кнопки */
     display: block;
     margin: 30px auto 0 auto; 
     cursor: pointer;
@@ -68,7 +68,7 @@
     background-color: #E6B800;
 }
 
-/* Стиль для ВИМКНЕНОЇ (disabled) кнопки після щоденного подання */
+/* Стиль для ВИМКНЕНОЇ (disabled) кнопки */
 .disabled-button {
     background-color: #6c757d !important; 
     color: #999999 !important;
@@ -91,18 +91,34 @@
     font-size: 1.2em;
 }
 
-/* --- НОВІ СТИЛІ ДЛЯ МАЛИХ ГРАФІКІВ У ФОРМІ --- */
+/* --- МАЛІ ГРАФІКИ --- */
 .small-chart-container {
     height: 80px; 
     width: 100%;
     margin-top: -10px; 
     margin-bottom: 20px;
-    padding: 5px;
+    padding: 5px 10px;
     background-color: #000000;
     border-radius: 5px;
+    position: relative;
+    border: 1px solid #333; 
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
 }
 
-/* --- Стилі для ВСІХ РЕЙТИНГІВ ІКОНОК (З номерами зверху) --- */
+/* Шкала 0-10 під графіком */
+.small-chart-container::after {
+    content: '0 1 2 3 4 5 6 7 8 9 10';
+    position: absolute;
+    bottom: -15px;
+    left: 10px;
+    font-size: 0.6em; /* маленькі цифри */
+    color: #888888;
+    letter-spacing: 7px; /* рівномірний розподіл */
+}
+
+/* --- RPE / ІКОНИ --- */
 .rating-group {
     display: flex;
     flex-direction: row-reverse; 
@@ -115,7 +131,6 @@
     display: none; 
 }
 .rating-group label {
-    /* *** УНІФІКАЦІЯ ШИРИНИ ТА РОЗМІРУ КОНТЕЙНЕРІВ ІКОНОК *** */
     display: inline-block; 
     width: 28px;           
     height: 28px;          
@@ -123,18 +138,17 @@
     text-align: center;    
     padding: 0;            
     position: relative;    
-    /* ********************************************************* */
     color: #888; 
     cursor: pointer;
     transition: color 0.2s;
 }
 
-/* Загальні стилі для номера (::after) */
+/* Зменшення цифр над іконками */
 .rating-group label::after {
     display: block;
     position: absolute;
-    top: -10px;             
-    font-size: 0.6em;       
+    top: -8px; /* менше відстань */
+    font-size: 0.5em; /* менше цифри */
     left: 50%;
     transform: translateX(-50%);
     color: #555; 
@@ -154,112 +168,65 @@
 .rating-group input[value="9"] + label::after { content: '9'; }
 .rating-group input[value="10"] + label::after { content: '10'; }
 
-
 /* --- ГРУПИ ТА АКТИВАЦІЯ --- */
-
-/* 1. Зірки (Сон) */
-.star-group label::before {
-    content: '★'; 
-}
+/* Зірки (Сон) */
+.star-group label::before { content: '★'; }
 .star-group input:checked ~ label::before,
 .star-group label:hover::before,
-.star-group label:hover ~ label::before {
-    color: #FFC72C; 
-}
-/* Активація номера */
+.star-group label:hover ~ label::before { color: #FFC72C; }
 .star-group input:checked ~ label::after,
 .star-group label:hover::after,
 .star-group label:hover ~ label::after { color: #FFC72C; }
 
-
-/* 2. М'ячі (Біль/Втома) */
-.pain-group label::before {
-    content: '●'; 
-    font-size: 1.7em; 
-}
-/* ФІКС ВІДСТУПУ ДЛЯ НОМЕРА М'ЯЧИКІВ: Максимальне наближення */
-.pain-group label::after { 
-    top: 10px; 
-}
-/* ---------------------------------- */
+/* М'ячі (Біль/Втома) */
+.pain-group label::before { content: '●'; font-size: 1.7em; }
+.pain-group label::after { top: 10px; }
 .pain-group input:checked ~ label::before,
 .pain-group label:hover::before,
-.pain-group label:hover ~ label::before {
-    color: #DA3E52; 
-}
-/* Активація номера */
+.pain-group label:hover ~ label::before { color: #DA3E52; }
 .pain-group input:checked ~ label::after,
 .pain-group label:hover::after,
 .pain-group label:hover ~ label::after { color: #DA3E52; }
 
-
-/* 3. Блискавки (Енергія/Настрій) */
+/* Блискавки (Енергія/Настрій) */
 .energy-group label { color: inherit; } 
-.energy-group label::before {
-    content: '⚡'; 
-    filter: grayscale(100%); 
-}
+.energy-group label::before { content: '⚡'; filter: grayscale(100%); }
 .energy-group input:checked ~ label::before,
 .energy-group label:hover::before,
-.energy-group label:hover ~ label::before {
-    filter: none; 
-}
-/* Активація номера */
+.energy-group label:hover ~ label::before { filter: none; }
 .energy-group input:checked ~ label::after,
 .energy-group label:hover::after,
 .energy-group label:hover ~ label::after { color: #FFC72C; }
 
-
-/* 4. Краплі (Гідратація) */
+/* Краплі (Гідратація) */
 .hydration-group label { color: inherit; } 
-.hydration-group label::before {
-    content: '💧'; 
-    filter: grayscale(100%); 
-}
+.hydration-group label::before { content: '💧'; filter: grayscale(100%); }
 .hydration-group input:checked ~ label::before,
 .hydration-group label:hover::before,
-.hydration-group label:hover ~ label::before {
-    filter: none; 
-}
-/* Активація номера */
+.hydration-group label:hover ~ label::before { filter: none; }
 .hydration-group label:hover::after,
 .hydration-group input:checked ~ label::after,
 .hydration-group label:hover ~ label::after { color: #5B92E5; } 
 
-
-/* 5. Вогник (Стрес) */
+/* Вогник (Стрес) */
 .stress-group label { color: inherit; } 
-.stress-group label::before {
-    content: '🔥'; 
-    filter: grayscale(100%); 
-}
+.stress-group label::before { content: '🔥'; filter: grayscale(100%); }
 .stress-group input:checked ~ label::before,
 .stress-group label:hover::before,
-.stress-group label:hover ~ label::before {
-    filter: none; 
-}
-/* Активація номера */
+.stress-group label:hover ~ label::before { filter: none; }
 .stress-group input:checked ~ label::after,
 .stress-group label:hover::after,
 .stress-group label:hover ~ label::after { color: #FF6700; } 
 
-
-/* 6. Галочка (Готовність) */
+/* Галочка (Готовність) */
 .ready-group label { color: inherit; } 
-.ready-group label::before {
-    content: '✅'; 
-    filter: grayscale(100%); 
-}
+.ready-group label::before { content: '✅'; filter: grayscale(100%); }
 .ready-group input:checked ~ label::before,
 .ready-group label:hover::before,
-.ready-group label:hover ~ label::before {
-    filter: none; 
-}
-/* Активація номера */
+.ready-group label:hover ~ label::before { filter: none; }
 .ready-group input:checked ~ label::after,
 .ready-group label:hover::after,
 .ready-group label:hover ~ label::after { color: #4CAF50; } 
-
 
 /* Футер */
 footer {
@@ -271,17 +238,9 @@ footer {
     border-top: 1px solid #1a1a1a;
 }
 
-/* --- СТИЛІ МЕНЮ ТА ШАПКИ НА МОБІЛЬНИХ (ДО 768px) --- */
+/* --- МЕНЮ ТА ШАПКА НА МОБІЛЬНИХ (ДО 768px) --- */
 @media (max-width: 768px) {
-    /* *** ФІКС: Забезпечення повної ширини для карток форми та графіка *** */
-    .form-card, .chart-card {
-        width: 100%;       
-        max-width: 100%;   
-        min-width: 0;      
-    }
-    /* *************************************************************** */
-
-    /* ФІКСОВАНА ШАПКА */
+    .form-card, .chart-card { width: 100%; max-width: 100%; min-width: 0; }
     header {
         position: fixed;
         top: 0;
@@ -293,25 +252,12 @@ footer {
         display: flex;
         align-items: center; 
         justify-content: flex-start;
-        /* ЗМІНА: Зменшення верхнього відступу з 10px до 5px */
         padding: 5px 60px 5px 10px; 
     }
-    header .logo { 
-        width: 40px; 
-        height: 40px;
-    }
-    header .project-title {
-        font-size: 1.1em; 
-        margin-left: 10px;
-        flex-shrink: 1;
-    }
-    header .tagline {
-        display: none; 
-    }
-    .content-wrapper {
-        padding-top: 100px; 
-        flex-direction: column; 
-    }
+    header .logo { width: 40px; height: 40px; }
+    header .project-title { font-size: 1.1em; margin-left: 10px; flex-shrink: 1; }
+    header .tagline { display: none; }
+    .content-wrapper { padding-top: 100px; flex-direction: column; }
     .menu-toggle {
         display: block !important; 
         position: fixed; 
@@ -341,7 +287,5 @@ footer {
         display: flex; 
         flex-direction: column;
     }
-    .sidebar.active {
-        transform: translateX(0); 
-    }
+    .sidebar.active { transform: translateX(0); }
 }
