@@ -24,11 +24,12 @@
     font-size: 0.9em;
 
     
-}/* Обгортка для вмісту та меню */
+/* Обгортка для вмісту та меню */
 .content-wrapper {
-    display: flex; /* <-- Важливо: повертаємо flex */
+    display: flex; /* <-- Повертаємо Flexbox */
     min-height: calc(100vh - 100px);
 }
+
 /* Бічне меню (Sidebar) */
 .sidebar {
     width: 250px;
@@ -36,14 +37,14 @@
     background-color: #0d0d0d;
     padding: 20px;
     box-shadow: 2px 0 10px rgba(255, 199, 44, 0.2);
-    /* Прибираємо position: fixed, top, height, z-index */
+    /* Усі позиційні властивості (position, top, height) видалено */
 }
+
 /* Основний вміст */
 .main-content {
     flex-grow: 1;
     padding: 30px; 
     background-color: #000000;
-    /* Прибираємо width: 100%; якщо ви його додавали сюди */
 }
     
 }/* Стилі для кожного пункту меню */.sidebar a {
