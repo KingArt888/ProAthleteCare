@@ -181,7 +181,6 @@ function renderDistanceChart() {
             }]
         },
         options: {
-            // ✅ ЦІ НАЛАШТУВАННЯ Є КОРЕКТНИМИ
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
@@ -237,7 +236,6 @@ function renderLoadChart(acuteLoad, chronicLoad) {
             ]
         },
         options: {
-            // ✅ ЦІ НАЛАШТУВАННЯ Є КОРЕКТНИМИ
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
