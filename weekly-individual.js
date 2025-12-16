@@ -1,7 +1,7 @@
 // weekly-individual.js
 // ПОТРЕБУЄ exercise_library.js ДЛЯ РОБОТИ
 
-const STORAGE_KEY = 'weeklyPlanData';
+const WEEKLY_STORAGE_KEY = 'weeklyPlanData';
 const COLOR_MAP = {
     'MD': { status: 'MD', colorClass: 'color-red' },
     'MD+1': { status: 'MD+1', colorClass: 'color-dark-green' }, 
