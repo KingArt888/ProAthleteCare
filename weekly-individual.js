@@ -774,27 +774,32 @@ window.initializeCollapsibles = function () {
 
 document.addEventListener('DOMContentLoaded', () => {
     
+    // Перевіряємо наявність activitySelects
     const activitySelects = document.querySelectorAll('.activity-type-select');
-    const form = document.getElementById('weekly-plan-form');
-    
     activitySelects.forEach((select) => { 
          select.addEventListener('change', () => {
              updateCycleColors(true); 
          });
     });
 
-    form.addEventListener('submit', (e) => {
-         e.preventDefault();
-         saveData(null, null);
-    });
-    
+    // Перевіряємо наявність форми
+    const form = document.getElementById('weekly-plan-form');
+    if (form) {
+        form.addEventListener('submit', (e) => {
+             e.preventDefault();
+             saveData(null, null);
+        });
+    }
+
+    // Перевіряємо наявність кнопки додавання
     const addSelectedBtn = document.getElementById('add-selected-btn');
     if (addSelectedBtn) {
         addSelectedBtn.addEventListener('click', handleSelectionComplete);
     }
     
+    // Перевіряємо наявність модального вікна (ПРИЧИНА ПОМИЛКИ: Element may be null)
     const modal = document.getElementById('exercise-selection-modal');
-    if (modal) {
+    if (modal) { // Додано перевірку, щоб уникнути TypeError
         modal.addEventListener('click', (e) => {
             if (e.target.id === 'exercise-selection-modal' || e.target.classList.contains('close-modal-btn')) {
                 closeExerciseModal();
