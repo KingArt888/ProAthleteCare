@@ -1,9 +1,11 @@
-// daily-individual.js
+// daily-individual.js - Логіка відображення щоденного індивідуального плану тренувань
 
 const STORAGE_KEY = 'weeklyPlanData';
 const YOUTUBE_EMBED_BASE = 'https://www.youtube.com/embed/';
 
-// Колірна палітра MD
+/**
+ * @const {Object.<string, {status: string, colorClass: string}>} COLOR_MAP - Колірна палітра MD-статусів.
+ */
 const COLOR_MAP = {
     'MD': { status: 'MD', colorClass: 'color-red' },
     'MD+1': { status: 'MD+1', colorClass: 'color-dark-green' }, 
@@ -13,10 +15,17 @@ const COLOR_MAP = {
     'MD-3': { status: 'MD-3', colorClass: 'color-orange' }, 
     'MD-4': { status: 'MD-4', colorClass: 'color-blue' }, 
     'REST': { status: 'REST', colorClass: 'color-neutral' }, 
-    'TRAIN': { status: 'TRAIN', colorClass: 'color-dark-grey' }, 
+    'TRAIN': { status: 'TRAIN', colorClass: 'color-dark-grey' },
 };
+
+/**
+ * @const {string[]} dayNamesFull - Повні назви днів тижня, починаючи з Неділі (для new Date().getDay()).
+ */
 const dayNamesFull = ['Неділя', 'Понеділок', 'Вівторок', 'Середа', 'Четвер', 'П\'ятниця', 'Субота'];
 
+/**
+ * @const {Object.<string, string>} MD_RECOMMENDATIONS - Рекомендації для кожного MD-статусу.
+ */
 const MD_RECOMMENDATIONS = {
     'MD': 'Сьогодні ігровий день. Зосередьтеся на швидкому відновленні, живленні та психологічній готовності. Уникайте важких фізичних навантажень, якщо вони не є частиною розминки.',
     'MD+1': 'Високе навантаження! Це ключовий тренувальний день. Максимальна інтенсивність і концентрація. Обов’язково виконуйте відновлювальні процедури після тренування.',
@@ -29,8 +38,15 @@ const MD_RECOMMENDATIONS = {
     'TRAIN': 'Стандартний тренувальний день без чіткої прив\'язки до матчу. Виконуйте заплановану програму згідно з вашим мікроциклом.'
 };
 
+/* ======================================================= */
+/* --- ДОПОМІЖНІ ФУНКЦІЇ --- */
+/* ======================================================= */
+
 /**
- * Отримує індекс сьогоднішнього дня (0=Пн, 6=Нд)
+ * Отримує індекс сьогоднішнього дня (0=Пн, 6=Нд) відповідно до структури плану.
+ * JavaScript getDay() повертає 0=Нд, 1=Пн... 6=Сб.
+ * Ми конвертуємо: 0=Пн, 6=Нд.
+ * @returns {number} Індекс дня тижня (0-6).
  */
 function getCurrentDayIndex() {
     const today = new Date();
@@ -39,19 +55,55 @@ function getCurrentDayIndex() {
 }
 
 /**
- * Зберігає/оновлює статус виконання вправи в localStorage
+ * Нормалізує назву етапу (stage) для групування.
+ * @param {string|null} stage - Оригінальна назва етапу.
+ * @returns {string} Нормалізована назва етапу.
+ */
+function normalizeStage(stage) {
+    if (!stage) return 'UNSORTED';
+
+    const normalized = stage
+        .toLowerCase()
+        .replace(/\s+/g, '-')   // пробіли → дефіс
+        .replace(/--+/g, '-');  // подвійні дефіси
+
+    // Повертаємо стандартизовані назви
+    switch (normalized) {
+        case 'pre-training':
+            return 'Pre-training';
+        case 'main-training':
+            return 'Main-training';
+        case 'post-training':
+            return 'Post-training';
+        case 'recovery':
+            return 'Recovery';
+        default:
+            // Для будь-яких інших незрозумілих етапів
+            return stage.replace(/\s+/g, '-');
+    }
+}
+
+
+/* ======================================================= */
+/* --- ОБРОБКА ВИКОНАННЯ ВПРАВ ТА ЗВОРОТНОГО ЗВ'ЯЗКУ --- */
+/* ======================================================= */
+
+/**
+ * Зберігає/оновлює статус виконання вправи в localStorage.
+ * @param {string} id - Унікальний ID вправи.
+ * @param {boolean} isChecked - Статус виконання.
  */
 function toggleCompletion(id, isChecked) {
     localStorage.setItem(id, isChecked);
     const exerciseBlock = document.querySelector(`[data-exercise-id="${id}"]`);
     if (exerciseBlock) {
-         // exerciseBlock.style.opacity = isChecked ? 0.7 : 1; 
+         // Закоментований ефект: exerciseBlock.style.opacity = isChecked ? 0.7 : 1; 
     }
     console.log(`Статус вправи ${id} встановлено: ${isChecked}`);
 }
 
 /**
- * Обробка відправки форми зворотного зв'язку
+ * Обробка відправки форми зворотного зв'язку.
  */
 function submitFeedback() {
     const feedbackText = document.getElementById('user-feedback-text').value.trim();
@@ -78,7 +130,8 @@ function submitFeedback() {
 }
 
 /**
- * Оновлення відображення форми/відгуку
+ * Оновлення відображення форми/збереженого відгуку.
+ * @param {Object|null} feedbackData - Збережені дані відгуку.
  */
 function updateFeedbackDisplay(feedbackData = null) {
     const container = document.getElementById('user-feedback-container');
@@ -111,8 +164,14 @@ function updateFeedbackDisplay(feedbackData = null) {
 }
 
 
+/* ======================================================= */
+/* --- ЛОГІКА MDX ТА ГЕНЕРАЦІЯ HTML --- */
+/* ======================================================= */
+
 /**
- * Визначає тижневий діапазон MD-статусів (MDX)
+ * Визначає тижневий діапазон MD-статусів (MDX) для відображення навантаження.
+ * @param {Object} savedData - Дані тижневого плану з localStorage.
+ * @returns {string} Рядок з діапазоном MDX (наприклад, "MD+2 до MD-1").
  */
 function calculateMdxRange(savedData) {
     const mdStatuses = [];
@@ -132,6 +191,7 @@ function calculateMdxRange(savedData) {
         }
     }
     
+    // Порядок MD-статусів від найвищого навантаження до найнижчого
     const mdOrder = [
         'MD+3', 'MD+2', 'MD+1', 'MD', 'MD-1', 'MD-2', 'MD-3', 'MD-4', 'MD-5', 'MD-6'
     ]; 
@@ -140,9 +200,9 @@ function calculateMdxRange(savedData) {
         return "Базовий / REST";
     }
     
-    let minIndex = mdOrder.length; 
-    let maxIndex = -1;             
-    
+    let minIndex = mdOrder.length; // Найменший індекс (найвище навантаження)
+    let maxIndex = -1;             // Найбільший індекс (найнижче навантаження)
+                      
     mdStatuses.forEach(status => {
         const index = mdOrder.indexOf(status);
         if (index !== -1) {
@@ -160,10 +220,15 @@ function calculateMdxRange(savedData) {
 
 
 /**
- * Генерує HTML для відображення однієї вправи
+ * Генерує HTML для відображення однієї вправи.
+ * @param {Object} exercise - Об'єкт вправи.
+ * @param {number} index - Оригінальний індекс вправи в масиві.
+ * @returns {string} HTML-розмітка для елемента вправи.
  */
 function createExerciseItemHTML(exercise, index) {
-    const uniqueId = `ex-${getCurrentDayIndex()}-${index}`; 
+    const todayIndex = getCurrentDayIndex();
+    // Унікальний ID, прив'язаний до дня та позиції
+    const uniqueId = `ex-${todayIndex}-${index}`; 
     const isCompleted = localStorage.getItem(uniqueId) === 'true' ? 'checked' : '';
 
     let mediaHtml = '';
@@ -175,8 +240,8 @@ function createExerciseItemHTML(exercise, index) {
     if (exercise.videoKey) {
         mediaHtml += `
             <iframe 
-                    src="${YOUTUBE_EMBED_BASE}${exercise.videoKey}" 
-                    frameborder="0" allowfullscreen>
+                src="${YOUTUBE_EMBED_BASE}${exercise.videoKey}" 
+                frameborder="0" allowfullscreen>
             </iframe>
         `;
     }
@@ -184,17 +249,18 @@ function createExerciseItemHTML(exercise, index) {
     const stageDisplay = exercise.stage ? `<p><strong>Етап:</strong> ${exercise.stage.replace('-', ' ')}</p>` : '';
     const categoryDisplay = exercise.category ? `<p><strong>Категорія:</strong> ${exercise.category}</p>` : '';
 
-    // Краще оформлення Sets/Reps
-    let descriptionDisplay = `<p><strong>Параметри/Опис:</strong> ${exercise.description}</p>`;
+    // Форматування Sets/Reps
+    let descriptionDisplay = exercise.description ? `<p><strong>Параметри/Опис:</strong> ${exercise.description}</p>` : '';
     
     if (exercise.sets || exercise.reps) {
         const setsReps = (exercise.sets ? `${exercise.sets} підходів` : '') + 
-                         (exercise.sets && exercise.reps ? ', ' : '') + 
-                         (exercise.reps ? `${exercise.reps} повторень` : '');
+                             (exercise.sets && exercise.reps ? ', ' : '') + 
+                             (exercise.reps ? `${exercise.reps} повторень` : '');
         
+        // Використовуємо окремий блок для Sets/Reps
         descriptionDisplay = `
             <p class="sets-reps-display">
-                <span style="color:#FFD700; font-size:1.1em;">${setsReps}</span>
+                <span style="color:#FFC72C; font-size:1.1em;">${setsReps}</span>
             </p>
             ${exercise.description ? `<p>Деталі: ${exercise.description}</p>` : ''}
         `;
@@ -217,7 +283,7 @@ function createExerciseItemHTML(exercise, index) {
                 <div class="completion-section">
                     <label for="${uniqueId}">Виконано:</label>
                     <input type="checkbox" id="${uniqueId}" ${isCompleted} 
-                           onchange="toggleCompletion('${uniqueId}', this.checked)">
+                               onchange="toggleCompletion('${uniqueId}', this.checked)">
                 </div>
             </div>
         </div>
@@ -226,7 +292,7 @@ function createExerciseItemHTML(exercise, index) {
 
 
 /**
- * Завантажує та відображає план на сьогоднішній день
+ * Завантажує та відображає план на сьогоднішній день.
  */
 function loadAndDisplayDailyPlan() {
     const todayIndex = getCurrentDayIndex(); 
@@ -239,6 +305,7 @@ function loadAndDisplayDailyPlan() {
     const recommendationContainer = document.getElementById('md-recommendations'); 
     const mdxRangeDisplay = document.getElementById('mdx-range-display'); 
     
+    // Перевірка наявності всіх критичних елементів
     if (!statusDisplay || !listContainer || !dateDisplay || !recommendationContainer || !mdxRangeDisplay) {
         console.error("❌ Критична помилка: Не знайдено один або кілька контейнерів у daily-individual.html.");
         if (listContainer) {
@@ -248,7 +315,8 @@ function loadAndDisplayDailyPlan() {
     }
     
     const today = new Date();
-    dateDisplay.textContent = `(${dayNamesFull[today.getDay()]}, ${today.toLocaleDateString('uk-UA')})`;
+    // Використовуємо dayNamesFull[today.getDay()] для коректної назви дня
+    dateDisplay.textContent = (`${dayNamesFull[today.getDay()]}, ${today.toLocaleDateString('uk-UA')}`);
 
     try {
         const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
@@ -265,6 +333,8 @@ function loadAndDisplayDailyPlan() {
         mdxRangeDisplay.textContent = calculateMdxRange(savedData);
         const style = COLOR_MAP[mdStatus] || COLOR_MAP['TRAIN'];
         statusDisplay.textContent = style.status;
+        
+        // Очищення та додавання класу кольору
         Object.values(COLOR_MAP).forEach(map => statusDisplay.classList.remove(map.colorClass)); 
         statusDisplay.classList.add(style.colorClass); 
         
@@ -274,6 +344,7 @@ function loadAndDisplayDailyPlan() {
             <p><strong>Рекомендація:</strong> ${recommendation}</p>
         `;
 
+        // Перевірка наявності вправ
         if (!todayPlan || !todayPlan.exercises || todayPlan.exercises.length === 0) {
             listContainer.innerHTML = `
                 <div class="note-info" style="color: #EEE; border: 1px solid #FFD700; padding: 15px; border-radius: 6px; background-color: #333;">
@@ -285,18 +356,83 @@ function loadAndDisplayDailyPlan() {
             return;
         }
         
-        let exercisesHtml = '';
-        let currentStage = '';
-
+        // ----------------------------------------------------------------------
+        // БЛОК: ГЕНЕРАЦІЯ ВКЛАДОК ДЛЯ ВСІХ ІСНУЮЧИХ ЕТАПІВ
+        // ----------------------------------------------------------------------
+        
+        let exercisesByStage = {};
+        // 1. Групування вправ за їхнім етапом (stage)
         todayPlan.exercises.forEach((exercise, index) => {
-            if (exercise.stage && exercise.stage !== currentStage) {
-                currentStage = exercise.stage;
-                exercisesHtml += `<h3 class="stage-header">${currentStage.replace('-', ' ')}</h3>`;
+            const stage = normalizeStage(exercise.stage);
+            if (!exercisesByStage[stage]) {
+                exercisesByStage[stage] = [];
             }
-            exercisesHtml += createExerciseItemHTML(exercise, index); 
+            // Зберігаємо оригінальний індекс для унікального ID
+            exercisesByStage[stage].push({ ...exercise, originalIndex: index }); 
+        });
+        
+        let exercisesHtml = '';
+        let stageIndex = 0;
+        
+        // 2. Визначення порядку відображення
+        const stageOrder = ['Pre-training', 'Main-training', 'Post-training', 'Recovery', 'UNSORTED'];
+        
+        // Створюємо масив унікальних етапів, які мають бути відрендерені
+        const allStages = Object.keys(exercisesByStage);
+        
+        // Сортування: спочатку відомі етапи, потім інші за алфавітом
+        allStages.sort((a, b) => {
+             const indexA = stageOrder.indexOf(a);
+             const indexB = stageOrder.indexOf(b);
+             
+             if (indexA !== -1 && indexB !== -1) return indexA - indexB; // Обидва відомі: за порядком
+             if (indexA !== -1) return -1; // A відомий: A йде першим
+             if (indexB !== -1) return 1;  // B відомий: B йде першим
+             
+             return a.localeCompare(b); // Обидва невідомі: за алфавітом
+        });
+
+
+        // 3. Генерація HTML для кожного етапу
+        allStages.forEach(stageKey => {
+            if (exercisesByStage[stageKey] && exercisesByStage[stageKey].length > 0) {
+                stageIndex++;
+                
+                // Класи для управління CSS: активний клас пустий, щоб приховати вміст (FOUC fix)
+                const activeClass = ''; 
+                // Іконка "закрита" (вправо)
+                const icon = '►'; 
+                
+                const stageTitle = stageKey.replace('-', ' ').toUpperCase();
+                
+                exercisesHtml += `<div class="training-section">`;
+
+                // Заголовок (Клікабельна вкладка)
+                exercisesHtml += `
+                    <h3 class="stage-header collapsible ${activeClass}">
+                        ${stageIndex}. ${stageTitle} <span class="toggle-icon">${icon}</span>
+                    </h3>
+                `;
+                // Вміст вправ (Контейнер)
+                exercisesHtml += `<div class="section-content ${activeClass}">`;
+                
+                exercisesByStage[stageKey].forEach((exercise) => {
+                    exercisesHtml += createExerciseItemHTML(exercise, exercise.originalIndex); 
+                });
+                
+                exercisesHtml += `</div></div>`; 
+            }
         });
 
         listContainer.innerHTML = exercisesHtml;
+        
+        // !!! КРИТИЧНИЙ ВИКЛИК !!! 
+        // Запускаємо ініціалізацію слухачів КЛІКІВ (функція має бути визначена у HTML/іншому файлі)
+        if (window.initializeCollapsibles) {
+            window.initializeCollapsibles();
+        } else {
+            console.warn("initializeCollapsibles() не знайдено. Переконайтеся, що JS-блок з цією функцією визначено в daily-individual.html.");
+        }
         
         // Відображення секції зворотного зв'язку
         updateFeedbackDisplay();
@@ -308,19 +444,7 @@ function loadAndDisplayDailyPlan() {
 }
 
 
-/**
- * Логіка для перемикання бічної панелі на мобільних пристроях
- */
-function setupMenuToggle() {
-    const toggleButton = document.getElementById('menu-toggle-button');
-    const sidebar = document.getElementById('main-sidebar');
 
-    if (toggleButton && sidebar) {
-        toggleButton.addEventListener('click', () => {
-            sidebar.classList.toggle('active');
-        });
-    }
-}
 
 
 // Запуск при завантаженні сторінки
