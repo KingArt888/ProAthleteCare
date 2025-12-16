@@ -1,25 +1,23 @@
 // daily-individual.js
 
-const STORAGE_KEY = 'weeklyPlanData';
+const DAILY_STORAGE_KEY = 'weeklyPlanData';
 const YOUTUBE_EMBED_BASE = 'https://www.youtube.com/embed/';
 
 // ===================== COLORS =====================
 const COLOR_MAP = {
     'MD': { status: 'MD', colorClass: 'color-red' },
-    'MD+1': { status: 'MD+1', colorClass: 'color-dark-green' },
-    'MD+2': { status: 'MD+2', colorClass: 'color-green' },
-    'MD-1': { status: 'MD-1', colorClass: 'color-yellow' },
-    'MD-2': { status: 'MD-2', colorClass: 'color-deep-green' },
-    'MD-3': { status: 'MD-3', colorClass: 'color-orange' },
-    'MD-4': { status: 'MD-4', colorClass: 'color-blue' },
-    'REST': { status: 'REST', colorClass: 'color-neutral' },
-    'TRAIN': { status: 'TRAIN', colorClass: 'color-dark-grey' }
+    'MD+1': { status: 'MD+1', colorClass: 'color-dark-green' }, 
+    'MD+2': { status: 'MD+2', colorClass: 'color-green' }, 
+    'MD-1': { status: 'MD-1', colorClass: 'color-yellow' }, 
+    'MD-2': { status: 'MD-2', colorClass: 'color-deep-green' }, 
+    'MD-3': { status: 'MD-3', colorClass: 'color-orange' }, 
+    'MD-4': { status: 'MD-4', colorClass: 'color-blue' }, 
+    'REST': { status: 'REST', colorClass: 'color-neutral' }, 
+    'TRAIN': { status: 'TRAIN', colorClass: 'color-dark-grey' }, 
 };
 
-const dayNamesFull = [
-    'Неділя','Понеділок','Вівторок','Середа',
-    'Четвер','Пʼятниця','Субота'
-];
+const dayNamesFull = ['Неділя', 'Понеділок', 'Вівторок', 'Середа', 'Четвер', 'П\'ятниця', 'Субота'];
+
 
 // ===================== RECOMMENDATIONS =====================
 const MD_RECOMMENDATIONS = {
@@ -113,12 +111,9 @@ function loadAndDisplayDailyPlan() {
     const list = document.getElementById('daily-exercise-list');
     if (!list) return;
 
-    const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    // ЗМІНЕНО: Використовує DAILY_STORAGE_KEY
+    const savedData = JSON.parse(localStorage.getItem(DAILY_STORAGE_KEY) || '{}'); 
     const todayPlan = savedData[planKey];
-
-    if (!todayPlan || !todayPlan.exercises?.length) {
-        list.innerHTML = `<p>На сьогодні немає вправ.</p>`;
-        return;
     }
 
     // === GROUP BY STAGE ===
