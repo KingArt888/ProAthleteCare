@@ -294,7 +294,7 @@ function loadAndDisplayDailyPlan() {
         let exercisesByStage = {};
         // 1. Групування вправ за їхнім етапом (stage)
         todayPlan.exercises.forEach((exercise, index) => {
-            const stage = (exercise.stage || 'UNSORTED').trim(); // Використовуємо .trim()
+            const stage = normalizeStage(exercise.stage);
             if (!exercisesByStage[stage]) {
                 exercisesByStage[stage] = [];
             }
@@ -389,6 +389,20 @@ function setupMenuToggle() {
             sidebar.classList.toggle('active');
         });
     }
+}
+
+-----------------------------------------------------------------------------------------------
+function normalizeStage(stage) {
+    if (!stage) return 'UNSORTED';
+
+    return stage
+        .toLowerCase()
+        .replace(/\s+/g, '-')   // пробіли → дефіс
+        .replace(/--+/g, '-')   // подвійні дефіси
+        .replace(/training$/, 'training') // захист
+        .replace(/^pre-training$/, 'Pre-training')
+        .replace(/^main-training$/, 'Main-training')
+        .replace(/^post-training$/, 'Post-training');
 }
 
 
