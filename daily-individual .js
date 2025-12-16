@@ -305,7 +305,7 @@ function loadAndDisplayDailyPlan() {
         console.error("Помилка при завантаженні щоденного плану:", e);
         listContainer.innerHTML = '<p style="color:red;">❌ Виникла критична помилка при завантаженні плану тренувань. Перевірте console.</p>';
     }
-}
+
 
 window.initializeCollapsibles = function () {
     document.querySelectorAll('.stage-header.collapsible').forEach(header => {
