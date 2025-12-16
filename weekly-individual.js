@@ -746,6 +746,22 @@ function closeExerciseModal() {
     }
 }
 
+window.initializeCollapsibles = function () {
+    document.querySelectorAll('.stage-header.collapsible').forEach(header => {
+        const content = header.nextElementSibling;
+        const icon = header.querySelector('.toggle-icon');
+
+        // Закритий за замовчуванням
+        content.style.display = 'none';
+        icon.textContent = '►'; // стрілка вправо
+
+        header.addEventListener('click', () => {
+            const isVisible = content.style.display === 'block';
+            content.style.display = isVisible ? 'none' : 'block';
+            icon.textContent = isVisible ? '►' : '▼';
+        });
+    });
+};
 
 // =========================================================
 // 5. ІНІЦІАЛІЗАЦІЯ ОБРОБНИКІВ
