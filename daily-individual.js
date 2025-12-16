@@ -1,14 +1,14 @@
 // daily-individual.js
 
-const DAILY_STORAGE_KEY = 'weeklyPlanData'; // ЗМІНА
+const DAILY_STORAGE_KEY = 'weeklyPlanData';
 const YOUTUBE_EMBED_BASE = 'https://www.youtube.com/embed/';
 
 // ===================== COLORS =====================
-// *** ВИДАЛЕНО const COLOR_MAP = {...} ***
+// ВИДАЛЕНО: const COLOR_MAP = { ... } для уникнення конфлікту
 
 const dayNamesFull = [
-    'Неділя','Понеділок','Вівторок','Середа',
-    'Четвер','Пʼятниця','Субота'
+    // ЗМІНА: Починаємо з Понеділка, щоб відповідати індексам 0-6
+    'Понеділок', 'Вівторок', 'Середа', 'Четвер', 'Пʼятниця', 'Субота', 'Неділя' 
 ];
 
 // ===================== RECOMMENDATIONS =====================
@@ -26,8 +26,9 @@ const MD_RECOMMENDATIONS = {
 
 // ===================== HELPERS =====================
 function getCurrentDayIndex() {
-    const d = new Date().getDay();
-    return d === 0 ? 6 : d - 1;
+    const d = new Date().getDay(); // 0 (Неділя) до 6 (Субота)
+    // Повертає 0 для Понеділка, 6 для Неділі, щоб відповідати збереженим day_plan_X
+    return d === 0 ? 6 : d - 1; 
 }
 
 function normalizeStage(stage) {
@@ -98,16 +99,41 @@ function createExerciseItemHTML(exercise, index) {
 // ===================== MAIN LOAD =====================
 function loadAndDisplayDailyPlan() {
     const todayIndex = getCurrentDayIndex();
+    const dayName = dayNamesFull[todayIndex]; // Отримання назви дня
     const planKey = `day_plan_${todayIndex}`;
 
     const list = document.getElementById('daily-exercise-list');
-    if (!list) return;
+    
+    // НОВІ ЕЛЕМЕНТИ ДЛЯ СТАТУСУ ТА РЕКОМЕНДАЦІЙ
+    const dayNameEl = document.getElementById('daily-day-name'); 
+    const mdStatusEl = document.getElementById('daily-md-status'); 
+    const recommendationEl = document.getElementById('daily-recommendation-text');
+    // ----------------------------------------------------
 
-    const savedData = JSON.parse(localStorage.getItem(DAILY_STORAGE_KEY) || '{}'); // ЗМІНА
+    if (dayNameEl) dayNameEl.textContent = dayName; // Виводимо назву дня завжди
+
+    const savedData = JSON.parse(localStorage.getItem(DAILY_STORAGE_KEY) || '{}');
     const todayPlan = savedData[planKey];
 
+    // --- ЛОГІКА ДЛЯ ВІДОБРАЖЕННЯ СТАТУСУ ТА РЕКОМЕНДАЦІЙ ---
+    let mdStatus = 'TRAIN'; 
+    let recommendation = MD_RECOMMENDATIONS['TRAIN'];
+
+    if (todayPlan && todayPlan.mdStatus) {
+        mdStatus = todayPlan.mdStatus;
+        recommendation = MD_RECOMMENDATIONS[mdStatus] || MD_RECOMMENDATIONS['TRAIN'];
+    } else if (!todayPlan) {
+        // Якщо плану немає, встановлюємо статус як REST/Немає плану
+        mdStatus = 'REST';
+        recommendation = MD_RECOMMENDATIONS['REST'];
+    }
+
+    if (mdStatusEl) mdStatusEl.textContent = mdStatus;
+    if (recommendationEl) recommendationEl.textContent = recommendation;
+    // ----------------------------------------------------
+
     if (!todayPlan || !todayPlan.exercises?.length) {
-        list.innerHTML = `<p>На сьогодні немає вправ.</p>`;
+        list.innerHTML = `<p>На сьогодні немає запланованих вправ.</p>`;
         return;
     }
 
