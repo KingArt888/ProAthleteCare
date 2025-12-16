@@ -391,7 +391,7 @@ function setupMenuToggle() {
     }
 }
 
------------------------------------------------------------------------------------------------
+
 function normalizeStage(stage) {
     if (!stage) return 'UNSORTED';
 
