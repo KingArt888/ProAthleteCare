@@ -7,16 +7,14 @@ const STORAGE_KEY = 'weeklyPlanData';
     const COLOR_MAP = {
         'MD': { status: 'MD', colorClass: 'color-red' },
         'MD+1': { status: 'MD+1', colorClass: 'color-dark-green' },
-        'MD+2': { status: 'MD+2', colorClass: 'color-green' },
-        'MD-1': { status: 'MD-1', colorClass: 'color-yellow' },
-        'MD-2': { status: 'MD-2', colorClass: 'color-deep-green' },
-        'MD-3': { status: 'MD-3', colorClass: 'color-orange' },
-        'MD-4': { status: 'MD-4', colorClass: 'color-blue' },
-        'REST': { status: 'REST', colorClass: 'color-neutral' },
-        'TRAIN': { status: 'TRAIN', colorClass: 'color-dark-grey' },
+        // ... решта COLOR_MAP
     };
 
-    const dayNamesShort = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
+    const dayNamesShort = ['Пн','Вт','Ср','Чт','Пт','Сб','Нд'];
+
+    // --- весь твій код weekly-individual.js сюди ---
+
+})();  // <- ОБОВ’ЯЗКОВО закриття IIFE
 
 // =========================================================
 // 1. СТРУКТУРА ШАБЛОНІВ ТА ГЕНЕРАЦІЯ
