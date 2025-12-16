@@ -2,6 +2,7 @@
 // ПОТРЕБУЄ exercise_library.js ДЛЯ РОБОТИ
 
 const STORAGE_KEY = 'weeklyPlanData';
+
 (function() {
     const COLOR_MAP = {
         'MD': { status: 'MD', colorClass: 'color-red' },
@@ -15,7 +16,7 @@ const STORAGE_KEY = 'weeklyPlanData';
         'TRAIN': { status: 'TRAIN', colorClass: 'color-dark-grey' },
     };
 
-const dayNamesShort = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
+    const dayNamesShort = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
 
 // =========================================================
 // 1. СТРУКТУРА ШАБЛОНІВ ТА ГЕНЕРАЦІЯ
