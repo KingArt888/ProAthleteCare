@@ -77,59 +77,34 @@
     <script src="navigation-common.js"></script>
 
     <script>
-        /**
-         * Функція, яка перемикає клас 'is-active' на заголовку та вмісті.
-         * CSS робить решту (display: none/block та обертання іконки).
-         */
-        function toggleSection(event) {
-            let headerElement = event.currentTarget; 
-            let content = headerElement.nextElementSibling;
-            
-            // Тогглимо клас 'is-active'
-            headerElement.classList.toggle('is-active');
-            content.classList.toggle('is-active');
-        }
+function toggleSection(headerElement) {
+    headerElement.classList.toggle("is-active");
+    const content = headerElement.nextElementSibling;
+    const icon = headerElement.querySelector('.toggle-icon');
 
-        /**
-         * Ініціалізація: прикріплюємо слухачі до всіх заголовків-вкладок.
-         */
-        window.initializeCollapsibles = function() {
-            let collapsibles = document.querySelectorAll('.stage-header.collapsible');
-            
-            collapsibles.forEach(header => {
-                // 1. Прикріплюємо слухач кліку
-                header.addEventListener('click', toggleSection);
+    if (content.classList.contains("is-active")) {
+        content.classList.remove("is-active");
+        icon.textContent = '►';
+    } else {
+        content.classList.add("is-active");
+        icon.textContent = '▼';
+    }
+}
 
-                // 2. Ініціалізуємо іконку (її вигляд контролюється CSS завдяки is-active)
-                let content = header.nextElementSibling;
+// Ця функція викликається після динамічного завантаження
+window.initializeCollapsibles = function() {
+    const collapsibles = document.querySelectorAll(".collapsible");
+    collapsibles.forEach(header => {
+        // Видаляємо старі слухачі, якщо вони були
+        header.removeEventListener('click', toggleHandler); 
 
-                // Перевірка: Якщо секція MAIN TRAINING завантажилася, вона має клас is-active, 
-                // іконка вже буде ▼ завдяки CSS.
-            });
-        }
-        
-        // --- ЗАПУСК ---
-        
-        // Оскільки dynamic-individual.js генерує вміст,
-        // найкраще викликати initializeCollapsibles() в кінці функції генерації.
-        
-        // Якщо у Вас немає доступу до daily-individual.js, 
-        // спробуйте запустити з невеликою затримкою.
-        // Це не ідеально, але може вирішити проблему, якщо DOM генерується швидко:
-        window.addEventListener('load', () => {
-             // Викликати через 100 мс після повного завантаження сторінки
-             setTimeout(window.initializeCollapsibles, 100); 
+        // Додаємо новий слухач
+        header.addEventListener('click', function toggleHandler() {
+            toggleSection(this);
         });
-
-
-        /*
-         * НАЙКРАЩЕ РІШЕННЯ:
-         * В кінці функції у daily-individual.js, яка вставляє вправи в DOM,
-         * додайте виклик:
-         * initializeCollapsibles();
-         */
-
-    </script>
+    });
+};
+</script>
     
 </body>
 </html>
