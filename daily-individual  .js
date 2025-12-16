@@ -1,4 +1,4 @@
-// daily-individual.js
+// daily-individual.js 
 
 const DAILY_STORAGE_KEY = 'weeklyPlanData';
 const YOUTUBE_EMBED_BASE = 'https://www.youtube.com/embed/';
