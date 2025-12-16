@@ -1,7 +1,7 @@
 // weekly-individual.js
 // ПОТРЕБУЄ exercise_library.js ДЛЯ РОБОТИ
 
-const STORAGE_KEY = 'weeklyPlanData';
+const WEEKLY_STORAGE_KEY = 'weeklyPlanData'; // ЗМІНЕНО назву змінної
 const COLOR_MAP = {
     'MD': { status: 'MD', colorClass: 'color-red' },
     'MD+1': { status: 'MD+1', colorClass: 'color-dark-green' }, 
@@ -99,7 +99,8 @@ function collectManualChanges() {
 function saveData(newWeeklyPlan = null, templatesFromUI = null) {
     const saveButton = document.querySelector('.save-button');
     try {
-        let existingData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        // ЗМІНЕНО: Використовує WEEKLY_STORAGE_KEY
+        let existingData = JSON.parse(localStorage.getItem(WEEKLY_STORAGE_KEY) || '{}');
         const activityData = {};
         let finalPlanData = {};
         
@@ -132,7 +133,8 @@ function saveData(newWeeklyPlan = null, templatesFromUI = null) {
         }
         
         const combinedData = { ...existingData, ...activityData, ...templateData, ...finalPlanData };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(combinedData));
+        // ЗМІНЕНО: Використовує WEEKLY_STORAGE_KEY
+        localStorage.setItem(WEEKLY_STORAGE_KEY, JSON.stringify(combinedData));
         
         if (saveButton) {
             saveButton.textContent = 'Збережено! (✔)';
@@ -392,7 +394,8 @@ function generateWeeklyPlan(mdStatuses, templates) {
             }
         }
         
-        const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        // ЗМІНЕНО: Використовує WEEKLY_STORAGE_KEY
+        const savedData = JSON.parse(localStorage.getItem(WEEKLY_STORAGE_KEY) || '{}');
         const manualPlanKey = `day_plan_${dayIndex}`;
         let finalExercises = generatedExercises;
         
@@ -489,7 +492,8 @@ function updateCycleColors(shouldGenerate = false) {
              }
         });
         
-        const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        // ЗМІНЕНО: Використовує WEEKLY_STORAGE_KEY
+        const savedData = JSON.parse(localStorage.getItem(WEEKLY_STORAGE_KEY) || '{}');
         const savedTemplates = {};
         Object.keys(savedData).forEach(key => {
             if (key.startsWith('template_')) {
@@ -517,7 +521,8 @@ function updateCycleColors(shouldGenerate = false) {
 
 function loadData() {
     try {
-        const savedData = localStorage.getItem(STORAGE_KEY);
+        // ЗМІНЕНО: Використовує WEEKLY_STORAGE_KEY
+        const savedData = localStorage.getItem(WEEKLY_STORAGE_KEY);
         let data = savedData ? JSON.parse(savedData) : {};
 
         document.querySelectorAll('#weekly-plan-form [name^="activity_"]').forEach(element => {
