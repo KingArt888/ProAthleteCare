@@ -1,16 +1,16 @@
 // daily-individual.js
 
-const DAILY_STORAGE_KEY = 'weeklyPlanData'; 
+const DAILY_STORAGE_KEY = 'weeklyPlanData'; // Усунення конфлікту змінних
 const YOUTUBE_EMBED_BASE = 'https://www.youtube.com/embed/';
 
 // ===================== COLORS & STATUS =====================
-// *** ВИДАЛЕНО const COLOR_MAP для уникнення SyntaxError, дублюємо лише класи ***
+// *** ВИДАЛЕНО const COLOR_MAP для уникнення SyntaxError (має бути лише в weekly-individual.js) ***
 
 const dayNamesFull = [ 
-    'Понеділок','Вівторок','Середа','Четвер','Пʼятниця','Субота','Неділя' 
+    'Понеділок','Вівторок','Середа','Четвер','Пʼятниця','Субота','Неділя' // Коректний індекс (0-6)
 ];
 
-// Карта кольорів (дублюємо класи з weekly-individual.js для коректного відображення)
+// Карта кольорів (дублюємо класи для встановлення стилів)
 const MD_COLOR_CLASSES = {
     'MD': 'color-red',
     'MD+1': 'color-dark-green',
@@ -43,11 +43,12 @@ function getCurrentDayIndex() {
     return d === 0 ? 6 : d - 1; 
 }
 
-// НОВА ФУНКЦІЯ: Форматування дати
+// ФУНКЦІЯ: Форматування дати
 function getCurrentDateFormatted() {
     const today = new Date();
     const dayIndex = today.getDay(); // 0-6
-    const dayName = dayNamesFull[dayIndex === 0 ? 6 : dayIndex - 1]; // Коректний день
+    // Отримуємо назву дня з коректним індексом
+    const dayName = dayNamesFull[dayIndex === 0 ? 6 : dayIndex - 1]; 
     
     const day = String(today.getDate()).padStart(2, '0');
     const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -89,7 +90,7 @@ function initializeCollapsibles() {
     });
 }
 
-// ===================== EXERCISE ITEM =====================
+// ===================== EXERCISE ITEM (ВИПРАВЛЕНО: для уникнення ReferenceError) =====================
 function createExerciseItemHTML(exercise, index) {
     const todayIndex = getCurrentDayIndex();
     const id = `ex-${todayIndex}-${index}`;
@@ -136,10 +137,10 @@ function loadAndDisplayDailyPlan() {
     const mdxRangeEl = document.getElementById('mdx-range-display'); 
     const loadingMessageEl = document.getElementById('loading-message'); 
 
-    // ВИПРАВЛЕННЯ: Виводимо назву дня та дату
+    // Виводимо назву дня та дату
     if (currentDateDisplayEl) currentDateDisplayEl.textContent = getCurrentDateFormatted(); 
     
-    // ВИПРАВЛЕННЯ: Очищуємо поле "Цикл MDX"
+    // ОЧИЩЕННЯ: Прибираємо "MD-1" з "Цикл MDX"
     if (mdxRangeEl) mdxRangeEl.textContent = ''; 
 
     const savedData = JSON.parse(localStorage.getItem(DAILY_STORAGE_KEY) || '{}');
@@ -161,19 +162,25 @@ function loadAndDisplayDailyPlan() {
     if (mdStatusEl) {
         mdStatusEl.textContent = mdStatus;
         
-        // ВИПРАВЛЕННЯ: Додаємо клас кольору
+        // Встановлюємо клас кольору
         const colorClass = MD_COLOR_CLASSES[mdStatus] || MD_COLOR_CLASSES['TRAIN'];
         
-        // Видаляємо всі попередні класи кольору (наприклад, 'color-dark-grey' з HTML)
+        // Видаляємо всі класи кольору, щоб уникнути конфліктів
         Object.values(MD_COLOR_CLASSES).forEach(cls => mdStatusEl.classList.remove(cls));
         
-        // Додаємо новий клас
+        // Додаємо коректний клас
         mdStatusEl.classList.add(colorClass);
     }
     
-    // Оновлюємо секцію рекомендацій
+    // Оновлюємо секцію рекомендацій (ЗАГРУЖАЄМО РЕКОМЕНДАЦІЇ)
     if (recommendationsSection) {
-        recommendationsSection.innerHTML = `<p>${recommendationText}</p>`;
+        // Оновлюємо вміст секції. Припускаємо, що рекомендація відображається у <p> всередині <section>.
+        const pElement = recommendationsSection.querySelector('p');
+        if (pElement) {
+            pElement.textContent = recommendationText;
+        } else {
+            recommendationsSection.innerHTML = `<p>${recommendationText}</p>`;
+        }
     }
     
     if (loadingMessageEl) {
