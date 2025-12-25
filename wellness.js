@@ -11,7 +11,7 @@ function getTodayDateString() {
 }
 
 // ==============================================
-// --- ФУНКЦІЇ ДЛЯ РОБОТИ З FIREBASE (WELLNESS) ---
+// --- ФУНКЦІЇ FIREBASE ---
 // ==============================================
 const WELLNESS_COLLECTION = 'wellness_reports';
 const CURRENT_ATHLETE_ID = 'Artem_Kulyk_Test'; 
@@ -19,7 +19,7 @@ const CURRENT_ATHLETE_ID = 'Artem_Kulyk_Test';
 async function loadWellnessHistoryFromFirebase() {
     const history = {};
     try {
-        // Запит до Firebase
+        // Запит до Firebase з сортуванням
         const snapshot = await db.collection(WELLNESS_COLLECTION)
             .where("athleteId", "==", CURRENT_ATHLETE_ID)
             .orderBy("date", "asc")
@@ -52,7 +52,7 @@ async function saveWellnessToFirebase(date, scores) {
 }
 
 // ==============================================
-// 1. КОНСТАНТИ СТИЛЮ
+// --- КОНСТАНТИ СТИЛЮ ---
 // ==============================================
 const GOLD_COLOR = 'rgb(255, 215, 0)', GOLD_AREA = 'rgba(255, 215, 0, 0.4)';
 const RED_COLOR = 'rgb(255, 99, 132)', RED_AREA = 'rgba(255, 99, 132, 0.4)';
@@ -60,10 +60,12 @@ const ORANGE_COLOR = 'rgb(255, 159, 64)', ORANGE_AREA = 'rgba(255, 159, 64, 0.4)
 const BLUE_COLOR = 'rgb(0, 191, 255)', BLUE_AREA = 'rgba(0, 191, 255, 0.4)';
 const PURPLE_COLOR = 'rgb(147, 112, 219)', PURPLE_AREA = 'rgba(147, 112, 219, 0.4)';
 const LIME_COLOR = 'rgb(50, 205, 50)', LIME_AREA = 'rgba(50, 205, 50, 0.4)';
-const GREY_GRID = '#CCCCCC';
 
 const WELLNESS_FIELDS = ['sleep', 'soreness', 'mood', 'water', 'stress', 'ready'];
-const FIELD_LABELS = { sleep: 'Сон', soreness: 'Біль', mood: 'Настрій', water: 'Гідратація', stress: 'Стрес', ready: 'Готовність' };
+const FIELD_LABELS = { 
+    sleep: 'Сон', soreness: 'Біль', mood: 'Настрій', 
+    water: 'Гідратація', stress: 'Стрес', ready: 'Готовність' 
+};
 
 const colorsMap = {
     sleep: { color: GOLD_COLOR, area: GOLD_AREA },
@@ -80,18 +82,19 @@ function updateWellnessStats(latestData) {
         if (statElement) {
             const score = latestData ? (latestData[field] || 0) : 0;
             statElement.textContent = `Оцінка: ${score} / 10`;
+            statElement.style.color = score >= 7 ? LIME_COLOR : (score >= 4 ? ORANGE_COLOR : RED_COLOR);
         }
     });
 }
 
 // ==============================================
-// 3. ІНІЦІАЛІЗАЦІЯ ГРАФІКІВ
+// --- ІНІЦІАЛІЗАЦІЯ ГРАФІКІВ ---
 // ==============================================
 async function initCharts() {
     const history = await loadWellnessHistoryFromFirebase();
     const sortedDates = Object.keys(history).sort();
 
-    // Очищення старих графіків
+    // Очищення старих об'єктів графіків
     WELLNESS_FIELDS.forEach(field => {
         if (window[`chart_${field}`] instanceof Chart) {
             window[`chart_${field}`].destroy();
@@ -112,7 +115,7 @@ async function initCharts() {
         chartData[field] = sortedDates.map(date => history[date][field]);
     });
 
-    // Створення міні-графіків
+    // 1. Міні-графіки (Лінійні)
     WELLNESS_FIELDS.forEach(field => {
         const ctx = document.getElementById(`chart-${field}`);
         if (ctx) {
@@ -125,7 +128,8 @@ async function initCharts() {
                         borderColor: colorsMap[field].color,
                         backgroundColor: colorsMap[field].area,
                         fill: true,
-                        tension: 0.3
+                        tension: 0.3,
+                        pointRadius: 2
                     }]
                 },
                 options: {
@@ -133,7 +137,7 @@ async function initCharts() {
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                        y: { min: 1, max: 10, ticks: { stepSize: 1 } },
+                        y: { min: 1, max: 10, ticks: { display: false }, grid: { display: false } },
                         x: { display: false }
                     }
                 }
@@ -141,7 +145,7 @@ async function initCharts() {
         }
     });
 
-    // Радар-графік
+    // 2. Головний Радар (З БІЛОЮ СІТКОЮ)
     const mainCtx = document.getElementById('wellnessChart');
     if (mainCtx) {
         const latestData = history[sortedDates[sortedDates.length - 1]];
@@ -154,19 +158,32 @@ async function initCharts() {
                     label: 'Стан сьогодні',
                     data: WELLNESS_FIELDS.map(f => latestData[f]),
                     backgroundColor: GOLD_AREA,
-                    borderColor: GOLD_COLOR
+                    borderColor: GOLD_COLOR,
+                    borderWidth: 3,
+                    pointBackgroundColor: GOLD_COLOR
                 }]
             },
             options: {
-                scales: { r: { min: 0, max: 10, ticks: { display: false } } },
-                plugins: { legend: { labels: { color: 'white' } } }
+                scales: {
+                    r: {
+                        min: 0,
+                        max: 10,
+                        angleLines: { color: '#FFFFFF' }, // Білі промені
+                        grid: { color: '#FFFFFF' },       // Біла сітка
+                        pointLabels: { color: '#FFFFFF', font: { size: 12, weight: 'bold' } },
+                        ticks: { display: false, backdropColor: 'transparent' }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: 'white' } }
+                }
             }
         });
     }
 }
 
 // ==============================================
-// 4. ОБМЕЖЕННЯ ТА ОБРОБКА ФОРМИ
+// --- ОБМЕЖЕННЯ ТА ОБРОБКА ФОРМИ ---
 // ==============================================
 function checkDailyRestriction() {
     const lastDate = localStorage.getItem('lastWellnessSubmissionDate');
@@ -176,6 +193,7 @@ function checkDailyRestriction() {
         if (btn) {
             btn.disabled = true;
             btn.textContent = "На сьогодні все!";
+            btn.classList.add('disabled-button'); 
             btn.style.opacity = "0.5";
         }
         return true;
@@ -202,7 +220,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             if (!allFilled) {
-                alert("Заповніть усі поля!");
+                alert("Будь ласка, заповніть усі 6 точок даних.");
                 return;
             }
 
@@ -210,8 +228,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             await saveWellnessToFirebase(today, submissionData);
             localStorage.setItem('lastWellnessSubmissionDate', today);
             
-            alert("Дані збережено!");
-            location.reload(); // Перезавантажуємо для оновлення графіків
+            alert("Ваші дані успішно збережено!");
+            location.reload(); 
         });
     }
 });
