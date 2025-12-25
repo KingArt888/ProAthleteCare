@@ -1,5 +1,6 @@
-// daily-individual.js — ProAtletCare (FINAL PROFESSIONAL EDITION)
+// daily-individual.js — ProAtletCare (PREMIUM ANALYTICS EDITION)
 const STORAGE_KEY = 'weeklyPlanData';
+const REPORTS_KEY = 'athleteTrainingReports';
 const YOUTUBE_EMBED_BASE = 'https://www.youtube.com/embed/';
 
 const COLOR_MAP = {
@@ -15,11 +16,11 @@ const COLOR_MAP = {
 };
 
 const MD_RECOMMENDATIONS = {
-    'MD': 'Ігровий день. Максимальна концентрація. Харчування за 3-4 години до матчу. Успіхів на полі!',
-    'MD+1': 'Відновлення. МФР та легка мобільність. Завдання — прибрати набряки та відновити м’язи.',
-    'MD-1': 'Активація нервової системи. Низький об’єм, висока швидкість. Фокус на реакції.',
-    'REST': 'ПОВНИЙ ВІДПОЧИНОК. Сон 8+ годин та якісне харчування — твоє головне тренування.',
-    'TRAIN': 'Робочий день. Дотримуйтесь техніки виконання вправ за планом.'
+    'MD': 'Ігровий день. Максимальна концентрація. Успіхів на полі!',
+    'MD+1': 'Відновлення. МФР та легка мобільність. Прибираємо набряки.',
+    'MD-1': 'Активація нервової системи. Низький об’єм, висока швидкість.',
+    'REST': 'ПОВНИЙ ВІДПОЧИНОК. Сон та якісне харчування — основа відновлення.',
+    'TRAIN': 'Робочий день. Працюй за планом, фокусуйся на техніці.'
 };
 
 const STAGES = ['Pre-Training', 'Main Training', 'Post-Training'];
@@ -44,73 +45,122 @@ function createExerciseItemHTML(exercise, index) {
     const uniqueId = `ex-check-${index}`;
     let mediaHtml = exercise.videoKey 
         ? `<div class="media-container"><iframe src="${YOUTUBE_EMBED_BASE}${exercise.videoKey}" frameborder="0" allowfullscreen></iframe></div>`
-        : `<div class="media-container" style="background:#111; height:150px; display:flex; align-items:center; justify-content:center; color:#444; border:1px solid #333;">Відео додається</div>`;
+        : `<div class="media-container" style="background:#111; height:150px; display:flex; align-items:center; justify-content:center; color:#444; border:1px solid #333;">Відео в роботі</div>`;
 
     return `
         <div class="daily-exercise-item" style="border:1px solid #222; margin-bottom:15px; padding:15px; background:#0a0a0a; border-radius:8px;">
-            <h4 style="color:#d4af37; margin:0 0 10px 0; font-size:1.1rem;">${exercise.name}</h4>
-            <p style="color:#999; font-size:0.85rem; margin-bottom:12px;">${exercise.description || ''}</p>
+            <h4 style="color:#d4af37; margin:0 0 10px 0;">${exercise.name}</h4>
             ${mediaHtml}
             <div style="margin-top:12px; background:#1a1a1a; padding:10px; border-radius:5px; display:flex; align-items:center; gap:12px;">
-                <input type="checkbox" id="${uniqueId}" style="width:18px; height:18px; cursor:pointer;" onchange="this.closest('.daily-exercise-item').style.opacity = this.checked ? 0.4 : 1">
-                <label for="${uniqueId}" style="color:#eee; cursor:pointer; font-size:0.9rem;">Вправу виконано</label>
+                <input type="checkbox" id="${uniqueId}" style="width:18px; height:18px;" onchange="this.closest('.daily-exercise-item').style.opacity = this.checked ? 0.4 : 1">
+                <label for="${uniqueId}" style="color:#eee; cursor:pointer; font-size: 0.9rem;">Виконано</label>
             </div>
         </div>
     `;
 }
 
-// 3. ПРЕМІАЛЬНА ФОРМА ЗВОРОТНОГО ЗВ'ЯЗКУ
+// 3. ФОРМА З БЛИСКАВКАМИ ТА ЗІРКАМИ
 function renderFeedbackForm() {
     const container = document.getElementById('user-feedback-container');
     if (!container) return;
 
     container.innerHTML = `
-        <div class="pro-feedback-card" style="background:#111; border:1px solid #d4af37; border-radius:12px; padding:25px; margin-top:40px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <div class="pro-feedback-card" style="background:#0a0a0a; border:1px solid #d4af37; border-radius:12px; padding:20px; margin-top:40px;">
             <div style="text-align:center; margin-bottom:20px;">
-                <h3 style="color:#d4af37; text-transform:uppercase; letter-spacing:2px; margin:0;">📊 Звіт Тренеру</h3>
-                <p style="color:#666; font-size:0.8rem; margin-top:5px;">Аналіз навантаження для Кулика Артема</p>
+                <h3 style="color:#d4af37; text-transform:uppercase; letter-spacing:1px; margin:0; font-size:1.1rem;">📊 Аналіз тренування</h3>
             </div>
 
-            <label style="color:#eee; display:block; text-align:center; margin-bottom:15px; font-weight:bold;">Оцінка складності (RPE 1-10):</label>
-            <div class="rpe-grid" style="display:grid; grid-template-columns: repeat(5, 1fr); gap:8px; margin-bottom:25px;">
-                ${[1,2,3,4,5,6,7,8,9,10].map(n => `
-                    <div class="rpe-item">
-                        <input type="radio" name="rpe" value="${n}" id="rpe-${n}" style="display:none;">
-                        <label for="rpe-${n}" style="display:flex; align-items:center; justify-content:center; height:40px; background:#222; border:1px solid #333; color:#fff; border-radius:5px; cursor:pointer; font-weight:bold; transition:0.3s;">${n}</label>
-                    </div>
-                `).join('')}
+            <div class="feedback-section" style="margin-bottom:25px; text-align:center;">
+                <label style="color:#888; display:block; margin-bottom:10px; font-size:0.75rem; text-transform:uppercase;">Складність (RPE 1-10):</label>
+                <div class="lightning-row" style="display:flex; justify-content:center; gap:5px;">
+                    ${[1,2,3,4,5,6,7,8,9,10].map(n => `
+                        <div class="lightning-item">
+                            <span style="display:block; color:#555; font-size:9px; margin-bottom:2px;">${n}</span>
+                            <input type="radio" name="rpe" value="${n}" id="bolt-${n}" style="display:none;">
+                            <label for="bolt-${n}" class="bolt-label" style="cursor:pointer; font-size:24px; color:#222; transition:0.3s;">⚡</label>
+                        </div>
+                    `).join('')}
+                </div>
             </div>
 
-            <label style="color:#eee; display:block; margin-bottom:8px; font-weight:bold;">Коментар тренеру / Пропозиції:</label>
-            <textarea id="user-comment" style="width:100%; height:90px; background:#1a1a1a; color:#fff; border:1px solid #333; border-radius:8px; padding:12px; box-sizing:border-box; resize:none; font-family:inherit;" placeholder="Як самопочуття? Що було найважчим?"></textarea>
+            <div class="feedback-section" style="margin-bottom:25px; text-align:center;">
+                <label style="color:#888; display:block; margin-bottom:10px; font-size:0.75rem; text-transform:uppercase;">Задоволення / Якість тренування:</label>
+                <div class="star-row" style="display:flex; justify-content:center; gap:8px;">
+                    ${[1,2,3,4,5].map(n => `
+                        <div class="star-item">
+                            <input type="radio" name="quality" value="${n}" id="star-${n}" style="display:none;">
+                            <label for="star-${n}" class="star-label" style="cursor:pointer; font-size:28px; color:#222; transition:0.3s;">★</label>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
 
-            <button onclick="submitDailyReport()" style="width:100%; margin-top:20px; padding:15px; background:#d4af37; color:#000; border:none; border-radius:8px; font-weight:bold; text-transform:uppercase; cursor:pointer; transition:0.3s;">Надіслати звіт тренеру</button>
+            <textarea id="user-comment" style="width:100%; height:70px; background:#111; color:#fff; border:1px solid #333; border-radius:8px; padding:12px; box-sizing:border-box; resize:none; font-family:inherit;" placeholder="Коментар для Артема..."></textarea>
+
+            <button id="submit-report-btn" onclick="submitDailyReport()" style="width:100%; margin-top:15px; padding:15px; background:#d4af37; color:#000; border:none; border-radius:8px; font-weight:900; text-transform:uppercase; cursor:pointer;">Надіслати звіт тренеру</button>
         </div>
 
         <style>
-            .rpe-item input:checked + label { background:#d4af37 !important; color:#000 !important; transform:scale(1.05); }
-            .rpe-item label:hover { border-color:#d4af37; }
-            #user-comment:focus { border-color:#d4af37; outline:none; }
+            /* RPE Lightning Effect */
+            .lightning-item input:checked ~ label,
+            .lightning-item label:hover,
+            .lightning-item:has(~ .lightning-item input:checked) label {
+                color: #d4af37 !important;
+                text-shadow: 0 0 10px #d4af37;
+            }
+
+            /* Stars Quality Effect */
+            .star-item input:checked ~ label,
+            .star-item label:hover,
+            .star-item:has(~ .star-item input:checked) label {
+                color: #f1c40f !important;
+                text-shadow: 0 0 10px #f1c40f;
+            }
+
+            .bolt-label:hover, .star-label:hover { transform: scale(1.3); }
         </style>
     `;
 }
 
+// ФУНКЦІЯ ЗБЕРЕЖЕННЯ
 function submitDailyReport() {
     const rpe = document.querySelector('input[name="rpe"]:checked')?.value;
+    const quality = document.querySelector('input[name="quality"]:checked')?.value;
     const comment = document.getElementById('user-comment').value;
-    if (!rpe) { alert("Будь ласка, оберіть RPE (складність)!"); return; }
-    
-    // Емуляція відправки
-    console.log("SENDING TO ARTEM KULYK:", { rpe, comment });
-    alert("Звіт успішно надіслано тренеру Артему Кулику!");
+    const mdStatus = document.getElementById('md-status-display')?.textContent || 'TRAIN';
+
+    if (!rpe || !quality) {
+        alert("Будь ласка, оцініть складність (⚡) та якість (★) тренування!");
+        return;
+    }
+
+    const report = {
+        timestamp: new Date().toISOString(),
+        date: new Date().toLocaleString('uk-UA'),
+        rpe: rpe,
+        quality: quality,
+        comment: comment,
+        mdStatus: mdStatus
+    };
+
+    let allReports = JSON.parse(localStorage.getItem(REPORTS_KEY) || '[]');
+    allReports.push(report);
+    localStorage.setItem(REPORTS_KEY, JSON.stringify(allReports));
+
+    const btn = document.getElementById('submit-report-btn');
+    btn.innerHTML = "✅ ЗВІТ ЗБЕРЕЖЕНО";
+    btn.style.background = "#2ecc71";
+    btn.disabled = true;
+
+    alert("Дякуємо! Твій відгук допоможе Артему Кулику скоригувати план.");
 }
 
-// 4. ОСНОВНА ЛОГІКА ЗАВАНТАЖЕННЯ
+// 4. ОСНОВНА ЛОГІКА ЗАВАНТАЖЕННЯ (MD ТА ПЛАН)
 function loadAndDisplayDailyPlan() {
     const todayIndex = (new Date().getDay() === 0) ? 6 : new Date().getDay() - 1;
     const listContainer = document.getElementById('daily-exercise-list');
     const statusDisplay = document.getElementById('md-status-display');
-    const recommendationContainer = document.getElementById('md-recommendations');
+    const recContainer = document.getElementById('md-recommendations');
 
     try {
         const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
@@ -122,20 +172,15 @@ function loadAndDisplayDailyPlan() {
             statusDisplay.className = `md-status ${style.colorClass}`;
         }
 
-        if (recommendationContainer) {
-            const rec = MD_RECOMMENDATIONS[mdStatus] || MD_RECOMMENDATIONS['TRAIN'];
-            recommendationContainer.innerHTML = `
-                <div style="border-left:4px solid #d4af37; padding:10px 15px; background:#1a1a1a; border-radius:0 8px 8px 0;">
-                    <h4 style="color:#d4af37; margin:0 0 5px 0; font-size:0.9rem;">ПОРАДА ТРЕНЕРА:</h4>
-                    <p style="margin:0; color:#eee; font-style:italic;">${rec}</p>
-                </div>`;
+        if (recContainer) {
+            recContainer.innerHTML = `<div style="border-left:3px solid #d4af37; padding:10px; background:#111;"><p style="margin:0; color:#eee; font-size:0.85rem;"><strong>Порада Кулика:</strong> ${MD_RECOMMENDATIONS[mdStatus] || MD_RECOMMENDATIONS['TRAIN']}</p></div>`;
         }
 
         const planKey = `status_plan_${mdStatus}`;
         const plan = savedData[planKey];
 
         if (!plan || !plan.exercises || plan.exercises.length === 0) {
-            listContainer.innerHTML = '<div style="text-align:center; color:#666; padding:40px; border:1px dashed #444;">План на сьогодні не заповнений в системі.</div>';
+            listContainer.innerHTML = '<p style="text-align:center; color:#555; padding:30px; border:1px dashed #333;">На сьогодні вправ немає.</p>';
             renderFeedbackForm();
             return;
         }
@@ -145,12 +190,12 @@ function loadAndDisplayDailyPlan() {
             const stageExs = plan.exercises.filter(ex => ex.stage === stage);
             if (stageExs.length > 0) {
                 html += `
-                    <div class="stage-wrapper" style="margin-bottom:12px;">
-                        <div class="stage-header" onclick="toggleStage(this)" style="background:#1a1a1a; color:#d4af37; padding:15px; border-left:4px solid #444; cursor:pointer; display:flex; justify-content:space-between; font-weight:bold; text-transform:uppercase; font-size:0.8rem;">
-                            <span>${stage.replace('-', ' ')}</span>
+                    <div style="margin-bottom:10px;">
+                        <div class="stage-header" onclick="toggleStage(this)" style="background:#1a1a1a; color:#d4af37; padding:12px; border-left:4px solid #444; cursor:pointer; display:flex; justify-content:space-between; font-weight:bold; font-size:0.8rem;">
+                            <span>${stage.toUpperCase()}</span>
                             <span class="stage-arrow">▶</span>
                         </div>
-                        <div class="stage-content" style="display:none; padding:15px 0 5px 0;">
+                        <div class="stage-content" style="display:none; padding-top:10px;">
                             ${stageExs.map((ex, i) => createExerciseItemHTML(ex, `${stage}-${i}`)).join('')}
                         </div>
                     </div>`;
@@ -160,9 +205,7 @@ function loadAndDisplayDailyPlan() {
         listContainer.innerHTML = html;
         renderFeedbackForm();
 
-    } catch (e) {
-        console.error("ERROR:", e);
-    }
+    } catch (e) { console.error(e); }
 }
 
 function calculateTodayStatus(data, todayIdx) {
