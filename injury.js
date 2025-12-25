@@ -1,5 +1,5 @@
 // ==========================================================
-// 1. ІНІЦІАЛІЗАЦІЯ ТА СТАН
+// 1. КОНСТАНТИ ТА СТАН
 // ==========================================================
 const INJURY_COLLECTION = 'injuries';
 let currentUserId = null;
@@ -7,29 +7,27 @@ let injuries = [];
 let selectedInjury = null;
 let currentPainChart = null;
 
-// Функція для поточної дати
 const getToday = () => new Date().toISOString().split('T')[0];
 
 // СЛУХАЧ АВТОРИЗАЦІЇ
 firebase.auth().onAuthStateChanged((user) => {
     if (user) {
-        currentUserId = user.uid; // Отримуємо унікальний ID користувача
+        currentUserId = user.uid;
         console.log("Авторизовано як:", currentUserId);
         loadInjuriesFromFirebase();
     } else {
-        console.warn("Користувач не увійшов в систему");
-        // Тут можна перенаправити на сторінку логіну: window.location.href = 'login.html';
+        console.warn("Користувач не авторизований. Перевірте сторінку входу.");
     }
 });
 
 // ==========================================================
-// 2. РОБОТА З ДАНИМИ (FIREBASE)
+// 2. ЗАВАНТАЖЕННЯ ТА ВІДОБРАЖЕННЯ
 // ==========================================================
 
 async function loadInjuriesFromFirebase() {
     if (!currentUserId) return;
     try {
-        // Фільтруємо дані: завантажуємо ТІЛЬКИ ті, де userId збігається
+        // Завантажуємо лише дані поточного користувача
         const snapshot = await db.collection(INJURY_COLLECTION)
             .where("userId", "==", currentUserId)
             .get();
@@ -38,61 +36,19 @@ async function loadInjuriesFromFirebase() {
         snapshot.forEach(doc => {
             injuries.push({ id: doc.id, ...doc.data() });
         });
+        
         renderInjuryMarkers();
+        displayInjuryList();
     } catch (e) { 
-        console.error("Помилка завантаження:", e); 
+        console.error("Помилка завантаження даних:", e); 
     }
-}
-
-async function saveInjury(data) {
-    try {
-        if (selectedInjury) {
-            // Оновлюємо існуючу травму
-            await db.collection(INJURY_COLLECTION).doc(selectedInjury.id).update(data);
-        } else {
-            // Створюємо нову
-            await db.collection(INJURY_COLLECTION).add(data);
-        }
-        alert("Збережено успішно!");
-        loadInjuriesFromFirebase();
-        resetInjuryForm();
-    } catch (e) {
-        console.error("Помилка збереження:", e);
-    }
-}
-
-// ==========================================================
-// 3. ІНТЕРФЕЙС ТА КАРТА
-// ==========================================================
-
-function setupBodyMap() {
-    const mapContainer = document.getElementById('bodyMapContainer');
-    const marker = document.getElementById('click-marker');
-    
-    if (!mapContainer || !marker) return;
-
-    mapContainer.onclick = function(e) {
-        if (e.target.classList.contains('injury-marker')) return;
-
-        const rect = mapContainer.getBoundingClientRect();
-        const x = ((e.clientX - rect.left) / rect.width) * 100;
-        const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-        marker.style.display = 'block';
-        marker.style.left = x + '%';
-        marker.style.top = y + '%';
-        
-        document.getElementById('coordX').value = x.toFixed(2);
-        document.getElementById('coordY').value = y.toFixed(2);
-        
-        selectedInjury = null; // Скидаємо вибір для нового запису
-    };
 }
 
 function renderInjuryMarkers() {
     const container = document.getElementById('bodyMapContainer');
     if (!container) return;
 
+    // Очищаємо старі маркери
     container.querySelectorAll('.injury-marker').forEach(m => m.remove());
 
     injuries.forEach(injury => {
@@ -109,83 +65,139 @@ function renderInjuryMarkers() {
         el.onclick = (e) => {
             e.stopPropagation();
             selectedInjury = injury;
-            fillFormWithInjury(injury);
+            fillFormWithData(injury);
         };
         container.appendChild(el);
     });
 }
 
-function fillFormWithInjury(injury) {
-    document.getElementById('injury-location').value = injury.location;
-    document.getElementById('injury-date').value = injury.date;
-    document.getElementById('injury-notes').value = injury.notes || "";
+function fillFormWithData(injury) {
+    // Заповнюємо поля форми
+    document.getElementById('injury-location').value = injury.location || "";
+    document.getElementById('injury-date').value = injury.date || getToday();
     document.getElementById('coordX').value = injury.coordX;
     document.getElementById('coordY').value = injury.coordY;
 
-    const painRadio = document.querySelector(`input[name="pain"][value="${injury.pain}"]`);
-    if (painRadio) painRadio.checked = true;
+    // ВАЖЛИВО: Поле коментаря, яке "пропадало"
+    const notesField = document.getElementById('injury-notes');
+    if (notesField) {
+        notesField.value = injury.notes || "";
+        // Переконуємося, що блок видимий
+        const notesSection = document.getElementById('notes-section');
+        if (notesSection) notesSection.style.display = 'block';
+    }
+
+    // Встановлюємо шкалу болю
+    const radio = document.querySelector(`input[name="pain"][value="${injury.pain}"]`);
+    if (radio) radio.checked = true;
 
     renderPainChart(injury);
 }
 
-function resetInjuryForm() {
-    document.getElementById('injury-form').reset();
-    document.getElementById('click-marker').style.display = 'none';
-    document.getElementById('coordX').value = "";
-    document.getElementById('injury-date').value = getToday();
-    selectedInjury = null;
-}
-
 // ==========================================================
-// 4. ГРАФІК ТА ЗАПУСК
+// 3. ЛОГІКА КАРТИ ТА ЗБЕРЕЖЕННЯ
 // ==========================================================
 
-function renderPainChart(injury) {
-    const ctx = document.getElementById('painChart');
-    if (!ctx) return;
-    if (currentPainChart) currentPainChart.destroy();
+function setupBodyMap() {
+    const mapContainer = document.getElementById('bodyMapContainer');
+    const marker = document.getElementById('click-marker');
+    const notesSection = document.getElementById('notes-section');
     
-    const history = injury.painHistory || [{date: injury.date, pain: injury.pain}];
-    currentPainChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: history.map(h => h.date),
-            datasets: [{
-                label: `Біль: ${injury.location}`,
-                data: history.map(h => h.pain),
-                borderColor: '#FFC72C',
-                tension: 0.3,
-                fill: false
-            }]
-        },
-        options: { responsive: true, maintainAspectRatio: false }
-    });
+    if (!mapContainer || !marker) return;
+
+    mapContainer.onclick = function(e) {
+        // Якщо клікнули не на маркер, а на порожнє місце силуету
+        if (e.target.classList.contains('injury-marker')) return;
+
+        const rect = mapContainer.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+        marker.style.display = 'block';
+        marker.style.left = x + '%';
+        marker.style.top = y + '%';
+        
+        document.getElementById('coordX').value = x.toFixed(2);
+        document.getElementById('coordY').value = y.toFixed(2);
+        
+        // Робимо поле коментарів видимим для нового запису
+        if (notesSection) notesSection.style.display = 'block';
+
+        selectedInjury = null;
+        document.getElementById('injury-form').reset();
+        document.getElementById('injury-date').value = getToday();
+    };
 }
+
+// ==========================================================
+// 4. ІНІЦІАЛІЗАЦІЯ ПРИ ЗАВАНТАЖЕННІ
+// ==========================================================
 
 document.addEventListener('DOMContentLoaded', () => {
     setupBodyMap();
-    document.getElementById('injury-date').value = getToday();
+    
+    // Робимо поле коментаря видимим від самого початку (як ви хотіли)
+    const notesSection = document.getElementById('notes-section');
+    if (notesSection) notesSection.style.display = 'block';
 
     const form = document.getElementById('injury-form');
     if (form) {
-        form.onsubmit = (e) => {
+        form.onsubmit = async (e) => {
             e.preventDefault();
-            if (!currentUserId) return alert("Помилка: ви не авторизовані!");
             
+            if (!currentUserId) {
+                alert("Помилка: Ви не авторизовані!");
+                return;
+            }
+
             const x = document.getElementById('coordX').value;
-            if (!x) return alert("Клікніть на силует!");
+            if (!x) {
+                alert("Будь ласка, спочатку клікніть на силует людини!");
+                return;
+            }
 
             const data = {
-                userId: currentUserId, // Прив'язка до конкретного користувача
+                userId: currentUserId,
                 location: document.getElementById('injury-location').value,
                 date: document.getElementById('injury-date').value,
                 pain: parseInt(form.querySelector('input[name="pain"]:checked')?.value || 1),
-                notes: document.getElementById('injury-notes').value,
+                notes: document.getElementById('injury-notes').value, // Збереження коментаря
                 coordX: x,
                 coordY: document.getElementById('coordY').value,
-                status: 'active'
+                status: 'active',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
-            saveInjury(data);
+
+            try {
+                if (selectedInjury) {
+                    await db.collection(INJURY_COLLECTION).doc(selectedInjury.id).update(data);
+                } else {
+                    await db.collection(INJURY_COLLECTION).add(data);
+                }
+                alert("Дані збережено!");
+                loadInjuriesFromFirebase();
+                form.reset();
+                document.getElementById('injury-date').value = getToday();
+            } catch (err) {
+                console.error("Помилка при збереженні:", err);
+                alert("Сталася помилка. Перевірте консоль.");
+            }
         };
     }
 });
+
+// Допоміжна функція списку (під картою)
+function displayInjuryList() {
+    const list = document.getElementById('injury-list');
+    if (!list) return;
+    if (injuries.length === 0) {
+        list.innerHTML = '<p class="placeholder-text">Немає активних травм.</p>';
+        return;
+    }
+    list.innerHTML = injuries.map(i => `
+        <div style="border-left: 3px solid #FFC72C; padding-left: 10px; margin-bottom: 10px; background: #111; padding: 10px; border-radius: 5px;">
+            <strong style="color: #FFC72C;">${i.location}</strong><br>
+            <small>${i.date} | Біль: ${i.pain}/10</small>
+        </div>
+    `).join('');
+}
