@@ -230,5 +230,4 @@ function closeExerciseModal() {
     }
 }
 
-    updateCycleColors();
-});
+
