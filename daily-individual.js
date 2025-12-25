@@ -14,16 +14,23 @@ const COLOR_MAP = {
     'TRAIN': { status: 'TRAIN', colorClass: 'color-dark-grey' }, 
 };
 
-const MD_RECOMMENDATIONS = {
-    'MD': 'Ігровий день. Фокус на результаті та енергії.',
-    'MD+1': 'Відновлення. Робота з роликом (МФР) та легка мобільність.',
-    'MD-1': 'Передматчева активація. Швидкість та реакція.',
-    'REST': 'Повний відпочинок. Відновлюй ресурси організму.',
-    'TRAIN': 'Робочий день. Працюй за планом.'
-};
-
-// Структура етапів для завантаження
 const STAGES = ['Pre-Training', 'Main Training', 'Post-Training'];
+
+// 1. Функція для розгортання/згортання блоків
+function toggleStage(headerElement) {
+    const content = headerElement.nextElementSibling;
+    const arrow = headerElement.querySelector('.stage-arrow');
+    
+    if (content.style.display === "none" || content.style.display === "") {
+        content.style.display = "block";
+        arrow.textContent = "▼";
+        headerElement.style.borderColor = "#FFD700"; // Підсвічуємо золотим при відкритті
+    } else {
+        content.style.display = "none";
+        arrow.textContent = "▶";
+        headerElement.style.borderColor = "#444";
+    }
+}
 
 function getCurrentDayIndex() {
     const today = new Date();
@@ -31,7 +38,6 @@ function getCurrentDayIndex() {
     return (jsDay === 0) ? 6 : jsDay - 1; 
 }
 
-// Функція створення картки вправи з відео
 function createExerciseItemHTML(exercise, index) {
     const uniqueId = `ex-${getCurrentDayIndex()}-${index}`;
     let mediaHtml = '';
@@ -39,7 +45,7 @@ function createExerciseItemHTML(exercise, index) {
     if (exercise.videoKey) {
         mediaHtml = `<iframe src="${YOUTUBE_EMBED_BASE}${exercise.videoKey}" frameborder="0" allowfullscreen></iframe>`;
     } else {
-        mediaHtml = `<div class="no-video-placeholder" style="width:300px; height:180px; background:#111; display:flex; align-items:center; justify-content:center; border:1px solid #d4af37; color:#444;">Відео в процесі...</div>`;
+        mediaHtml = `<div class="no-video" style="width:300px; height:180px; background:#111; display:flex; align-items:center; justify-content:center; border:1px solid #333; color:#444;">Відео додається...</div>`;
     }
 
     return `
@@ -47,8 +53,8 @@ function createExerciseItemHTML(exercise, index) {
             <div class="exercise-content">
                 <h4>${exercise.name}</h4>
                 <div class="exercise-details">
-                    <p><strong>Категорія:</strong> ${exercise.category || 'Загальна'}</p>
-                    <p>${exercise.description || 'Виконуйте згідно з технікою.'}</p>
+                    <p><strong>Категорія:</strong> ${exercise.category || 'Тренування'}</p>
+                    <p>${exercise.description || 'Виконуйте згідно з протоколом.'}</p>
                 </div>
             </div>
             <div class="media-container">
@@ -66,20 +72,15 @@ function loadAndDisplayDailyPlan() {
     const todayIndex = getCurrentDayIndex();
     const listContainer = document.getElementById('daily-exercise-list');
     const statusDisplay = document.getElementById('md-status-display');
-    const recContainer = document.getElementById('md-recommendations');
 
     try {
         const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
         const mdStatus = calculateTodayStatus(savedData, todayIndex);
         
-        // Відображення статусу та рекомендації
         const style = COLOR_MAP[mdStatus] || COLOR_MAP['TRAIN'];
         if (statusDisplay) {
             statusDisplay.textContent = mdStatus;
             statusDisplay.className = `md-status ${style.colorClass}`;
-        }
-        if (recContainer) {
-            recContainer.innerHTML = `<p><strong>Порада тренера:</strong> ${MD_RECOMMENDATIONS[mdStatus] || MD_RECOMMENDATIONS['TRAIN']}</p>`;
         }
 
         const planKey = `status_plan_${mdStatus}`;
@@ -90,18 +91,31 @@ function loadAndDisplayDailyPlan() {
             return;
         }
 
-        // ГРУПУВАННЯ ЗА ЕТАПАМИ (Pre, Main, Post)
         let finalHtml = '';
         STAGES.forEach(stage => {
             const stageExercises = plan.exercises.filter(ex => ex.stage === stage);
             
             if (stageExercises.length > 0) {
                 finalHtml += `
-                    <div class="stage-group">
-                        <h3 class="stage-header" style="background: #1a1a1a; color: #d4af37; padding: 10px; border-left: 4px solid #d4af37; margin-top: 20px; cursor: pointer;">
-                            ${stage.replace('-', ' ')} ▼
-                        </h3>
-                        <div class="stage-content">
+                    <div class="stage-accordion" style="margin-bottom: 15px;">
+                        <div class="stage-header" onclick="toggleStage(this)" style="
+                            background: #1a1a1a; 
+                            color: #d4af37; 
+                            padding: 15px; 
+                            border-left: 4px solid #444; 
+                            display: flex; 
+                            justify-content: space-between; 
+                            align-items: center; 
+                            cursor: pointer;
+                            font-weight: bold;
+                            text-transform: uppercase;
+                            letter-spacing: 1px;
+                            transition: 0.3s;
+                        ">
+                            <span>${stage.replace('-', ' ')}</span>
+                            <span class="stage-arrow">▶</span>
+                        </div>
+                        <div class="stage-content" style="display: none; padding-top: 15px;">
                             ${stageExercises.map((ex, i) => createExerciseItemHTML(ex, i)).join('')}
                         </div>
                     </div>
@@ -112,7 +126,7 @@ function loadAndDisplayDailyPlan() {
         listContainer.innerHTML = finalHtml;
 
     } catch (e) {
-        console.error("Помилка завантаження:", e);
+        console.error("Помилка:", e);
     }
 }
 
