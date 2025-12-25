@@ -1,6 +1,7 @@
-// weekly-individual.js - ProAtletCare Edition
-// Поєднує Глобальні шаблони, Індивідуальні оверрайди та Бібліотеку вправ
+// weekly-individual.js
+// Повна версія: Розділи (Pre/Main/Post), Чекбокси та Глобальні шаблони
 
+const STORAGE_KEY = 'weeklyPlanData';
 const GLOBAL_TEMPLATE_KEY = 'pro_global_templates';
 const INDIVIDUAL_OVERRIDE_KEY = 'pro_individual_overrides';
 
@@ -18,33 +19,31 @@ const COLOR_MAP = {
 
 const dayNamesShort = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
 
-// Змінні для модалки
-let currentDayIndex = null;
-let currentMdStatus = null;
-let selectedExercises = [];
+// Твоя структура розділів
+const templateStages = {
+    'Pre-Training': ['Mobility', 'Activation'],
+    'Main Training': ['Legs', 'Core', 'UpperBody'],
+    'Post-Training': ['Recovery', 'FoamRolling']
+};
+
+let currentExerciseContext = null; 
+let selectedExercises = []; 
 
 // =========================================================
-// 1. РОБОТА З ДАНИМИ (STORE)
+// 1. РОБОТА З ДАНИМИ
 // =========================================================
 
 function getDayPlan(dayIndex, mdStatus, userId = "default_athlete") {
-    // 1. Шукаємо індивідуальну правку
     const overrides = JSON.parse(localStorage.getItem(INDIVIDUAL_OVERRIDE_KEY) || '{}');
     if (overrides[userId] && overrides[userId][dayIndex]) {
         return overrides[userId][dayIndex].exercises;
     }
-
-    // 2. Якщо нема, беремо глобальний шаблон
     const globals = JSON.parse(localStorage.getItem(GLOBAL_TEMPLATE_KEY) || '{}');
-    if (globals[mdStatus]) {
-        return globals[mdStatus].exercises;
-    }
-
-    return [];
+    return globals[mdStatus] ? globals[mdStatus].exercises : [];
 }
 
 // =========================================================
-// 2. ВІДОБРАЖЕННЯ ІНТЕРФЕЙСУ
+// 2. ВІДОБРАЖЕННЯ ТА РОЗДІЛИ (PRE/MAIN/POST)
 // =========================================================
 
 function updateCycleColors() {
@@ -58,29 +57,17 @@ function updateCycleColors() {
         let statusKey = dayStatuses[index];
         const style = COLOR_MAP[statusKey] || COLOR_MAP['TRAIN'];
 
-        // Оновлення заголовків та міток
-        const mdLabel = cell.querySelector('.md-status');
-        if (mdLabel) {
-            mdLabel.textContent = style.status;
-            Object.values(COLOR_MAP).forEach(m => mdLabel.classList.remove(m.colorClass));
-            mdLabel.classList.add(style.colorClass);
-        }
-
         const titleEl = document.getElementById(`md-title-${index}`);
-        if (titleEl) {
-            titleEl.innerHTML = `<span class="md-status-label">${style.status}</span> (${dayNamesShort[index]})`;
-        }
+        if (titleEl) titleEl.innerHTML = `<span class="md-status-label">${style.status}</span> (${dayNamesShort[index]})`;
 
-        // Рендер вправ
         const exercises = getDayPlan(index, statusKey);
-        renderExercises(index, statusKey, exercises);
+        renderExercisesWithStages(index, statusKey, exercises);
     });
 }
 
 function calculateMdStatuses(activityTypes) {
     let statuses = activityTypes.map(type => (type === 'MATCH' ? 'MD' : (type === 'REST' ? 'REST' : 'TRAIN')));
     const matchIdx = activityTypes.indexOf('MATCH');
-
     if (matchIdx !== -1) {
         for (let i = 1; i <= 4; i++) {
             let prev = (matchIdx - i + 7) % 7;
@@ -94,7 +81,7 @@ function calculateMdStatuses(activityTypes) {
     return statuses;
 }
 
-function renderExercises(dayIndex, mdStatus, exercises) {
+function renderExercisesWithStages(dayIndex, mdStatus, exercises) {
     const container = document.querySelector(`.task-day-container[data-day-index="${dayIndex}"]`);
     if (!container) return;
 
@@ -103,76 +90,90 @@ function renderExercises(dayIndex, mdStatus, exercises) {
         return;
     }
 
-    let html = `<div class="exercise-list">`;
-    exercises.forEach((ex, idx) => {
-        html += `
-            <div class="exercise-item" data-idx="${idx}">
-                <strong>${ex.name}</strong>
-                <p>${ex.description}</p>
-                <button type="button" class="remove-btn" onclick="removeExercise(${dayIndex}, ${idx})">✕</button>
-            </div>`;
+    let html = '<div class="generated-exercises-list">';
+    
+    // Відображення за розділами (Pre/Main/Post)
+    Object.keys(templateStages).forEach(stage => {
+        const stageExs = exercises.filter(ex => ex.stage === stage);
+        html += `<h5 class="template-stage-header">${stage.replace('-', ' ')}</h5>`;
+        
+        stageExs.forEach((ex, idx) => {
+            const globalIdx = exercises.indexOf(ex);
+            html += `
+                <div class="exercise-item">
+                    <strong>${ex.name}</strong>
+                    <p>${ex.description}</p>
+                    <button type="button" class="remove-btn" onclick="deleteExercise(${dayIndex}, ${globalIdx})">✕</button>
+                </div>`;
+        });
+        
+        // Кнопка додавання саме в цей розділ
+        html += `<button type="button" class="add-manual-btn" onclick="openExerciseModal(${dayIndex}, '${mdStatus}', '${stage}')">+ Додати в ${stage}</button>`;
     });
-    html += `</div>`;
 
-    // Кнопки управління
     html += `
-        <div class="day-actions">
-            <button type="button" class="add-manual-btn" onclick="openExerciseModal(${dayIndex}, '${mdStatus}')">+ Додати вправу</button>
-            <button type="button" class="global-save-btn" onclick="saveAsGlobal(${dayIndex}, '${mdStatus}')">★ Зробити шаблоном для ${mdStatus}</button>
-        </div>`;
+        <div class="day-footer-actions" style="margin-top:15px; border-top:1px solid #d4af37; padding-top:10px;">
+            <button type="button" class="gold-button btn-small" onclick="saveAsGlobal(${dayIndex}, '${mdStatus}')">★ Зберегти як шаблон ${mdStatus}</button>
+        </div></div>`;
 
     container.innerHTML = html;
 }
 
 // =========================================================
-// 3. МОДАЛЬНЕ ВІКНО ТА БІБЛІОТЕКА (EXERCISE_LIBRARY)
+// 3. МОДАЛКА З ГАЛОЧКАМИ (ЧЕКБОКСАМИ)
 // =========================================================
 
-function openExerciseModal(dayIndex, mdStatus) {
-    currentDayIndex = dayIndex;
-    currentMdStatus = mdStatus;
+function openExerciseModal(dayIndex, mdStatus, stage) {
+    currentExerciseContext = { dayIndex, mdStatus, stage };
     selectedExercises = [];
     
     const modal = document.getElementById('exercise-selection-modal');
-    const filterContainer = document.getElementById('quality-filters');
-    const listContainer = document.getElementById('exercise-list-container');
-
-    // Очистка та заповнення фільтрів
-    filterContainer.innerHTML = QUALITIES.map(q => 
+    const qualityFilters = document.getElementById('quality-filters');
+    
+    // Фільтри за якістю (Strength, Mobility тощо)
+    qualityFilters.innerHTML = QUALITIES.map(q => 
         `<button type="button" class="filter-chip" onclick="filterModal('${q}')">${q}</button>`
     ).join('');
 
-    renderModalList();
+    renderModalList(stage);
     modal.style.display = 'flex';
 }
 
-function renderModalList(filter = null) {
+function renderModalList(stage, qualityFilter = null) {
     const listContainer = document.getElementById('exercise-list-container');
     listContainer.innerHTML = '';
 
-    // Проходимо по категоріях бібліотеки (Pre, Main, Post)
-    for (const stage in EXERCISE_LIBRARY) {
-        for (const subCat in EXERCISE_LIBRARY[stage]) {
-            const data = EXERCISE_LIBRARY[stage][subCat];
-            
-            data.exercises.forEach(ex => {
-                if (!filter || data.qualities.includes(filter)) {
-                    const div = document.createElement('div');
-                    div.className = 'modal-ex-item';
-                    div.innerHTML = `<strong>${ex.name}</strong><br><small>${subCat}</small>`;
-                    div.onclick = () => toggleSelectExercise(ex, div);
-                    listContainer.appendChild(div);
-                }
-            });
-        }
+    // Беремо вправи тільки для вибраного розділу (Stage)
+    const categories = EXERCISE_LIBRARY[stage];
+    for (const catName in categories) {
+        const data = categories[catName];
+        if (qualityFilter && !data.qualities.includes(qualityFilter)) continue;
+
+        data.exercises.forEach(ex => {
+            const div = document.createElement('div');
+            div.className = 'exercise-select-item';
+            div.innerHTML = `
+                <input type="checkbox" class="ex-checkbox" id="chk-${ex.name}" onchange="toggleEx('${ex.name}', '${stage}')">
+                <label for="chk-${ex.name}">
+                    <strong>${ex.name}</strong><br><small>${catName}</small>
+                </label>
+            `;
+            listContainer.appendChild(div);
+        });
     }
 }
 
-function toggleSelectExercise(ex, element) {
-    element.classList.toggle('selected');
-    const index = selectedExercises.findIndex(s => s.name === ex.name);
-    if (index > -1) selectedExercises.splice(index, 1);
-    else selectedExercises.push(ex);
+function toggleEx(name, stage) {
+    const categories = EXERCISE_LIBRARY[stage];
+    let foundEx = null;
+    for (const cat in categories) {
+        const ex = categories[cat].exercises.find(e => e.name === name);
+        if (ex) { foundEx = { ...ex, stage }; break; }
+    }
+
+    const idx = selectedExercises.findIndex(e => e.name === name);
+    if (idx > -1) selectedExercises.splice(idx, 1);
+    else if (foundEx) selectedExercises.push(foundEx);
 
     const btn = document.getElementById('add-selected-btn');
     btn.style.display = selectedExercises.length > 0 ? 'block' : 'none';
@@ -184,72 +185,49 @@ function handleSelectionComplete() {
     const overrides = JSON.parse(localStorage.getItem(INDIVIDUAL_OVERRIDE_KEY) || '{}');
     
     if (!overrides[userId]) overrides[userId] = {};
-    if (!overrides[userId][currentDayIndex]) {
-        // Якщо ще немає оверрайду, беремо базу з шаблону
-        const currentPlan = getDayPlan(currentDayIndex, currentMdStatus);
-        overrides[userId][currentDayIndex] = { exercises: [...currentPlan], mdStatus: currentMdStatus };
-    }
-
-    overrides[userId][currentDayIndex].exercises.push(...selectedExercises);
-    localStorage.setItem(INDIVIDUAL_OVERRIDE_KEY, JSON.stringify(overrides));
+    const currentExs = getDayPlan(currentExerciseContext.dayIndex, currentExerciseContext.mdStatus);
     
+    overrides[userId][currentExerciseContext.dayIndex] = { 
+        exercises: [...currentExs, ...selectedExercises],
+        mdStatus: currentExerciseContext.mdStatus 
+    };
+
+    localStorage.setItem(INDIVIDUAL_OVERRIDE_KEY, JSON.stringify(overrides));
     closeExerciseModal();
     updateCycleColors();
 }
 
 // =========================================================
-// 4. ЗБЕРЕЖЕННЯ (ГЛОБАЛЬНЕ ТА ІНДИВІДУАЛЬНЕ)
+// 4. ІНІЦІАЛІЗАЦІЯ
 // =========================================================
 
-function saveAsGlobal(dayIndex, mdStatus) {
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.activity-type-select').forEach(s => s.addEventListener('change', updateCycleColors));
+    const addBtn = document.getElementById('add-selected-btn');
+    if (addBtn) addBtn.onclick = handleSelectionComplete;
+    updateCycleColors();
+});
+
+function deleteExercise(dayIdx, exIdx) {
     const userId = "default_athlete";
     const overrides = JSON.parse(localStorage.getItem(INDIVIDUAL_OVERRIDE_KEY) || '{}');
+    const currentExs = getDayPlan(dayIdx, ""); 
     
-    // Беремо поточний стан вправ з оверрайду або шаблону
-    const exercisesToSave = (overrides[userId] && overrides[userId][dayIndex]) 
-        ? overrides[userId][dayIndex].exercises 
-        : getDayPlan(dayIndex, mdStatus);
-
-    const globals = JSON.parse(localStorage.getItem(GLOBAL_TEMPLATE_KEY) || '{}');
-    globals[mdStatus] = { exercises: exercisesToSave };
-    localStorage.setItem(GLOBAL_TEMPLATE_KEY, JSON.stringify(globals));
+    currentExs.splice(exIdx, 1);
+    overrides[userId] = overrides[userId] || {};
+    overrides[userId][dayIdx] = { exercises: currentExs };
     
-    alert(`Стиль ProAtletCare: Шаблон для дня ${mdStatus} оновлено для всіх!`);
-}
-
-function removeExercise(dayIndex, exIdx) {
-    const userId = "default_athlete";
-    const overrides = JSON.parse(localStorage.getItem(INDIVIDUAL_OVERRIDE_KEY) || '{}');
-    
-    if (!overrides[userId] || !overrides[userId][dayIndex]) {
-        // Створюємо оверрайд на основі шаблону перед видаленням
-        const base = getDayPlan(dayIndex, currentMdStatus);
-        overrides[userId] = overrides[userId] || {};
-        overrides[userId][dayIndex] = { exercises: [...base] };
-    }
-
-    overrides[userId][dayIndex].exercises.splice(exIdx, 1);
     localStorage.setItem(INDIVIDUAL_OVERRIDE_KEY, JSON.stringify(overrides));
     updateCycleColors();
 }
 
-function closeExerciseModal() {
-    document.getElementById('exercise-selection-modal').style.display = 'none';
+function saveAsGlobal(dayIdx, mdStatus) {
+    const currentExs = getDayPlan(dayIdx, mdStatus);
+    const globals = JSON.parse(localStorage.getItem(GLOBAL_TEMPLATE_KEY) || '{}');
+    globals[mdStatus] = { exercises: currentExs };
+    localStorage.setItem(GLOBAL_TEMPLATE_KEY, JSON.stringify(globals));
+    alert(`Шаблон для ${mdStatus} збережено!`);
 }
 
-// =========================================================
-// 5. ІНІЦІАЛІЗАЦІЯ
-// =========================================================
-
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.activity-type-select').forEach(select => {
-        select.addEventListener('change', updateCycleColors);
-    });
-
-    const addBtn = document.getElementById('add-selected-btn');
-    if (addBtn) addBtn.onclick = handleSelectionComplete;
-
-    window.filterModal = (q) => renderModalList(q);
-
-    updateCycleColors();
-});
+function closeExerciseModal() { document.getElementById('exercise-selection-modal').style.display = 'none'; }
+function filterModal(q) { renderModalList(currentExerciseContext.stage, q); }
