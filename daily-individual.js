@@ -159,6 +159,24 @@ async function submitDailyReport() {
     }
 }
 
+async function loadPlanFromFirebase(athleteId) {
+    try {
+        const docRef = db.collection("weekly_plans")
+            .where("athleteId", "==", athleteId)
+            .orderBy("createdAt", "desc")
+            .limit(1);
+            
+        const snapshot = await docRef.get();
+        if (!snapshot.empty) {
+            const latestPlan = snapshot.docs[0].data().planData;
+            localStorage.setItem('weeklyPlanData', JSON.stringify(latestPlan));
+            console.log("✅ План синхронізовано з хмари Firebase");
+        }
+    } catch (error) {
+        console.error("❌ Помилка завантаження з Firebase:", error);
+    }
+}
+
 // 4. ОСНОВНА ЛОГІКА ЗАВАНТАЖЕННЯ (MD ТА ПЛАН)
 function loadAndDisplayDailyPlan() {
     const todayIndex = (new Date().getDay() === 0) ? 6 : new Date().getDay() - 1;
