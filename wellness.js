@@ -2,36 +2,53 @@
 // --- ФУНКЦІЇ ДЛЯ РОБОТИ З ДАНИМИ ---
 // ==============================================
 
+// ==============================================
+// --- ФУНКЦІЇ ДЛЯ РОБОТИ З FIREBASE (WELLNESS) ---
+// ==============================================
+
+const WELLNESS_COLLECTION = 'wellness_reports';
+const CURRENT_ATHLETE_ID = 'Artem_Kulyk_Test'; // Тимчасово, поки не додамо Login
+
 /**
- * Повертає поточну дату у форматі YYYY-MM-DD.
+ * Завантажує історію Wellness з Firebase Firestore.
  */
-function getTodayDateString() {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+async function loadWellnessHistoryFromFirebase() {
+    const history = {};
+    try {
+        const snapshot = await db.collection(WELLNESS_COLLECTION)
+            .where("athleteId", "==", CURRENT_ATHLETE_ID)
+            .orderBy("date", "asc")
+            .get();
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            // Перетворюємо назад у формат { 'YYYY-MM-DD': { scores } }
+            history[data.date] = data.scores;
+        });
+    } catch (error) {
+        console.error("Помилка завантаження Wellness:", error);
+    }
+    return history;
 }
 
 /**
- * Завантажує всю історію оцінок Wellness з LocalStorage.
+ * Зберігає щоденні оцінки у Firebase.
  */
-function loadWellnessHistory() {
-    const data = localStorage.getItem('wellnessHistory');
-    return data ? JSON.parse(data) : {};
+async function saveWellnessToFirebase(date, scores) {
+    try {
+        await db.collection(WELLNESS_COLLECTION).add({
+            athleteId: CURRENT_ATHLETE_ID,
+            date: date,
+            scores: scores,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        console.log("✅ Wellness збережено в Firebase");
+    } catch (error) {
+        console.error("❌ Помилка збереження в Firebase:", error);
+        // Резервне збереження в LocalStorage на випадок офлайну
+        saveWellnessHistory(date, scores); 
+    }
 }
-
-/**
- * Зберігає щоденні оцінки у LocalStorage.
- * @param {string} date - Поточна дата (YYYY-MM-DD).
- * @param {Object} scores - Об'єкт з оцінками.
- */
-function saveWellnessHistory(date, scores) {
-    const history = loadWellnessHistory();
-    history[date] = scores;
-    localStorage.setItem('wellnessHistory', JSON.stringify(history));
-}
-
 
 // ==============================================
 // 1. КОНСТАНТИ
@@ -93,12 +110,10 @@ function updateWellnessStats(latestData) {
 // ==============================================
 // 3. КОД ДЛЯ ГРАФІКІВ (ТІЛЬКИ ДЛЯ wellness.html)
 // ==============================================
-function initCharts() {
-    
-    // --- ДИНАМІЧНЕ ЗАВАНТАЖЕННЯ ТА ПІДГОТОВКА ДАНИХ ---
-    const history = loadWellnessHistory();
-    // Сортуємо дати для коректного відображення на осі X
-    const sortedDates = Object.keys(history).sort(); 
+async function initCharts() {
+    // --- ДИНАМІЧНЕ ЗАВАНТАЖЕННЯ З FIREBASE ---
+    const history = await loadWellnessHistoryFromFirebase();
+    const sortedDates = Object.keys(history).sort();
 
     // -----------------------------------------------------------------
     // --- ЗНИЩЕННЯ ІСНУЮЧИХ ГРАФІКІВ (ВИПРАВЛЕННЯ Type Error) ---
@@ -367,26 +382,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-                // --- ЛОГІКА ЗБЕРЕЖЕННЯ ---
+               
                 
-                const submissionData = {};
-                form.querySelectorAll('input[type="radio"]:checked').forEach(input => {
-                    submissionData[input.name] = parseInt(input.value, 10);
-                });
-                
-                const todayDate = getTodayDateString();
-                
-                // 1. Зберігаємо дані в історію
-                saveWellnessHistory(todayDate, submissionData);
-                // 2. Зберігаємо дату останньої відправки
-                localStorage.setItem('lastWellnessSubmissionDate', todayDate);
-                
-                // *** ВИПРАВЛЕННЯ: Використовуємо затримку 100мс для надійного оновлення графіків на мобільних пристроях. ***
-                setTimeout(() => {
-                    initCharts(); 
-                    checkDailyRestriction();
-                    alert("Ваші дані Wellness успішно записані!");
-                }, 100);
+                // --- ЛОГІКА ЗБЕРЕЖЕННЯ В ХМАРУ ---
+const submissionData = {};
+form.querySelectorAll('input[type="radio"]:checked').forEach(input => {
+    submissionData[input.name] = parseInt(input.value, 10);
+});
+
+const todayDate = getTodayDateString();
+
+// 1. Зберігаємо в Firebase (асинхронно)
+await saveWellnessToFirebase(todayDate, submissionData);
+
+// 2. Локальна мітка для обмеження "раз на день"
+localStorage.setItem('lastWellnessSubmissionDate', todayDate);
+
+// Оновлюємо візуал
+setTimeout(async () => {
+    await initCharts(); 
+    checkDailyRestriction();
+    alert("ProAtletCare: Твій стан зафіксовано в системі!");
+}, 100);
             });
         }
     }
