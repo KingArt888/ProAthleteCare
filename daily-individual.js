@@ -1,12 +1,12 @@
-// daily-individual.js — ProAtletCare (FIXED VERSION)
+// daily-individual.js — ProAtletCare (PREMIUM ANALYTICS EDITION)
 
-// Використовуємо перевірку, щоб не було помилки "Identifier has already been declared"
+// Захист від помилки повторного оголошення
 if (typeof STORAGE_KEY === 'undefined') {
     var STORAGE_KEY = 'weeklyPlanData';
 }
-var YOUTUBE_EMBED_BASE = 'https://www.youtube.com/embed/';
+const YOUTUBE_EMBED_BASE = 'https://www.youtube.com/embed/';
 
-var COLOR_MAP = {
+const COLOR_MAP = {
     'MD': { status: 'MD', colorClass: 'color-red' },
     'MD+1': { status: 'MD+1', colorClass: 'color-dark-green' }, 
     'MD+2': { status: 'MD+2', colorClass: 'color-green' }, 
@@ -18,7 +18,7 @@ var COLOR_MAP = {
     'TRAIN': { status: 'TRAIN', colorClass: 'color-dark-grey' }, 
 };
 
-var MD_RECOMMENDATIONS = {
+const MD_RECOMMENDATIONS = {
     'MD': 'Ігровий день. Максимальна концентрація. Успіхів на полі!',
     'MD+1': 'Відновлення. МФР та легка мобільність. Прибираємо набряки.',
     'MD-1': 'Активація нервової системи. Низький об’єм, висока швидкість.',
@@ -26,7 +26,9 @@ var MD_RECOMMENDATIONS = {
     'TRAIN': 'Робочий день. Працюй за планом, фокусуйся на техніці.'
 };
 
-// 1. КЕРУВАННЯ АКОРДЕОНОМ
+const STAGES = ['Pre-Training', 'Main Training', 'Post-Training'];
+
+// 1. УПРАВЛІННЯ АКОРДЕОНОМ
 function toggleStage(headerElement) {
     const content = headerElement.nextElementSibling;
     const arrow = headerElement.querySelector('.stage-arrow');
@@ -39,7 +41,15 @@ function toggleStage(headerElement) {
     }
 }
 
-// 2. СТВОРЕННЯ КАРТКИ ВПРАВИ
+// 2. ВІЗУАЛІЗАЦІЯ ВИБОРУ (Блискавки та Зірки)
+function highlightSelection(groupName, value, activeColor) {
+    const labels = document.querySelectorAll(`label[data-group="${groupName}"]`);
+    labels.forEach((label, index) => {
+        label.style.color = (index < value) ? activeColor : '#222';
+    });
+}
+
+// 3. СТВОРЕННЯ КАРТКИ ВПРАВИ
 function createExerciseItemHTML(exercise, index) {
     const uniqueId = `ex-check-${index}`;
     let mediaHtml = exercise.videoKey 
@@ -58,71 +68,129 @@ function createExerciseItemHTML(exercise, index) {
     `;
 }
 
-// 3. ФОРМА ЗВОРOTНОГО ЗВ'ЯЗКУ
+// 4. ФОРМА З БЛИСКАВКАМИ ТА ЗІРКАМИ
 function renderFeedbackForm() {
     const container = document.getElementById('user-feedback-container');
     if (!container) return;
 
     container.innerHTML = `
         <div class="pro-feedback-card" style="background:#0a0a0a; border:1px solid #d4af37; border-radius:12px; padding:20px; margin-top:40px;">
-            <h3 style="color:#d4af37; text-align:center; text-transform:uppercase; margin-bottom:20px;">📊 Аналіз тренування</h3>
-            <div style="margin-bottom:20px; text-align:center;">
-                <p style="color:#888; font-size:0.8rem;">СКЛАДНІСТЬ (RPE 1-10):</p>
-                <input type="number" id="rpe-input" min="1" max="10" style="width:50px; background:#111; color:#fff; border:1px solid #d4af37; text-align:center;">
+            <div style="text-align:center; margin-bottom:20px;">
+                <h3 style="color:#d4af37; text-transform:uppercase; letter-spacing:1px; margin:0; font-size:1.1rem;">📊 Аналіз тренування</h3>
             </div>
-            <textarea id="user-comment" style="width:100%; height:80px; background:#111; color:#fff; border:1px solid #333; padding:10px; border-radius:8px;" placeholder="Твій коментар..."></textarea>
-            <button id="submit-report-btn" onclick="submitDailyReport()" style="width:100%; margin-top:15px; padding:15px; background:#d4af37; color:#000; font-weight:bold; border:none; border-radius:8px; cursor:pointer;">НАДІСЛАТИ ЗВІТ</button>
+
+            <div style="margin-bottom:20px; text-align:center;">
+                <p style="color:#888; font-size:0.8rem; margin-bottom:10px;">СКЛАДНІСТЬ (RPE):</p>
+                <div style="display:flex; justify-content:center; gap:5px;">
+                    ${[1,2,3,4,5,6,7,8,9,10].map(n => `
+                        <input type="radio" name="rpe" value="${n}" id="bolt-${n}" style="display:none;">
+                        <label for="bolt-${n}" data-group="rpe" style="cursor:pointer; font-size:22px; color:#222; transition:0.3s;" onclick="highlightSelection('rpe', ${n}, '#d4af37')">⚡</label>
+                    `).join('')}
+                </div>
+            </div>
+
+            <div style="margin-bottom:20px; text-align:center;">
+                <p style="color:#888; font-size:0.8rem; margin-bottom:10px;">ЯКІСТЬ ВИКОНАННЯ:</p>
+                <div style="display:flex; justify-content:center; gap:8px;">
+                    ${[1,2,3,4,5].map(n => `
+                        <input type="radio" name="quality" value="${n}" id="star-${n}" style="display:none;">
+                        <label for="star-${n}" data-group="quality" style="cursor:pointer; font-size:26px; color:#222; transition:0.3s;" onclick="highlightSelection('quality', ${n}, '#d4af37')">★</label>
+                    `).join('')}
+                </div>
+            </div>
+
+            <textarea id="user-comment" style="width:100%; height:70px; background:#111; color:#fff; border:1px solid #333; border-radius:8px; padding:12px; box-sizing:border-box; resize:none;" placeholder="Коментар для Артема..."></textarea>
+
+            <button id="submit-report-btn" onclick="submitDailyReport()" style="width:100%; margin-top:15px; padding:15px; background:#d4af37; color:#000; border:none; border-radius:8px; font-weight:900; text-transform:uppercase; cursor:pointer;">Надіслати звіт тренеру</button>
         </div>
     `;
 }
 
-// 4. ОСНОВНА ЛОГІКА
+// 5. ВІДПРАВКА ЗВІТУ
+async function submitDailyReport() {
+    const rpe = document.querySelector('input[name="rpe"]:checked')?.value;
+    const quality = document.querySelector('input[name="quality"]:checked')?.value;
+    const comment = document.getElementById('user-comment').value;
+    const status = document.getElementById('md-status-display')?.textContent;
+
+    if (!rpe || !quality) {
+        alert("Оберіть блискавки ⚡ та зірки ★!");
+        return;
+    }
+
+    const reportData = {
+        userId: currentUserId || "unknown",
+        rpe: parseInt(rpe),
+        quality: parseInt(quality),
+        comment: comment,
+        mdStatus: status,
+        date: new Date().toISOString().split('T')[0],
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    try {
+        await db.collection("athlete_reports").add(reportData);
+        const btn = document.getElementById('submit-report-btn');
+        btn.style.background = "#2ecc71";
+        btn.innerHTML = "✅ ВІДПРАВЛЕНО";
+        btn.disabled = true;
+        alert("Звіт успішно збережено!");
+    } catch (error) {
+        console.error("Помилка:", error);
+    }
+}
+
+// 6. ЗАВАНТАЖЕННЯ ПЛАНУ
 function loadAndDisplayDailyPlan() {
     const todayIndex = (new Date().getDay() === 0) ? 6 : new Date().getDay() - 1;
     const listContainer = document.getElementById('daily-exercise-list');
     const statusDisplay = document.getElementById('md-status-display');
     const recContainer = document.getElementById('md-recommendations');
 
-    const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    const mdStatus = calculateTodayStatus(savedData, todayIndex);
+    try {
+        const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        const mdStatus = calculateTodayStatus(savedData, todayIndex);
 
-    if (statusDisplay) {
-        statusDisplay.textContent = mdStatus;
-        const style = COLOR_MAP[mdStatus] || COLOR_MAP['TRAIN'];
-        statusDisplay.className = `md-status ${style.colorClass}`;
-    }
-
-    if (recContainer) {
-        recContainer.innerHTML = `<p style="color:#d4af37;">${MD_RECOMMENDATIONS[mdStatus] || MD_RECOMMENDATIONS['TRAIN']}</p>`;
-    }
-
-    const planKey = `status_plan_${mdStatus}`;
-    const plan = savedData[planKey];
-
-    if (!plan || !plan.exercises || plan.exercises.length === 0) {
-        listContainer.innerHTML = '<p style="text-align:center; color:#555;">На сьогодні вправ немає.</p>';
-        renderFeedbackForm();
-        return;
-    }
-
-    let html = '';
-    ['Pre-Training', 'Main Training', 'Post-Training'].forEach(stage => {
-        const stageExs = plan.exercises.filter(ex => ex.stage === stage);
-        if (stageExs.length > 0) {
-            html += `
-                <div style="margin-bottom:10px;">
-                    <div class="stage-header" onclick="toggleStage(this)" style="background:#1a1a1a; color:#d4af37; padding:12px; cursor:pointer; display:flex; justify-content:space-between; font-weight:bold; border-left:4px solid #444;">
-                        <span>${stage.toUpperCase()}</span>
-                        <span class="stage-arrow">▶</span>
-                    </div>
-                    <div class="stage-content" style="display:none; padding-top:10px;">
-                        ${stageExs.map((ex, i) => createExerciseItemHTML(ex, `${stage}-${i}`)).join('')}
-                    </div>
-                </div>`;
+        if (statusDisplay) {
+            statusDisplay.textContent = mdStatus;
+            const style = COLOR_MAP[mdStatus] || COLOR_MAP['TRAIN'];
+            statusDisplay.className = `md-status ${style.colorClass}`;
         }
-    });
-    listContainer.innerHTML = html;
-    renderFeedbackForm();
+
+        if (recContainer) {
+            recContainer.innerHTML = `<div style="border-left:3px solid #d4af37; padding:10px; background:#111;"><p style="margin:0; color:#eee; font-size:0.85rem;"><strong>Порада Кулика:</strong> ${MD_RECOMMENDATIONS[mdStatus] || MD_RECOMMENDATIONS['TRAIN']}</p></div>`;
+        }
+
+        const planKey = `status_plan_${mdStatus}`;
+        const plan = savedData[planKey];
+
+        if (!plan || !plan.exercises || plan.exercises.length === 0) {
+            listContainer.innerHTML = '<p style="text-align:center; color:#555; padding:30px; border:1px dashed #333;">На сьогодні вправ немає.</p>';
+            renderFeedbackForm();
+            return;
+        }
+
+        let html = '';
+        STAGES.forEach(stage => {
+            const stageExs = plan.exercises.filter(ex => ex.stage === stage);
+            if (stageExs.length > 0) {
+                html += `
+                    <div style="margin-bottom:10px;">
+                        <div class="stage-header" onclick="toggleStage(this)" style="background:#1a1a1a; color:#d4af37; padding:12px; border-left:4px solid #444; cursor:pointer; display:flex; justify-content:space-between; font-weight:bold; font-size:0.8rem;">
+                            <span>${stage.toUpperCase()}</span>
+                            <span class="stage-arrow">▶</span>
+                        </div>
+                        <div class="stage-content" style="display:none; padding-top:10px;">
+                            ${stageExs.map((ex, i) => createExerciseItemHTML(ex, `${stage}-${i}`)).join('')}
+                        </div>
+                    </div>`;
+            }
+        });
+
+        listContainer.innerHTML = html;
+        renderFeedbackForm();
+
+    } catch (e) { console.error(e); }
 }
 
 function calculateTodayStatus(data, todayIdx) {
@@ -137,24 +205,10 @@ function calculateTodayStatus(data, todayIdx) {
     return 'TRAIN';
 }
 
-async function submitDailyReport() {
-    const rpe = document.getElementById('rpe-input')?.value;
-    const comment = document.getElementById('user-comment')?.value;
-    if (!rpe) { alert("Вкажіть складність!"); return; }
-    try {
-        await db.collection("training_reports").add({
-            userId: firebase.auth().currentUser.uid,
-            rpe: parseInt(rpe),
-            comment: comment,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        alert("Звіт відправлено!");
-    } catch (e) { console.error("Помилка:", e); }
-}
-
-// СЛУХАЧ FIREBASE
+// 7. СИНХРОНІЗАЦІЯ
 firebase.auth().onAuthStateChanged((user) => {
     if (user) {
+        currentUserId = user.uid;
         db.collection("weekly_plans").doc(user.uid).onSnapshot((doc) => {
             if (doc.exists) {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(doc.data().planData));
