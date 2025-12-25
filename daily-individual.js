@@ -123,36 +123,41 @@ function renderFeedbackForm() {
 }
 
 // ФУНКЦІЯ ЗБЕРЕЖЕННЯ
-function submitDailyReport() {
+async function submitDailyReport() {
     const rpe = document.querySelector('input[name="rpe"]:checked')?.value;
     const quality = document.querySelector('input[name="quality"]:checked')?.value;
     const comment = document.getElementById('user-comment').value;
-    const mdStatus = document.getElementById('md-status-display')?.textContent || 'TRAIN';
+    const status = document.getElementById('md-status-display')?.textContent;
 
     if (!rpe || !quality) {
-        alert("Будь ласка, оцініть складність (⚡) та якість (★) тренування!");
+        alert("Оберіть блискавки ⚡ та зірки ★!");
         return;
     }
 
-    const report = {
-        timestamp: new Date().toISOString(),
-        date: new Date().toLocaleString('uk-UA'),
-        rpe: rpe,
-        quality: quality,
+    const reportData = {
+        athleteName: "Artem Test", // Тут потім буде ім'я авторизованого юзера
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        rpe: parseInt(rpe),
+        quality: parseInt(quality),
         comment: comment,
-        mdStatus: mdStatus
+        mdStatus: status
     };
 
-    let allReports = JSON.parse(localStorage.getItem(REPORTS_KEY) || '[]');
-    allReports.push(report);
-    localStorage.setItem(REPORTS_KEY, JSON.stringify(allReports));
-
-    const btn = document.getElementById('submit-report-btn');
-    btn.innerHTML = "✅ ЗВІТ ЗБЕРЕЖЕНО";
-    btn.style.background = "#2ecc71";
-    btn.disabled = true;
-
-    alert("Дякуємо! Твій відгук допоможе Артему Кулику скоригувати план.");
+    try {
+        // Записуємо в Firebase
+        await db.collection("training_reports").add(reportData);
+        
+        // Візуальний ефект
+        const btn = document.getElementById('submit-report-btn');
+        btn.style.background = "#2ecc71";
+        btn.innerHTML = "✅ ВІДПРАВЛЕНО В ХМАРУ";
+        btn.disabled = true;
+        
+        alert("Артеме, звіт успішно збережено в Firebase!");
+    } catch (error) {
+        console.error("Помилка Firebase: ", error);
+        alert("Помилка при збереженні. Перевір інтернет.");
+    }
 }
 
 // 4. ОСНОВНА ЛОГІКА ЗАВАНТАЖЕННЯ (MD ТА ПЛАН)
