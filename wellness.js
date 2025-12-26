@@ -1,14 +1,15 @@
-// wellness.js — ProAtletCare (ВЕРСІЯ З ПІДТРИМКОЮ FIREBASE)
+// wellness.js — ProAtletCare (СТАБІЛЬНА ВЕРСІЯ З FIREBASE)
 
 (function() {
-    // МИ НЕ ПЕРЕОГОЛОШУЄМО db, вона вже є у вашому HTML
+    // МИ НЕ ОГОЛОШУЄМО const db, бо вона вже є у вашому HTML.
+    // Використовуємо існуючу змінну db для Firestore.
     const COLLECTION_NAME = 'wellness_reports';
 
-    // --- ФУНКЦІЇ ДЛЯ FIREBASE (ДОДАТИ) ---
+    // --- 1. ФУНКЦІЇ СИНХРОНІЗАЦІЇ З FIREBASE ---
 
     async function syncWithFirebase(uid) {
         try {
-            // Отримуємо всі записи користувача з Firebase
+            // Отримуємо всі записи атлета з хмари
             const snapshot = await db.collection(COLLECTION_NAME)
                 .where("userId", "==", uid)
                 .orderBy("timestamp", "asc")
@@ -17,28 +18,26 @@
             const history = {};
             snapshot.forEach(doc => {
                 const data = doc.data();
-                // Використовуємо дату як ключ (YYYY-MM-DD)
-                history[data.date] = data.scores;
+                if (data.date && data.scores) {
+                    history[data.date] = data.scores;
+                }
             });
 
-            // Зберігаємо завантажені дані в локальну пам'ять, щоб ваш старий код їх підхопив
+            // Оновлюємо локальну пам'ять завантаженими даними
             localStorage.setItem('wellnessHistory', JSON.stringify(history));
             
-            // Оновлюємо графіки після завантаження
+            // Перемальовуємо графіки з новими даними
             initCharts();
         } catch (e) {
             console.error("Помилка синхронізації з Firebase:", e);
         }
     }
 
-    // --- ВАШІ ОРИГІНАЛЬНІ ФУНКЦІЇ (БЕЗ ЗМІН) ---
+    // --- 2. ДОПОМІЖНІ ФУНКЦІЇ ---
 
     function getTodayDateString() {
         const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+        return today.toISOString().split('T')[0];
     }
 
     function loadWellnessHistory() {
@@ -52,13 +51,9 @@
         localStorage.setItem('wellnessHistory', JSON.stringify(history));
     }
 
+    // --- 3. КОНСТАНТИ ТА СТИЛІСТИКА ---
     const GOLD_COLOR = 'rgb(255, 215, 0)';
     const GOLD_AREA = 'rgba(255, 215, 0, 0.4)';
-    const RED_COLOR = 'rgb(255, 99, 132)'; 
-    const LIME_COLOR = 'rgb(50, 205, 50)'; 
-    const ORANGE_COLOR = 'rgb(255, 159, 64)';
-    const GREY_GRID = '#CCCCCC';
-
     const WELLNESS_FIELDS = ['sleep', 'soreness', 'mood', 'water', 'stress', 'ready'];
     const FIELD_LABELS = {
         sleep: 'Сон', soreness: 'Біль', mood: 'Настрій', 
@@ -67,12 +62,14 @@
 
     const colorsMap = {
         sleep: { color: GOLD_COLOR, area: GOLD_AREA },
-        soreness: { color: RED_COLOR, area: 'rgba(255, 99, 132, 0.4)' },
+        soreness: { color: 'rgb(255, 99, 132)', area: 'rgba(255, 99, 132, 0.4)' },
         mood: { color: 'rgb(147, 112, 219)', area: 'rgba(147, 112, 219, 0.4)' },
         water: { color: 'rgb(0, 191, 255)', area: 'rgba(0, 191, 255, 0.4)' },
-        stress: { color: ORANGE_COLOR, area: 'rgba(255, 159, 64, 0.4)' },
-        ready: { color: LIME_COLOR, area: 'rgba(50, 205, 50, 0.4)' },
+        stress: { color: 'rgb(255, 159, 64)', area: 'rgba(255, 159, 64, 0.4)' },
+        ready: { color: 'rgb(50, 205, 50)', area: 'rgba(50, 205, 50, 0.4)' },
     };
+
+    // --- 4. РОБОТА З ГРАФІКАМИ ---
 
     function updateWellnessStats(latestData) {
         WELLNESS_FIELDS.forEach(field => {
@@ -80,7 +77,7 @@
             if (statElement) {
                 const score = latestData[field] || 0;
                 statElement.textContent = `Оцінка: ${score} / 10`;
-                statElement.style.color = score >= 7 ? LIME_COLOR : (score >= 4 ? ORANGE_COLOR : RED_COLOR);
+                statElement.style.color = score >= 7 ? 'rgb(50, 205, 50)' : (score >= 4 ? 'rgb(255, 159, 64)' : 'rgb(255, 99, 132)');
             }
         });
     }
@@ -89,52 +86,41 @@
         const history = loadWellnessHistory();
         const sortedDates = Object.keys(history).sort(); 
 
+        // Очищення старих графіків для уникнення помилок
         WELLNESS_FIELDS.forEach(field => {
-            if (window[`chart_${field}`] && typeof window[`chart_${field}`].destroy === 'function') {
-                window[`chart_${field}`].destroy();
-            }
+            if (window[`chart_${field}`] instanceof Chart) window[`chart_${field}`].destroy();
         });
-        
-        const mainCtx = document.getElementById('wellnessChart');
-        if (window.wellnessChart && typeof window.wellnessChart.destroy === 'function') {
-            window.wellnessChart.destroy();
-        }
+        if (window.wellnessChart instanceof Chart) window.wellnessChart.destroy();
 
         if (sortedDates.length === 0) return;
 
-        const chartLabels = sortedDates.map(date => {
-            const parts = date.split('-');
-            return `${parts[1]}/${parts[2]}`;
-        });
-        
-        const chartData = {};
-        WELLNESS_FIELDS.forEach(field => {
-            chartData[field] = sortedDates.map(date => history[date][field]);
-        });
-
+        const chartLabels = sortedDates.map(date => date.split('-').slice(1).join('/'));
         const latestData = history[sortedDates[sortedDates.length - 1]];
         updateWellnessStats(latestData);
 
+        // Головний РАДАР-графік ("Зірка")
+        const mainCtx = document.getElementById('wellnessChart');
         if (mainCtx) {
             window.wellnessChart = new Chart(mainCtx, {
                 type: 'radar',
                 data: {
                     labels: Object.values(FIELD_LABELS),
                     datasets: [{
-                        label: 'Поточний стан',
+                        label: 'Мій стан',
                         data: WELLNESS_FIELDS.map(f => latestData[f]),
                         backgroundColor: GOLD_AREA,
-                        borderColor: '#333'
+                        borderColor: '#333',
+                        borderWidth: 2
                     }]
                 },
                 options: {
-                    scales: { r: { min: 0, max: 10, grid: { color: GREY_GRID }, pointLabels: { color: 'white' }, ticks: { display: false } } },
+                    scales: { r: { min: 0, max: 10, grid: { color: '#444' }, pointLabels: { color: 'white' }, ticks: { display: false } } },
                     plugins: { legend: { labels: { color: 'white' } } }
                 }
             });
         }
-        
-        // Малюємо міні-графіки
+
+        // Міні-графіки (Лінії)
         WELLNESS_FIELDS.forEach(field => {
             const ctx = document.getElementById(`chart-${field}`);
             if (ctx) {
@@ -142,70 +128,87 @@
                     type: 'line',
                     data: {
                         labels: chartLabels,
-                        datasets: [{ data: chartData[field], borderColor: colorsMap[field].color, fill: true, backgroundColor: colorsMap[field].area }]
+                        datasets: [{
+                            data: sortedDates.map(d => history[d][field]),
+                            borderColor: colorsMap[field].color,
+                            backgroundColor: colorsMap[field].area,
+                            fill: true,
+                            tension: 0.3
+                        }]
                     },
-                    options: { scales: { y: { display: false }, x: { display: false } }, plugins: { legend: { display: false } } }
+                    options: { 
+                        scales: { y: { display: false, min: 0, max: 10 }, x: { display: false } }, 
+                        plugins: { legend: { display: false } } 
+                    }
                 });
             }
         });
     }
 
+    // --- 5. ОБМЕЖЕННЯ ТА ВІДПРАВКА ФОРМИ ---
+
     function checkDailyRestriction() {
-        const lastDate = localStorage.getItem('lastWellnessSubmissionDate');
-        const today = getTodayDateString(); 
+        const today = getTodayDateString();
+        const lastSub = localStorage.getItem('lastWellnessSubmissionDate');
         const button = document.querySelector('.gold-button');
-        if (button && lastDate === today) {
+
+        if (button && lastSub === today) {
             button.disabled = true;
-            button.textContent = "Дані на сьогодні вже записані.";
+            button.textContent = "Звіт на сьогодні вже подано";
+            button.style.opacity = "0.5";
             return true;
         }
         return false;
     }
 
-    // --- ЗАПУСК ---
+    // --- 6. ЗАПУСК ПРИ ЗАВАНТАЖЕННІ ---
 
     document.addEventListener('DOMContentLoaded', function() {
-        firebase.auth().onAuthStateChanged(user => {
-            if (user) {
-                // Синхронізуємо локальні дані з Firebase
-                syncWithFirebase(user.uid);
-            }
-        });
+        // Перевірка Auth (виправляє помилку firebase.auth is not a function)
+        if (typeof firebase.auth === 'function') {
+            firebase.auth().onAuthStateChanged(user => {
+                if (user) {
+                    syncWithFirebase(user.uid);
+                    checkDailyRestriction();
+                }
+            });
+        }
 
         const form = document.getElementById('wellness-form');
         if (form) {
             form.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 const user = firebase.auth().currentUser;
-                if (!user) return alert("Увійдіть в систему!");
+                if (!user) return alert("Будь ласка, увійдіть в систему!");
 
-                const submissionData = {};
+                const scores = {};
+                let valid = true;
                 WELLNESS_FIELDS.forEach(f => {
-                    const checked = form.querySelector(`input[name="${f}"]:checked`);
-                    if (checked) submissionData[f] = parseInt(checked.value, 10);
+                    const val = form.querySelector(`input[name="${f}"]:checked`);
+                    if (val) scores[f] = parseInt(val.value); else valid = false;
                 });
 
-                if (Object.keys(submissionData).length < 6) return alert("Заповніть всі 6 пунктів!");
+                if (!valid) return alert("Оберіть всі 6 показників!");
 
                 try {
                     const todayDate = getTodayDateString();
-                    // 1. Зберігаємо в Firebase
+                    
+                    // Запис у Firebase
                     await db.collection(COLLECTION_NAME).add({
                         userId: user.uid,
                         date: todayDate,
-                        scores: submissionData,
+                        scores: scores,
                         timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     });
 
-                    // 2. Оновлюємо локально
-                    saveWellnessHistory(todayDate, submissionData);
+                    saveWellnessHistory(todayDate, scores);
                     localStorage.setItem('lastWellnessSubmissionDate', todayDate);
                     
                     initCharts();
                     checkDailyRestriction();
-                    alert("Дані збережено в хмару!");
+                    alert("Дані успішно збережені в ProAtletCare!");
                 } catch (err) {
-                    alert("Помилка збереження: " + err.message);
+                    alert("Помилка бази даних: " + err.message);
                 }
             });
         }
