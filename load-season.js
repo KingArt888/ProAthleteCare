@@ -1,12 +1,10 @@
-// ==========================================================
-// 1. КОНФІГУРАЦІЯ ТА FIREBASE
-// ==========================================================
 const LOAD_COLLECTION = 'training_loads';
 let currentUserId = null;
 let trainingData = [];
-let targetACWR = 1.0;
+let targetACWR = 0.0;
 let currentNeedleAngle = -Math.PI; 
 
+// 1. Авторизація та завантаження
 if (typeof firebase !== 'undefined' && firebase.auth) {
     firebase.auth().onAuthStateChanged(async (user) => {
         if (user) {
@@ -27,83 +25,87 @@ async function loadDataFromFirebase() {
         const metrics = calculateProfessionalACWR();
         targetACWR = metrics.acwr;
         
-        // Запуск анімації спідометра
         startGaugeAnimation(); 
-        
-        // ВИКЛИК ГРАФІКІВ (переконайся, що функція renderLoadChart існує у файлі)
-        if (window.renderLoadChart) {
-            window.renderLoadChart(metrics.acuteLoad, metrics.chronicLoad);
-        }
-    } catch (e) { console.error("Помилка завантаження:", e); }
+        if (typeof renderLoadChart === 'function') renderLoadChart(metrics.acuteLoad, metrics.chronicLoad);
+    } catch (e) { console.error(e); }
 }
 
-// ==========================================================
-// 2. ЗОЛОТИЙ СПІДОМЕТР З ЦИФРАМИ ПІД ШКАЛОЮ
-// ==========================================================
+// 2. Функція малювання преміального спідометра
 function drawGoldenGauge(acwr) {
     const canvas = document.getElementById('gaugeCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const cx = canvas.width / 2;
-    const cy = canvas.height - 60; // Центр піднятий, щоб знизу було місце
+    const cy = canvas.height - 70; 
     const radius = 100;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 1. Малюємо шкалу та цифри значень (0.0, 0.5, 1.0, 1.5, 2.0)
-    const labels = ["0.0", "0.5", "1.0", "1.5", "2.0"];
+    // Визначаємо колір залежно від зони
+    let mainColor = "#FFC72C"; // Золото (дефолт)
+    let statusLabel = "ADAPTATION";
+    
+    if (acwr >= 0.8 && acwr <= 1.3) {
+        mainColor = "#4CAF50"; // Зелений
+        statusLabel = "SAFE ZONE";
+    } else if (acwr > 1.3) {
+        mainColor = "#FF4444"; // Червоний
+        statusLabel = "DANGER: OVERLOAD";
+    }
+
+    // Оновлюємо текстовий статус у HTML (якщо він є)
+    const statusBox = document.getElementById('acwr-status');
+    if (statusBox) {
+        statusBox.textContent = statusLabel;
+        statusBox.style.color = mainColor;
+    }
+
+    // Малюємо поділки шкали
     for (let i = 0; i <= 20; i++) {
         const angle = Math.PI + (i / 20) * Math.PI;
-        const xStart = cx + Math.cos(angle) * (radius - 5);
-        const yStart = cy + Math.sin(angle) * (radius - 5);
-        const xEnd = cx + Math.cos(angle) * radius;
-        const yEnd = cy + Math.sin(angle) * radius;
-
+        const isGreen = (i >= 8 && i <= 13);
+        const isRed = (i > 13);
+        
         ctx.beginPath();
-        ctx.moveTo(xStart, yStart);
-        ctx.lineTo(xEnd, yEnd);
-        
-        // Кольорові зони
-        if (i >= 8 && i <= 13) ctx.strokeStyle = "#4CAF50"; // Зелена (0.8 - 1.3)
-        else if (i > 13) ctx.strokeStyle = "#FF4444";      // Червона (1.4+)
-        else ctx.strokeStyle = "#FFC72C";                  // Золота (низька)
-        
+        ctx.moveTo(cx + Math.cos(angle) * (radius - 5), cy + Math.sin(angle) * (radius - 5));
+        ctx.lineTo(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
+        ctx.strokeStyle = isRed ? "#FF4444" : (isGreen ? "#4CAF50" : "#FFC72C");
         ctx.lineWidth = 3;
         ctx.stroke();
 
-        // Додаємо підписи значень під великими поділками
+        // Цифри під шкалою
         if (i % 5 === 0) {
-            const labelX = cx + Math.cos(angle) * (radius + 20);
-            const labelY = cy + Math.sin(angle) * (radius + 20);
-            ctx.fillStyle = "#AAA";
-            ctx.font = "12px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText(labels[i/5], labelX, labelY);
+            ctx.fillStyle = "#888";
+            ctx.font = "11px Arial";
+            ctx.fillText((i/10).toFixed(1), cx + Math.cos(angle) * (radius + 15), cy + Math.sin(angle) * (radius + 15));
         }
     }
 
-    // 2. Анімація стрілки
+    // Розрахунок кута стрілки
     const targetAngle = Math.PI + (Math.min(acwr, 2.0) / 2.0) * Math.PI;
-    currentNeedleAngle += (targetAngle - currentNeedleAngle) * 0.05;
+    currentNeedleAngle += (targetAngle - currentNeedleAngle) * 0.06;
 
-    // 3. Малюємо стрілку
+    // Стрілка
     ctx.shadowBlur = 10;
-    ctx.shadowColor = "#FFC72C";
+    ctx.shadowColor = mainColor;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.lineTo(cx + Math.cos(currentNeedleAngle) * (radius - 10), cy + Math.sin(currentNeedleAngle) * (radius - 10));
-    ctx.strokeStyle = "#FFC72C";
+    ctx.strokeStyle = mainColor;
     ctx.lineWidth = 4;
     ctx.lineCap = "round";
     ctx.stroke();
     ctx.shadowBlur = 0;
 
-    // 4. Великий напис ACWR в самому низу
-    ctx.fillStyle = "#FFC72C";
-    ctx.font = "bold 14px Montserrat";
-    ctx.fillText("ACWR", cx, canvas.height - 35);
-    ctx.font = "bold 32px Montserrat";
-    ctx.fillText(acwr.toFixed(2), cx, canvas.height - 5);
+    // ВЕЛИКИЙ ІНДЕКС ACWR ПО ЦЕНТРУ ЗНИЗУ
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#888";
+    ctx.font = "12px Montserrat";
+    ctx.fillText("CURRENT ACWR", cx, cy + 30);
+    
+    ctx.fillStyle = mainColor;
+    ctx.font = "bold 42px Orbitron, sans-serif"; // Спортивний шрифт
+    ctx.fillText(acwr.toFixed(2), cx, cy + 70);
 
     if (Math.abs(targetAngle - currentNeedleAngle) > 0.001) {
         requestAnimationFrame(() => drawGoldenGauge(acwr));
@@ -114,40 +116,26 @@ function startGaugeAnimation() {
     requestAnimationFrame(() => drawGoldenGauge(targetACWR));
 }
 
-// ==========================================================
-// 3. МАТЕМАТИКА
-// ==========================================================
+// 3. Розрахунок ACWR
 function calculateProfessionalACWR() {
     if (trainingData.length < 2) return { acuteLoad: 0, chronicLoad: 0, acwr: 0.0 };
-    
-    const latestDate = new Date(trainingData[trainingData.length - 1].date);
-    
-    const getLoadForDays = (days) => {
-        const cutoff = new Date(latestDate);
-        cutoff.setDate(latestDate.getDate() - days);
-        
-        const relevant = trainingData.filter(d => new Date(d.date) > cutoff);
-        const total = relevant.reduce((sum, item) => sum + (Number(item.duration) * Number(item.rpe)), 0);
-        return total / days;
+    const latest = new Date(trainingData[trainingData.length - 1].date);
+    const getAvg = (d) => {
+        const cutoff = new Date(latest);
+        cutoff.setDate(latest.getDate() - d);
+        const p = trainingData.filter(i => new Date(i.date) > cutoff);
+        return p.length ? p.reduce((s, i) => s + (Number(i.duration) * Number(i.rpe)), 0) / d : 0;
     };
-
-    const acute = getLoadForDays(7);
-    const chronic = getLoadForDays(28);
-    let ratio = acute / (chronic || 1);
-    
-    return { 
-        acuteLoad: Math.round(acute * 7), 
-        chronicLoad: Math.round(chronic * 28), 
-        acwr: parseFloat(ratio.toFixed(2)) 
-    };
+    const acute = getAvg(7);
+    const chronic = getAvg(28);
+    return { acuteLoad: acute, chronicLoad: chronic, acwr: parseFloat((acute / (chronic || 1)).toFixed(2)) };
 }
 
-// Ініціалізація при завантаженні
 document.addEventListener('DOMContentLoaded', () => {
     const container = document.querySelector('.gauge-display');
     if (container) {
-        // Збільшена висота, щоб все влізло
-        container.innerHTML = '<canvas id="gaugeCanvas" width="300" height="240"></canvas>';
+        container.innerHTML = '<canvas id="gaugeCanvas" width="300" height="250"></canvas>';
     }
-    startGaugeAnimation();
+    const dateInput = document.getElementById('load-date');
+    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
 });
