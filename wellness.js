@@ -1,10 +1,13 @@
 (function() {
     const COLLECTION_NAME = 'wellness_reports';
     
-    // --- ВАШ ОРИГІНАЛЬНИЙ ДИЗАЙН ---
+    // --- ОНОВЛЕНІ КОЛЬОРИ ДИЗАЙНУ ---
     const GOLD_COLOR = 'rgb(255, 215, 0)';
     const GOLD_AREA = 'rgba(255, 215, 0, 0.4)';
-    const GREY_GRID = 'rgba(255, 255, 255, 0.1)';
+    
+    // Зробив сітку білішою (0.3 замість 0.1/0.2)
+    const WHITE_GRID = 'rgba(255, 255, 255, 0.3)'; 
+    const TEXT_COLOR = 'rgba(255, 255, 255, 0.8)';
 
     const WELLNESS_FIELDS = ['sleep', 'soreness', 'mood', 'water', 'stress', 'ready'];
     const FIELD_LABELS = {
@@ -21,7 +24,6 @@
         ready: { color: 'rgb(50, 205, 50)', area: 'rgba(50, 205, 50, 0.4)' },
     };
 
-    // --- 1. СИНХРОНІЗАЦІЯ З FIREBASE ---
     async function syncWellnessFromFirebase(uid) {
         try {
             const snapshot = await db.collection(COLLECTION_NAME)
@@ -46,12 +48,11 @@
             initCharts(); 
             checkDailyRestriction();
         } catch (e) {
-            console.error("Помилка завантаження даних:", e);
-            initCharts(); // Малюємо те, що є
+            console.error("Помилка:", e);
+            initCharts();
         }
     }
 
-    // --- 2. ДОПОМІЖНІ ФУНКЦІЇ ---
     function getTodayDateString() {
         const today = new Date();
         return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -65,13 +66,12 @@
         if (lastDate === today && button) {
             button.disabled = true;
             button.textContent = "Сьогодні вже заповнено";
-            button.classList.add('disabled-button');
+            button.classList.add('disabled-button'); 
             return true;
         }
         return false;
     }
 
-    // --- 3. МАЛЮВАННЯ ГРАФІКІВ (ВАШ ДИЗАЙН + ВИПРАВЛЕННЯ ПОМИЛОК) ---
     function initCharts() {
         const history = JSON.parse(localStorage.getItem('wellnessHistory') || '{}');
         const sortedDates = Object.keys(history).sort(); 
@@ -84,12 +84,11 @@
             ? history[sortedDates[sortedDates.length - 1]] 
             : { sleep:0, soreness:0, mood:0, water:0, stress:0, ready:0 };
 
-        // МАЛЕНЬКІ ГРАФІКИ ДИНАМІКИ
+        // --- МАЛЕНЬКІ ГРАФІКИ ---
         WELLNESS_FIELDS.forEach(field => {
             const ctx = document.getElementById(`chart-${field}`);
             const statEl = document.getElementById(`stat-${field}`);
             
-            // Оновлюємо текст оцінки
             if (statEl) {
                 const score = latestData[field] || 0;
                 statEl.textContent = `Оцінка: ${score} / 10`;
@@ -97,7 +96,6 @@
             }
 
             if (ctx) {
-                // ВИПРАВЛЕННЯ Type Error: перевірка чи є метод destroy
                 if (window[`chart_${field}`] && typeof window[`chart_${field}`].destroy === 'function') {
                     window[`chart_${field}`].destroy();
                 }
@@ -119,10 +117,14 @@
                         maintainAspectRatio: false,
                         scales: {
                             y: { 
-                                min: 1, max: 10, 
-                                ticks: { color: 'rgba(255,255,255,0.5)', stepSize: 2, display: true } // Повертаємо шкалу
+                                min: 0, max: 10, 
+                                ticks: { color: TEXT_COLOR, stepSize: 2, display: true }, // Біліший текст шкали
+                                grid: { color: WHITE_GRID } // БІЛІША СІТКА
                             },
-                            x: { display: false }
+                            x: { 
+                                ticks: { color: TEXT_COLOR, display: false },
+                                grid: { display: false } 
+                            }
                         },
                         plugins: { legend: { display: false } }
                     }
@@ -130,7 +132,7 @@
             }
         });
 
-        // ЦЕНТРАЛЬНИЙ РАДАР (ПАВУТИННЯ)
+        // --- ПАВУТИННЯ ---
         const mainCtx = document.getElementById('wellnessChart');
         if (mainCtx) {
             if (window.wellnessChart && typeof window.wellnessChart.destroy === 'function') {
@@ -141,7 +143,7 @@
                 data: {
                     labels: Object.values(FIELD_LABELS),
                     datasets: [{
-                        label: 'Мій стан',
+                        label: 'Стан',
                         data: WELLNESS_FIELDS.map(f => latestData[f]),
                         backgroundColor: GOLD_AREA,
                         borderColor: GOLD_COLOR,
@@ -152,21 +154,20 @@
                     scales: {
                         r: {
                             min: 0, max: 10,
-                            grid: { color: GREY_GRID },
-                            angleLines: { color: GREY_GRID },
-                            pointLabels: { color: 'white' },
+                            grid: { color: WHITE_GRID }, // БІЛІША СІТКА ПАВУТИННЯ
+                            angleLines: { color: WHITE_GRID },
+                            pointLabels: { color: 'white', font: { size: 12 } },
                             ticks: { display: false }
                         }
                     },
-                    plugins: { legend: { labels: { color: 'white' } } }
+                    plugins: { legend: { display: false } }
                 }
             });
         }
     }
 
-    // --- 4. ЗАПУСК ---
     document.addEventListener('DOMContentLoaded', () => {
-        initCharts(); // Початкове малювання
+        initCharts();
 
         firebase.auth().onAuthStateChanged(async (user) => {
             if (user) {
@@ -183,7 +184,7 @@
                 if (checkDailyRestriction()) return;
 
                 const user = firebase.auth().currentUser;
-                if (!user) return alert("Зачекайте авторизації...");
+                if (!user) return alert("Зачекайте...");
 
                 const scores = {};
                 WELLNESS_FIELDS.forEach(f => {
@@ -191,7 +192,7 @@
                     if (val) scores[f] = parseInt(val.value, 10);
                 });
 
-                if (Object.keys(scores).length < 6) return alert("Заповніть усі поля!");
+                if (Object.keys(scores).length < 6) return alert("Заповніть все!");
 
                 try {
                     const today = getTodayDateString();
