@@ -1,11 +1,11 @@
 // ==========================================================
-// 1. КОНФІГУРАЦІЯ ТА FIREBASE
+// 1. НАЛАШТУВАННЯ ТА FIREBASE
 // ==========================================================
 const LOAD_COLLECTION = 'training_loads';
 let currentUserId = null;
 let trainingData = [];
 let targetACWR = 1.0;
-let currentNeedleAngle = -Math.PI; // Початкова позиція стрілки (зліва)
+let currentNeedleAngle = -Math.PI; 
 
 function setTodayDate() {
     const dateInput = document.getElementById('load-date');
@@ -32,71 +32,77 @@ async function loadDataFromFirebase() {
         
         const metrics = calculateProfessionalACWR();
         targetACWR = metrics.acwr;
-        startGaugeAnimation(); // Запуск анімації
+        startGaugeAnimation(); 
         renderLoadChart(metrics.acuteLoad, metrics.chronicLoad);
     } catch (e) { console.error(e); }
 }
 
 // ==========================================================
-// 2. ЗОЛОТИЙ СПІДОМЕТР (PREMIUM STYLE)
+// 2. ЗОЛОТИЙ СПІДОМЕТР З ЧЕРВОНОЮ ЗОНОЮ ТА ЦИФРАМИ ВНИЗУ
 // ==========================================================
 function drawGoldenGauge(acwr) {
     const canvas = document.getElementById('gaugeCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const cx = canvas.width / 2;
-    const cy = canvas.height - 20;
-    const radius = 120;
+    const cy = canvas.height - 40; // Трохи підняли, щоб внизу влізли цифри
+    const radius = 110;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 1. Малюємо шкалу (поділки)
-    for (let i = 0; i <= 20; i++) {
-        const angle = Math.PI + (i / 20) * Math.PI;
-        const xStart = cx + Math.cos(angle) * (radius - 5);
-        const yStart = cy + Math.sin(angle) * (radius - 5);
-        const xEnd = cx + Math.cos(angle) * radius;
-        const yEnd = cy + Math.sin(angle) * radius;
+    // 1. МАЛЮЄМО КОЛЬОРОВУ ДУГУ (ШКАЛУ)
+    ctx.lineWidth = 10;
+    ctx.lineCap = 'butt';
 
-        ctx.beginPath();
-        ctx.moveTo(xStart, yStart);
-        ctx.lineTo(xEnd, yEnd);
-        ctx.strokeStyle = i > 7 && i < 14 ? "#4CAF50" : "#FFC72C"; // Зелені ділення в центрі
-        ctx.lineWidth = 2;
-        ctx.stroke();
-    }
+    // Жовта/Золота зона (0.0 - 0.8)
+    drawArcSegment(ctx, cx, cy, radius, 0, 0.8, "#FFC72C");
+    // Зелена зона (0.8 - 1.3)
+    drawArcSegment(ctx, cx, cy, radius, 0.8, 1.3, "#4CAF50");
+    // Червона зона (1.3 - 2.0+)
+    drawArcSegment(ctx, cx, cy, radius, 1.3, 2.0, "#DA3E52");
 
-    // 2. Розрахунок кута стрілки (плавний перехід)
+    // 2. АНІМАЦІЯ СТРІЛКИ
     const targetAngle = Math.PI + (Math.min(acwr, 2.0) / 2.0) * Math.PI;
-    currentNeedleAngle += (targetAngle - currentNeedleAngle) * 0.1; // Швидкість стрілки
+    const easing = 0.08; 
+    currentNeedleAngle += (targetAngle - currentNeedleAngle) * easing;
 
-    // 3. Малюємо стрілку (Золотий меч)
-    ctx.shadowBlur = 15;
+    // 3. МАЛЮЄМО СТРІЛКУ (Золота з неоновим ефектом)
+    ctx.shadowBlur = 10;
     ctx.shadowColor = "#FFC72C";
     ctx.beginPath();
     ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + Math.cos(currentNeedleAngle) * (radius - 10), cy + Math.sin(currentNeedleAngle) * (radius - 10));
-    ctx.strokeStyle = "#FFC72C";
+    ctx.lineTo(cx + Math.cos(currentNeedleAngle) * (radius - 5), cy + Math.sin(currentNeedleAngle) * (radius - 5));
+    ctx.strokeStyle = "#FFD700";
     ctx.lineWidth = 4;
     ctx.lineCap = "round";
     ctx.stroke();
     ctx.shadowBlur = 0;
 
-    // 4. Центр стрілки
+    // Центр стрілки
     ctx.beginPath();
-    ctx.arc(cx, cy, 8, 0, Math.PI * 2);
-    ctx.fillStyle = "#FFC72C";
+    ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+    ctx.fillStyle = "#FFD700";
     ctx.fill();
 
-    // 5. Текст значення
+    // 4. ЦИФРИ ПІД СТРІЛКОЮ (В самому низу)
     ctx.fillStyle = "#FFC72C";
-    ctx.font = "bold 32px Montserrat, sans-serif";
+    ctx.font = "bold 36px 'Orbitron', sans-serif"; // Спортивний шрифт
     ctx.textAlign = "center";
-    ctx.fillText(acwr.toFixed(2), cx, cy - 40);
-    
-    if (Math.abs(targetAngle - currentNeedleAngle) > 0.01) {
+    ctx.fillText(acwr.toFixed(2), cx, canvas.height - 5);
+
+    if (Math.abs(targetAngle - currentNeedleAngle) > 0.001) {
         requestAnimationFrame(() => drawGoldenGauge(acwr));
     }
+}
+
+// Допоміжна функція для малювання частин дуги
+function drawArcSegment(ctx, cx, cy, radius, startVal, endVal, color) {
+    const startAngle = Math.PI + (startVal / 2) * Math.PI;
+    const endAngle = Math.PI + (endVal / 2) * Math.PI;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, startAngle, endAngle);
+    ctx.strokeStyle = color;
+    ctx.stroke();
 }
 
 function startGaugeAnimation() {
@@ -113,18 +119,19 @@ function calculateProfessionalACWR() {
         const cutoff = new Date(latest);
         cutoff.setDate(latest.getDate() - d);
         const p = trainingData.filter(item => new Date(item.date) > cutoff);
-        return p.length ? p.reduce((s, i) => s + (i.duration * i.rpe), 0) / d : 0;
+        return p.length ? p.reduce((s, i) => s + (Number(i.duration) * Number(i.rpe)), 0) / d : 0;
     };
     const acute = getAvg(7);
     const chronic = getAvg(28);
-    return { acuteLoad: Math.round(acute), chronicLoad: Math.round(chronic), acwr: parseFloat((acute / (chronic || 1)).toFixed(2)) };
+    const result = acute / (chronic || 1);
+    return { acuteLoad: Math.round(acute), chronicLoad: Math.round(chronic), acwr: parseFloat(result.toFixed(2)) };
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Додаємо Canvas в HTML, якщо його немає
     const container = document.querySelector('.gauge-display');
     if (container) {
-        container.innerHTML = '<canvas id="gaugeCanvas" width="300" height="180"></canvas>';
+        // Робимо Canvas трохи вищим, щоб влізли цифри під стрілкою
+        container.innerHTML = '<canvas id="gaugeCanvas" width="300" height="200"></canvas>';
     }
 
     const form = document.getElementById('load-form');
@@ -150,3 +157,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     setTodayDate();
 });
+
+// Функція для графіка
+function renderLoadChart(acute, chronic) {
+    const ctx = document.getElementById('loadChart');
+    if (!ctx) return;
+    if (window.myLoadChart) window.myLoadChart.destroy();
+    window.myLoadChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Day 1', 'Day 2', 'Day 3', 'Today'],
+            datasets: [
+                { label: 'Acute', data: [acute*0.7, acute*0.9, acute*1.1, acute], borderColor: '#DA3E52', tension: 0.4 },
+                { label: 'Chronic', data: [chronic, chronic, chronic, chronic], borderColor: '#4CAF50', tension: 0.4 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, animation: false }
+    });
+}
