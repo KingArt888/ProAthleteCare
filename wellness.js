@@ -24,10 +24,13 @@
     }
 
     // 2. ДОПОМІЖНІ ФУНКЦІЇ
-    function getTodayDateString() {
-        const today = new Date();
-        return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    }
+   function getTodayDateString() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`; // Саме такий формат найкращий для бази
+}
 
     function loadWellnessHistory() {
         const data = localStorage.getItem('wellnessHistory');
