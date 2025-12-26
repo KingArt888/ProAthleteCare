@@ -3,14 +3,13 @@ let currentUserId = null;
 let trainingData = [];
 let targetACWR = 0.0;
 let currentNeedleAngle = -Math.PI;
-let charts = {}; // Для зберігання об'єктів графіків
+let charts = {};
 
-// Авторизація
+// 1. Firebase Auth
 if (typeof firebase !== 'undefined' && firebase.auth) {
     firebase.auth().onAuthStateChanged(user => {
         if (user) {
             currentUserId = user.uid;
-            document.getElementById('load-date').value = new Date().toISOString().split('T')[0];
             loadData();
         } else {
             firebase.auth().signInAnonymously();
@@ -18,126 +17,131 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
     });
 }
 
+// 2. Завантаження та розрахунки
 async function loadData() {
     if (!currentUserId) return;
     const snap = await db.collection(LOAD_COLLECTION).where("userId", "==", currentUserId).get();
     trainingData = snap.docs.map(doc => doc.data()).sort((a,b) => new Date(a.date) - new Date(b.date));
     
-    const metrics = calculateMetrics();
-    targetACWR = metrics.acwr;
+    const m = calculateMetrics();
+    targetACWR = m.acwr;
     
-    startGauge(); // Спідометр
-    renderCharts(metrics); // Графіки
+    requestAnimationFrame(drawGauge);
+    renderCharts(m);
 }
 
 function calculateMetrics() {
-    if (trainingData.length === 0) return { acwr: 0, acute: 0, chronic: 0, history: [] };
+    if (trainingData.length === 0) return { acwr: 0, acute: 0, chronic: 0, dists: [0,0,0,0,0,0,0] };
     const latest = new Date(trainingData[trainingData.length-1].date);
     
     const getAvg = (days) => {
         const cutoff = new Date(latest);
         cutoff.setDate(latest.getDate() - days);
         const filtered = trainingData.filter(d => new Date(d.date) > cutoff);
-        return filtered.reduce((sum, d) => sum + (Number(d.duration) * Number(d.rpe)), 0) / days;
+        return (filtered.reduce((sum, d) => sum + (Number(d.duration) * Number(d.rpe)), 0) / days) || 0;
     };
 
-    const acute = getAvg(7);
-    const chronic = getAvg(28);
+    // Останні 7 днів для графіка дистанції
+    const last7Days = Array(7).fill(0);
+    trainingData.slice(-7).forEach((d, i) => { if(i < 7) last7Days[i] = d.distance || 0; });
+
     return {
-        acwr: parseFloat((acute / (chronic || 1)).toFixed(2)),
-        acute: Math.round(acute),
-        chronic: Math.round(chronic),
-        distData: trainingData.slice(-7).map(d => d.distance) // Останні 7 записів
+        acwr: parseFloat((getAvg(7) / (getAvg(28) || 1)).toFixed(2)),
+        acute: Math.round(getAvg(7)),
+        chronic: Math.round(getAvg(28)),
+        dists: last7Days
     };
 }
 
-// МАЛЮВАННЯ ЗОЛОТОГО СПІДОМЕТРА
+// 3. Малювання спідометра
 function drawGauge() {
     const container = document.getElementById('acwr-gauge-display');
     if (!container) return;
     if (!document.getElementById('gaugeCanvas')) {
-        container.innerHTML = '<canvas id="gaugeCanvas" width="300" height="250"></canvas>';
+        container.innerHTML = '<canvas id="gaugeCanvas" width="320" height="220"></canvas>';
     }
     const canvas = document.getElementById('gaugeCanvas');
     const ctx = canvas.getContext('2d');
-    const cx = 150, cy = 160, radius = 100;
+    const cx = 160, cy = 150, radius = 95;
 
-    ctx.clearRect(0, 0, 300, 250);
+    ctx.clearRect(0, 0, 320, 220);
 
-    // Колір та статус
-    let color = "#FFC72C"; let status = "ADAPTATION";
-    if (targetACWR >= 0.8 && targetACWR <= 1.3) { color = "#4CAF50"; status = "SAFE ZONE"; }
-    else if (targetACWR > 1.3) { color = "#FF4444"; status = "DANGER: OVERLOAD"; }
+    let color = "#FFC72C";
+    if (targetACWR >= 0.8 && targetACWR <= 1.3) color = "#4CAF50";
+    else if (targetACWR > 1.3) color = "#FF4444";
 
-    const statusEl = document.getElementById('acwr-status');
-    if (statusEl) { statusEl.textContent = status; statusEl.style.color = color; }
-
-    // Шкала
+    // Шкала з цифрами
+    const labels = ["0.0", "0.5", "1.0", "1.5", "2.0"];
     for (let i = 0; i <= 20; i++) {
         const angle = Math.PI + (i / 20) * Math.PI;
         ctx.beginPath();
         ctx.strokeStyle = i > 13 ? "#FF4444" : (i >= 8 ? "#4CAF50" : "#FFC72C");
-        ctx.lineWidth = 3;
-        ctx.moveTo(cx + Math.cos(angle) * 95, cy + Math.sin(angle) * 95);
-        ctx.lineTo(cx + Math.cos(angle) * 105, cy + Math.sin(angle) * 105);
+        ctx.lineWidth = i % 5 === 0 ? 4 : 2;
+        ctx.moveTo(cx + Math.cos(angle) * (radius - 5), cy + Math.sin(angle) * (radius - 5));
+        ctx.lineTo(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
         ctx.stroke();
+
+        if (i % 5 === 0) {
+            ctx.fillStyle = "#666";
+            ctx.font = "10px Arial";
+            ctx.fillText(labels[i/5], cx + Math.cos(angle) * (radius + 15), cy + Math.sin(angle) * (radius + 15));
+        }
     }
 
     // Стрілка
     const targetAngle = Math.PI + (Math.min(targetACWR, 2.0) / 2.0) * Math.PI;
-    currentNeedleAngle += (targetAngle - currentNeedleAngle) * 0.1;
+    currentNeedleAngle += (targetAngle - currentNeedleAngle) * 0.08;
     
-    ctx.shadowBlur = 15; ctx.shadowColor = color;
+    ctx.shadowBlur = 10; ctx.shadowColor = color;
     ctx.beginPath();
-    ctx.strokeStyle = color; ctx.lineWidth = 4;
+    ctx.strokeStyle = color; ctx.lineWidth = 3;
     ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + Math.cos(currentNeedleAngle) * 90, cy + Math.sin(currentNeedleAngle) * 90);
+    ctx.lineTo(cx + Math.cos(currentNeedleAngle) * 85, cy + Math.sin(currentNeedleAngle) * 85);
     ctx.stroke();
     ctx.shadowBlur = 0;
 
-    // Цифра ACWR
+    // Зменшений індекс ACWR
     ctx.textAlign = "center";
-    ctx.fillStyle = "#888"; ctx.font = "14px Arial";
-    ctx.fillText("INDEX ACWR", cx, cy + 40);
-    ctx.fillStyle = color; ctx.font = "bold 42px Orbitron, sans-serif";
-    ctx.fillText(targetACWR.toFixed(2), cx, cy + 80);
+    ctx.fillStyle = "#888"; ctx.font = "10px Montserrat";
+    ctx.fillText("INDEX ACWR", cx, cy + 30);
+    ctx.fillStyle = color; ctx.font = "bold 24px Orbitron, sans-serif"; // Зменшено з 42px
+    ctx.fillText(targetACWR.toFixed(2), cx, cy + 55);
+
+    document.getElementById('acwr-status').textContent = targetACWR > 1.3 ? "DANGER" : (targetACWR >= 0.8 ? "SAFE" : "ADAPTATION");
+    document.getElementById('acwr-status').style.color = color;
 
     if (Math.abs(targetAngle - currentNeedleAngle) > 0.001) requestAnimationFrame(drawGauge);
 }
 
-function startGauge() { requestAnimationFrame(drawGauge); }
-
-// ГРАФІКИ
+// 4. Графіки (Фікс: тепер працюють обидва)
 function renderCharts(m) {
-    const commonOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#aaa' } } } };
-
-    // 1. Acute vs Chronic
+    Chart.defaults.color = '#888';
+    
     if (charts.load) charts.load.destroy();
     charts.load = new Chart(document.getElementById('loadChart'), {
         type: 'line',
         data: {
-            labels: ['Day 1', 'Day 2', 'Day 3', 'Today'],
+            labels: ['Day -3', 'Day -2', 'Day -1', 'Today'],
             datasets: [
-                { label: 'Acute', data: [m.acute*0.8, m.acute*1.1, m.acute], borderColor: '#FF4444' },
-                { label: 'Chronic', data: [m.chronic, m.chronic, m.chronic], borderColor: '#4CAF50' }
+                { label: 'Acute', data: [m.acute*0.9, m.acute*1.05, m.acute], borderColor: '#FF4444', tension: 0.3 },
+                { label: 'Chronic', data: [m.chronic, m.chronic, m.chronic], borderColor: '#4CAF50', tension: 0.3 }
             ]
         },
-        options: commonOpts
+        options: { responsive: true, maintainAspectRatio: false }
     });
 
-    // 2. Дистанція
     if (charts.dist) charts.dist.destroy();
     charts.dist = new Chart(document.getElementById('distanceChart'), {
         type: 'bar',
         data: {
-            labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'],
-            datasets: [{ label: 'Км', data: m.distData, backgroundColor: '#FFC72C' }]
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{ label: 'Distance (km)', data: m.dists, backgroundColor: '#FFC72C' }]
         },
-        options: commonOpts
+        options: { responsive: true, maintainAspectRatio: false }
     });
 }
 
-// Форма
+// 5. Форма
 document.getElementById('load-form').onsubmit = async (e) => {
     e.preventDefault();
     const f = e.target;
