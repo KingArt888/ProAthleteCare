@@ -1,5 +1,5 @@
 // ==========================================================
-// 1. НАЛАШТУВАННЯ ТА FIREBASE
+// 1. КОНФІГУРАЦІЯ ТА FIREBASE
 // ==========================================================
 const LOAD_COLLECTION = 'training_loads';
 let currentUserId = null;
@@ -18,6 +18,8 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
             currentUserId = user.uid;
             setTodayDate();
             loadDataFromFirebase();
+        } else {
+            firebase.auth().signInAnonymously().catch(e => console.error(e));
         }
     });
 }
@@ -33,76 +35,80 @@ async function loadDataFromFirebase() {
         const metrics = calculateProfessionalACWR();
         targetACWR = metrics.acwr;
         startGaugeAnimation(); 
-        renderLoadChart(metrics.acuteLoad, metrics.chronicLoad);
+        if (typeof renderLoadChart === 'function') renderLoadChart(metrics.acuteLoad, metrics.chronicLoad);
     } catch (e) { console.error(e); }
 }
 
 // ==========================================================
-// 2. ЗОЛОТИЙ СПІДОМЕТР З ЧЕРВОНОЮ ЗОНОЮ ТА ЦИФРАМИ ВНИЗУ
+// 2. ЗОЛОТИЙ СПІДОМЕТР (PREMIUM STYLE) - ВИПРАВЛЕНИЙ
 // ==========================================================
 function drawGoldenGauge(acwr) {
     const canvas = document.getElementById('gaugeCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const cx = canvas.width / 2;
-    const cy = canvas.height - 40; // Трохи підняли, щоб внизу влізли цифри
-    const radius = 110;
+    const cy = canvas.height - 45; // Підняли центр, щоб звільнити місце знизу для цифр
+    const radius = 115;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 1. МАЛЮЄМО КОЛЬОРОВУ ДУГУ (ШКАЛУ)
-    ctx.lineWidth = 10;
-    ctx.lineCap = 'butt';
+    // 1. Малюємо шкалу (поділки) з червоною зоною
+    for (let i = 0; i <= 20; i++) {
+        const angle = Math.PI + (i / 20) * Math.PI;
+        const xStart = cx + Math.cos(angle) * (radius - 8);
+        const yStart = cy + Math.sin(angle) * (radius - 8);
+        const xEnd = cx + Math.cos(angle) * radius;
+        const yEnd = cy + Math.sin(angle) * radius;
 
-    // Жовта/Золота зона (0.0 - 0.8)
-    drawArcSegment(ctx, cx, cy, radius, 0, 0.8, "#FFC72C");
-    // Зелена зона (0.8 - 1.3)
-    drawArcSegment(ctx, cx, cy, radius, 0.8, 1.3, "#4CAF50");
-    // Червона зона (1.3 - 2.0+)
-    drawArcSegment(ctx, cx, cy, radius, 1.3, 2.0, "#DA3E52");
+        ctx.beginPath();
+        ctx.moveTo(xStart, yStart);
+        ctx.lineTo(xEnd, yEnd);
+        
+        // ЛОГІКА КОЛЬОРУ: 0-7 Золото (Low), 8-13 Зелений (Safe), 14-20 Червоний (Danger)
+        if (i >= 8 && i <= 13) {
+            ctx.strokeStyle = "#4CAF50"; // Зелений
+        } else if (i > 13) {
+            ctx.strokeStyle = "#DA3E52"; // Червоний (Ризик)
+        } else {
+            ctx.strokeStyle = "#FFC72C"; // Золотий
+        }
+        
+        ctx.lineWidth = 3;
+        ctx.stroke();
+    }
 
-    // 2. АНІМАЦІЯ СТРІЛКИ
+    // 2. Розрахунок кута стрілки
     const targetAngle = Math.PI + (Math.min(acwr, 2.0) / 2.0) * Math.PI;
-    const easing = 0.08; 
-    currentNeedleAngle += (targetAngle - currentNeedleAngle) * easing;
+    currentNeedleAngle += (targetAngle - currentNeedleAngle) * 0.1;
 
-    // 3. МАЛЮЄМО СТРІЛКУ (Золота з неоновим ефектом)
-    ctx.shadowBlur = 10;
+    // 3. Малюємо стрілку
+    ctx.shadowBlur = 15;
     ctx.shadowColor = "#FFC72C";
     ctx.beginPath();
     ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + Math.cos(currentNeedleAngle) * (radius - 5), cy + Math.sin(currentNeedleAngle) * (radius - 5));
+    ctx.lineTo(cx + Math.cos(currentNeedleAngle) * (radius - 10), cy + Math.sin(currentNeedleAngle) * (radius - 10));
     ctx.strokeStyle = "#FFD700";
     ctx.lineWidth = 4;
     ctx.lineCap = "round";
     ctx.stroke();
     ctx.shadowBlur = 0;
 
-    // Центр стрілки
+    // 4. Центр стрілки
     ctx.beginPath();
-    ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+    ctx.arc(cx, cy, 8, 0, Math.PI * 2);
     ctx.fillStyle = "#FFD700";
     ctx.fill();
 
-    // 4. ЦИФРИ ПІД СТРІЛКОЮ (В самому низу)
+    // 5. ТЕКСТ ЗНАЧЕННЯ - ТЕПЕР ВНИЗУ ПІД СТРІЛКОЮ
     ctx.fillStyle = "#FFC72C";
-    ctx.font = "bold 36px 'Orbitron', sans-serif"; // Спортивний шрифт
+    ctx.font = "bold 38px 'Orbitron', sans-serif"; // Спортивний шрифт
     ctx.textAlign = "center";
+    // Малюємо цифри в самому низу канвасу
     ctx.fillText(acwr.toFixed(2), cx, canvas.height - 5);
-
-    if (Math.abs(targetAngle - currentNeedleAngle) > 0.001) {
+    
+    if (Math.abs(targetAngle - currentNeedleAngle) > 0.01) {
         requestAnimationFrame(() => drawGoldenGauge(acwr));
     }
-}
-
-// Допоміжна функція для малювання частин дуги
-function drawArcSegment(ctx, cx, cy, radius, startVal, endVal, color) {
-    const startAngle = Math.PI + (startVal / 2) * Math.PI;
-    const endAngle = Math.PI + (endVal / 2) * Math.PI;
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, startAngle, endAngle);
-    ctx.strokeStyle = color;
-    ctx.stroke();
 }
 
 function startGaugeAnimation() {
@@ -110,7 +116,7 @@ function startGaugeAnimation() {
 }
 
 // ==========================================================
-// 3. МАТЕМАТИКА ТА ФОРМА
+// 3. МАТЕМАТИКА ТА ІНІЦІАЛІЗАЦІЯ
 // ==========================================================
 function calculateProfessionalACWR() {
     if (trainingData.length < 2) return { acuteLoad: 0, chronicLoad: 0, acwr: 1.0 };
@@ -123,15 +129,18 @@ function calculateProfessionalACWR() {
     };
     const acute = getAvg(7);
     const chronic = getAvg(28);
-    const result = acute / (chronic || 1);
-    return { acuteLoad: Math.round(acute), chronicLoad: Math.round(chronic), acwr: parseFloat(result.toFixed(2)) };
+    return { 
+        acuteLoad: Math.round(acute), 
+        chronicLoad: Math.round(chronic), 
+        acwr: parseFloat((acute / (chronic || 1)).toFixed(2)) 
+    };
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     const container = document.querySelector('.gauge-display');
     if (container) {
-        // Робимо Canvas трохи вищим, щоб влізли цифри під стрілкою
-        container.innerHTML = '<canvas id="gaugeCanvas" width="300" height="200"></canvas>';
+        // Збільшили висоту канвасу до 220, щоб влізли цифри під стрілкою
+        container.innerHTML = '<canvas id="gaugeCanvas" width="300" height="220"></canvas>';
     }
 
     const form = document.getElementById('load-form');
@@ -157,21 +166,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     setTodayDate();
 });
-
-// Функція для графіка
-function renderLoadChart(acute, chronic) {
-    const ctx = document.getElementById('loadChart');
-    if (!ctx) return;
-    if (window.myLoadChart) window.myLoadChart.destroy();
-    window.myLoadChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: ['Day 1', 'Day 2', 'Day 3', 'Today'],
-            datasets: [
-                { label: 'Acute', data: [acute*0.7, acute*0.9, acute*1.1, acute], borderColor: '#DA3E52', tension: 0.4 },
-                { label: 'Chronic', data: [chronic, chronic, chronic, chronic], borderColor: '#4CAF50', tension: 0.4 }
-            ]
-        },
-        options: { responsive: true, maintainAspectRatio: false, animation: false }
-    });
-}
