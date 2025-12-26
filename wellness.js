@@ -1,14 +1,10 @@
 (function() {
-    // Колекція у вашому Firestore
     const COLLECTION_NAME = 'wellness_reports';
 
-    // ==============================================
-    // 1. СИНХРОНІЗАЦІЯ З FIREBASE (ПІДТЯГУВАННЯ ДАНИХ)
-    // ==============================================
+    // ПІДТЯГУВАННЯ ДАНИХ З ХМАРИ
     async function syncWithFirebase(uid) {
         try {
-            console.log("Завантаження даних з Firebase для:", uid);
-            // Отримуємо документи поточного користувача, відсортовані за часом
+            console.log("Користувач увійшов:", uid); // Тепер це з'явиться!
             const snapshot = await db.collection(COLLECTION_NAME)
                 .where("userId", "==", uid)
                 .orderBy("timestamp", "asc")
@@ -17,24 +13,17 @@
             const history = {};
             snapshot.forEach(doc => {
                 const data = doc.data();
-                if (data.date && data.scores) {
-                    history[data.date] = data.scores;
-                }
+                if (data.date && data.scores) history[data.date] = data.scores;
             });
 
-            // Оновлюємо LocalStorage, щоб графіки побачили дані
             localStorage.setItem('wellnessHistory', JSON.stringify(history));
-            
-            // Малюємо графіки
-            initCharts();
+            initCharts(); 
         } catch (e) {
             console.error("Помилка синхронізації:", e);
         }
     }
 
-    // ==============================================
-    // 2. ВАШІ ОРИГІНАЛЬНІ ФУНКЦІЇ (ЛОГІКА ТА СТИЛЬ)
-    // ==============================================
+    // ВАШІ ОРИГІНАЛЬНІ ФУНКЦІЇ
     function getTodayDateString() {
         const today = new Date();
         return today.toISOString().split('T')[0];
@@ -45,36 +34,22 @@
         return data ? JSON.parse(data) : {};
     }
 
-    function saveWellnessHistory(date, scores) {
-        const history = loadWellnessHistory();
-        history[date] = scores;
-        localStorage.setItem('wellnessHistory', JSON.stringify(history));
-    }
-
     const WELLNESS_FIELDS = ['sleep', 'soreness', 'mood', 'water', 'stress', 'ready'];
     const FIELD_LABELS = { sleep: 'Сон', soreness: 'Біль', mood: 'Настрій', water: 'Гідратація', stress: 'Стрес', ready: 'Готовність' };
 
-    function updateWellnessStats(latestData) {
-        WELLNESS_FIELDS.forEach(field => {
-            const el = document.getElementById(`stat-${field}`);
-            if (el) {
-                const score = latestData[field] || 0;
-                el.textContent = `Оцінка: ${score} / 10`;
-                el.style.color = score >= 7 ? 'rgb(50, 205, 50)' : (score >= 4 ? 'rgb(255, 159, 64)' : 'rgb(255, 99, 132)');
-            }
-        });
-    }
-
-    // ==============================================
-    // 3. МАЛЮВАННЯ ГРАФІКІВ
-    // ==============================================
+    // МАЛЮВАННЯ ГРАФІКІВ
     function initCharts() {
         const history = loadWellnessHistory();
         const sortedDates = Object.keys(history).sort(); 
         if (sortedDates.length === 0) return;
 
         const latestData = history[sortedDates[sortedDates.length - 1]];
-        updateWellnessStats(latestData);
+        
+        // Оновлення статистики під графіками
+        WELLNESS_FIELDS.forEach(field => {
+            const el = document.getElementById(`stat-${field}`);
+            if (el) el.textContent = `Оцінка: ${latestData[field] || 0} / 10`;
+        });
 
         const mainCtx = document.getElementById('wellnessChart');
         if (mainCtx && typeof Chart !== 'undefined') {
@@ -84,81 +59,63 @@
                 data: {
                     labels: Object.values(FIELD_LABELS),
                     datasets: [{
-                        label: 'Мій стан',
+                        label: 'Поточний стан',
                         data: WELLNESS_FIELDS.map(f => latestData[f]),
                         backgroundColor: 'rgba(255, 215, 0, 0.4)',
-                        borderColor: 'rgb(255, 215, 0)',
-                        pointBackgroundColor: '#333'
+                        borderColor: 'rgb(255, 215, 0)'
                     }]
                 },
-                options: {
-                    scales: { r: { min: 0, max: 10, grid: { color: '#ccc' }, pointLabels: { color: 'white' }, ticks: { display: false } } },
-                    plugins: { legend: { labels: { color: 'white' } } }
-                }
+                options: { scales: { r: { min: 0, max: 10, ticks: { display: false } } } }
             });
         }
     }
 
-    // ==============================================
-    // 4. ЛОГІКА КНОПКИ ТА FIREBASE AUTH
-    // ==============================================
-    function checkDailyRestriction() {
-        const lastDate = localStorage.getItem('lastWellnessSubmissionDate');
-        const today = getTodayDateString(); 
-        const button = document.querySelector('.gold-button');
-        if (button && lastDate === today) {
-            button.disabled = true;
-            button.textContent = "Дані на сьогодні вже записані.";
-            return true;
-        }
-        return false;
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
-        // Чекаємо на авторизацію користувача
-        firebase.auth().onAuthStateChanged(user => {
-            if (user) {
-                syncWithFirebase(user.uid);
-                checkDailyRestriction();
-            }
-        });
+        // Чекаємо на підключення Auth
+        if (typeof firebase.auth === 'function') {
+            firebase.auth().onAuthStateChanged(user => {
+                if (user) {
+                    syncWithFirebase(user.uid);
+                } else {
+                    console.warn("Користувач не авторизований");
+                }
+            });
+        }
 
         const form = document.getElementById('wellness-form');
         if (form) {
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                
                 const user = firebase.auth().currentUser;
-                if (!user) return alert("Будь ласка, увійдіть в систему!");
+                if (!user) return alert("Потрібна авторизація!");
 
                 const scores = {};
-                let allChecked = true;
                 WELLNESS_FIELDS.forEach(f => {
                     const val = form.querySelector(`input[name="${f}"]:checked`);
-                    if (val) scores[f] = parseInt(val.value); else allChecked = false;
+                    if (val) scores[f] = parseInt(val.value);
                 });
 
-                if (!allChecked) return alert("Заповніть всі 6 пунктів!");
+                if (Object.keys(scores).length < 6) return alert("Заповніть всі пункти!");
 
                 try {
-                    const todayDate = getTodayDateString();
-
-                    // Збереження в Firebase з прив'язкою до користувача
+                    const today = getTodayDateString();
                     await db.collection(COLLECTION_NAME).add({
                         userId: user.uid,
-                        date: todayDate,
+                        date: today,
                         scores: scores,
                         timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     });
 
-                    saveWellnessHistory(todayDate, scores);
-                    localStorage.setItem('lastWellnessSubmissionDate', todayDate);
+                    // Зберігаємо локально для миттєвого оновлення
+                    const history = loadWellnessHistory();
+                    history[today] = scores;
+                    localStorage.setItem('wellnessHistory', JSON.stringify(history));
+                    localStorage.setItem('lastWellnessSubmissionDate', today);
                     
-                    alert("Дані збережено в хмару!");
-                    location.reload(); // Перезавантаження для оновлення всіх графіків
+                    alert("Дані збережено!");
+                    location.reload(); 
                 } catch (err) {
-                    console.error("Помилка збереження:", err);
-                    alert("Помилка бази даних: " + err.message);
+                    alert("Помилка: " + err.message);
                 }
             });
         }
