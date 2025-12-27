@@ -1,11 +1,9 @@
 (function() {
-    // Назва колекції має суворо збігатися з вашими Firebase Rules
     const COLLECTION_NAME = 'load_season_reports';
-    
     let dailyLoadData = [];
     let distanceChart, loadChart;
 
-    // --- 1. СИНХРОНІЗАЦІЯ З FIREBASE ---
+    // --- 1. СИНХРОНІЗАЦІЯ ТА ІНІЦІАЛІЗАЦІЯ ---
     async function syncLoadFromFirebase(uid) {
         try {
             const snapshot = await db.collection(COLLECTION_NAME)
@@ -15,14 +13,11 @@
 
             const firebaseData = [];
             snapshot.forEach(doc => firebaseData.push(doc.data()));
-            
-            // Якщо в базі порожньо — показуємо демо-дані, щоб графіки не були пустими
-            dailyLoadData = firebaseData.length > 0 ? firebaseData : getInitialDemoData();
-            
+            dailyLoadData = firebaseData.length > 0 ? firebaseData : getDemoData();
             refreshUI();
         } catch (e) {
-            console.error("Помилка синхронізації:", e);
-            dailyLoadData = getInitialDemoData();
+            console.error("Помилка:", e);
+            dailyLoadData = getDemoData();
             refreshUI();
         }
     }
@@ -36,94 +31,57 @@
         }
     }
 
-    // --- 2. ЛОГІКА ОБЧИСЛЕНЬ ---
-    function calculateSessionRPE(duration, rpe) {
-        return duration * rpe;
-    }
-
-    function getWeekNumber(dateString) {
-        const date = new Date(dateString);
-        date.setHours(0, 0, 0, 0);
-        date.setDate(date.getDate() + 4 - (date.getDay() || 7));
-        const yearStart = new Date(date.getFullYear(), 0, 1);
-        return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
-    }
-
-    function calculateACWR() {
-        if (dailyLoadData.length === 0) return { acuteLoad: 0, chronicLoad: 0, acwr: 0 };
-        const sortedData = [...dailyLoadData].sort((a, b) => new Date(a.date) - new Date(b.date));
-        const latestDate = new Date(sortedData[sortedData.length - 1].date);
-
-        const dataWithLoad = sortedData.map(item => ({
-            ...item,
-            load: calculateSessionRPE(item.duration, item.rpe)
-        }));
-
-        const getLoadDays = (days) => {
-            const startDate = new Date(latestDate);
-            startDate.setDate(latestDate.getDate() - days);
-            const periodData = dataWithLoad.filter(item => new Date(item.date) > startDate);
-            return (periodData.reduce((sum, item) => sum + item.load, 0)) / days;
-        };
-
-        const acute = getLoadDays(7);
-        const chronic = getLoadDays(28);
-
-        return {
-            acuteLoad: Math.round(acute),
-            chronicLoad: Math.round(chronic),
-            acwr: chronic > 0 ? parseFloat((acute / chronic).toFixed(2)) : 0
-        };
-    }
-
-    // --- 3. ПРЕМІАЛЬНИЙ UI (СПІДОМЕТР ТА ГРАФІКИ) ---
-    
+    // --- 2. ЛОГІКА "ДОРОГОГО" СПІДОМЕТРА (З КОЛЬОРАМИ) ---
     function updateACWRGauge(acwrValue) {
         const needle = document.getElementById('gauge-needle');
         const display = document.getElementById('acwr-value');
         const statusText = document.getElementById('acwr-status');
+        const gaugeTrack = document.querySelector('.gauge-track') || document.querySelector('.gauge-body');
+
         if (!needle || !display || !statusText) return;
+
+        // АВТО-ФАРБУВАННЯ ШКАЛИ (якщо ви не міняли CSS)
+        if (gaugeTrack) {
+            gaugeTrack.style.background = `conic-gradient(from 270deg, #f1c40f 0deg, #f1c40f 45deg, #2ecc71 45deg, #2ecc71 135deg, #e74c3c 135deg, #e74c3c 180deg, transparent 180deg)`;
+        }
 
         let degree = -90; 
         let status = '';
         
-        // Кольорова логіка "Спорткар":
         if (acwrValue < 0.8) {
-            // ЖОВТА ЗОНА - Недотренованість
             degree = -90 + (acwrValue / 0.8) * 40; 
-            status = 'Недотренованість';
+            status = 'Недотренованість (Low)';
             statusText.style.color = '#f1c40f'; 
         } else if (acwrValue >= 0.8 && acwrValue <= 1.3) {
-            // ЗЕЛЕНА ЗОНА - Оптимально
             degree = -50 + ((acwrValue - 0.8) / 0.5) * 100;
-            status = 'Хороша динаміка';
+            status = 'Хороша динаміка (Optimal)';
             statusText.style.color = '#2ecc71';
         } else {
-            // ЧЕРВОНА ЗОНА - Ризик травм
             degree = 50 + ((acwrValue - 1.3) / 0.7) * 40;
-            status = 'Ризик травм';
+            status = 'Ризик травм (High)';
             statusText.style.color = '#e74c3c';
         }
 
         const finalDegree = Math.min(90, Math.max(-90, degree));
+        needle.style.transition = "transform 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
         needle.style.transform = `translateX(-50%) rotate(${finalDegree}deg)`;
+        
         display.textContent = acwrValue.toFixed(2);
         statusText.textContent = status;
     }
 
+    // --- 3. ГРАФІКИ (ВАШ ОРИГІНАЛЬНИЙ ЛІНІЙНИЙ ВИГЛЯД) ---
     function renderDistanceChart() {
         const ctx = document.getElementById('distanceChart');
         if (!ctx) return;
-        
         const weeklyDistance = {};
         dailyLoadData.forEach(item => {
-            const week = getWeekNumber(item.date);
+            const date = new Date(item.date);
+            const week = Math.ceil(date.getDate() / 7);
             weeklyDistance[week] = (weeklyDistance[week] || 0) + item.distance;
         });
-
-        const sortedWeeks = Object.keys(weeklyDistance).sort();
-        const labels = sortedWeeks.map((_, i) => `Тиждень ${i + 1}`);
-        const data = sortedWeeks.map(w => weeklyDistance[w]);
+        const labels = Object.keys(weeklyDistance).map(w => `Тиждень ${w}`);
+        const data = Object.values(weeklyDistance);
 
         if (distanceChart) distanceChart.destroy();
         distanceChart = new Chart(ctx, {
@@ -131,75 +89,67 @@
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Загальна дистанція (км)',
+                    label: 'Дистанція (км)',
                     data: data,
                     borderColor: '#FFD700',
-                    backgroundColor: 'rgba(255, 215, 0, 0.2)',
-                    borderWidth: 3, tension: 0.3, fill: true
+                    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                    fill: true, tension: 0.4, borderWidth: 3
                 }]
             },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { labels: { color: '#CCCCCC' } } },
-                scales: {
-                    x: { ticks: { color: '#AAAAAA' }, grid: { color: '#333333' } },
-                    y: { beginAtZero: true, ticks: { color: '#AAAAAA' }, grid: { color: '#333333' } }
-                }
-            }
+            options: { responsive: true, maintainAspectRatio: false }
         });
     }
 
-    function renderLoadChart(acuteLoad, chronicLoad) {
+    function renderLoadChart(acute, chronic) {
         const ctx = document.getElementById('loadChart');
         if (!ctx) return;
-
-        const demoLabels = ['4 тижні тому', '3 тижні тому', '2 тижні тому', 'Поточний'];
-        const demoAcute = [500, 650, 800, acuteLoad];
-        const demoChronic = [600, 620, 700, chronicLoad];
-
         if (loadChart) loadChart.destroy();
         loadChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: demoLabels,
+                labels: ['4 тижні тому', '3 тижні тому', '2 тижні тому', 'Поточний'],
                 datasets: [
-                    { label: 'Acute Load', data: demoAcute, borderColor: '#D9534F', tension: 0.3, fill: false, borderWidth: 3 },
-                    { label: 'Chronic Load', data: demoChronic, borderColor: '#4CAF50', tension: 0.3, fill: false, borderWidth: 3 }
+                    { label: 'Acute', data: [acute*0.8, acute*0.9, acute*1.1, acute], borderColor: '#e74c3c', tension: 0.3, fill: false },
+                    { label: 'Chronic', data: [chronic*0.9, chronic, chronic*0.95, chronic], borderColor: '#2ecc71', tension: 0.3, fill: false }
                 ]
             },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { labels: { color: '#CCCCCC' } } },
-                scales: {
-                    x: { ticks: { color: '#AAAAAA' }, grid: { color: '#333333' } },
-                    y: { beginAtZero: true, ticks: { color: '#AAAAAA' }, grid: { color: '#333333' } }
-                }
-            }
+            options: { responsive: true, maintainAspectRatio: false }
         });
     }
 
-    function getInitialDemoData() {
-        return [
-            { date: '2025-11-24', duration: 60, rpe: 7, distance: 8.5 },
-            { date: '2025-12-05', duration: 100, rpe: 9, distance: 14.0 },
-            { date: '2025-12-13', duration: 80, rpe: 8, distance: 10.0 }
-        ];
+    // --- 4. РОЗРАХУНКИ ---
+    function calculateACWR() {
+        if (dailyLoadData.length === 0) return { acuteLoad: 0, chronicLoad: 0, acwr: 0 };
+        const sorted = [...dailyLoadData].sort((a, b) => new Date(a.date) - new Date(b.date));
+        const last = sorted[sorted.length - 1];
+        const lastDate = new Date(last.date);
+
+        const getAvg = (days) => {
+            const start = new Date(lastDate);
+            start.setDate(lastDate.getDate() - days);
+            const filtered = sorted.filter(d => new Date(d.date) > start);
+            const total = filtered.reduce((s, d) => s + (d.duration * d.rpe), 0);
+            return total / days;
+        };
+
+        const a = getAvg(7);
+        const c = getAvg(28);
+        return { acuteLoad: a, chronicLoad: c, acwr: c > 0 ? a / c : 0 };
     }
 
-    // --- 4. ІНІЦІАЛІЗАЦІЯ ПРИ ЗАВАНТАЖЕННІ ---
+    function getDemoData() {
+        return [{ date: '2025-12-20', duration: 60, rpe: 7, distance: 5 }];
+    }
+
+    // --- 5. ЗАПУСК ---
     document.addEventListener('DOMContentLoaded', () => {
-        // ВСТАНОВЛЕННЯ СЬОГОДНІШНЬОЇ ДАТИ
-        const dateInput = document.getElementById('load-date') || document.querySelector('input[type="date"]');
-        if (dateInput) {
-            dateInput.value = new Date().toISOString().split('T')[0];
-        }
+        // АВТО-ДАТА
+        const dateInput = document.querySelector('input[type="date"]');
+        if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
 
         firebase.auth().onAuthStateChanged(async (user) => {
-            if (user) {
-                await syncLoadFromFirebase(user.uid);
-            } else {
-                await firebase.auth().signInAnonymously();
-            }
+            if (user) await syncLoadFromFirebase(user.uid);
+            else await firebase.auth().signInAnonymously();
         });
 
         const form = document.getElementById('load-form');
@@ -207,23 +157,16 @@
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const user = firebase.auth().currentUser;
-                if (!user) return alert("Потрібна авторизація...");
-
+                if (!user) return;
                 const data = {
                     userId: user.uid,
                     date: form.elements['date'].value,
                     duration: parseInt(form.elements['duration'].value),
                     distance: parseFloat(form.elements['distance'].value),
-                    rpe: parseInt(form.querySelector('input[name="rpe"]:checked')?.value || 0),
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    rpe: parseInt(form.querySelector('input[name="rpe"]:checked')?.value || 0)
                 };
-
-                try {
-                    await db.collection(COLLECTION_NAME).doc(`${user.uid}_${data.date}`).set(data);
-                    const status = document.getElementById('form-status');
-                    if (status) status.textContent = "Дані збережено у хмарі!";
-                    await syncLoadFromFirebase(user.uid);
-                } catch (err) { alert("Помилка Firebase: Перевірте правила (Rules)"); }
+                await db.collection(COLLECTION_NAME).doc(`${user.uid}_${data.date}`).set(data);
+                await syncLoadFromFirebase(user.uid);
             });
         }
     });
