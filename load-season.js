@@ -6,7 +6,7 @@
 
     // --- 1. ІНІЦІАЛІЗАЦІЯ ТА АВТО-ДАТА ---
     document.addEventListener('DOMContentLoaded', () => {
-        // Встановлюємо сьогоднішню дату автоматично
+        // Встановлюємо сьогоднішню дату
         const dateInput = document.getElementById('load-date') || document.querySelector('input[type="date"]');
         if (dateInput) {
             dateInput.value = new Date().toISOString().split('T')[0];
@@ -17,7 +17,6 @@
             if (user) {
                 await syncLoadFromFirebase(user.uid);
             } else {
-                // Анонімний вхід для виконання правил Firebase (auth != null)
                 await firebase.auth().signInAnonymously().catch(console.error);
             }
         });
@@ -26,21 +25,21 @@
         if (form) form.addEventListener('submit', handleFormSubmit);
     });
 
-    // --- 2. ПРЕМІАЛЬНИЙ СПІДОМЕТР (Dashboard Style) ---
+    // --- 2. СПІДОМЕТР ---
     function updateACWRGauge(acwrValue) {
-        const needle = document.querySelector('.gauge-needle'); // З вашого CSS
-        const display = document.getElementById('acwr-value'); // З вашого CSS
+        const needle = document.querySelector('.gauge-needle');
+        const display = document.getElementById('acwr-value');
         const gaugeArc = document.querySelector('.gauge-arc');
         const statusBox = document.querySelector('.gauge-status-box');
 
         if (!needle || !display || !gaugeArc) return;
 
-        // Малюємо цифрову шкалу навколо стрілки
+        // Малюємо цифрову шкалу лише один раз
         if (!gaugeArc.querySelector('.gauge-labels-container')) {
             const labelsContainer = document.createElement('div');
             labelsContainer.className = 'gauge-labels-container';
             labelsContainer.style.cssText = 'position:absolute; width:100%; height:100%; top:0; left:0; pointer-events:none;';
-            
+
             const points = [
                 { val: 0, lab: '0' },
                 { val: 0.8, lab: '0.8' },
@@ -49,50 +48,48 @@
             ];
 
             points.forEach(p => {
-                const angle = -180 + (p.val <= 0.8 ? (p.val / 0.8) * 45 : 
-                              p.val <= 1.3 ? 45 + ((p.val - 0.8) / 0.5) * 90 : 
+                const angle = -180 + (p.val <= 0.8 ? (p.val / 0.8) * 45 :
+                              p.val <= 1.3 ? 45 + ((p.val - 0.8) / 0.5) * 90 :
                               135 + ((p.val - 1.3) / 0.7) * 45);
-                
+
                 const labelWrap = document.createElement('div');
                 labelWrap.style.cssText = `position:absolute; bottom:10px; left:50%; width:2px; height:135px; background:rgba(255,255,255,0.2); transform-origin:bottom center; transform:translateX(-50%) rotate(${angle}deg);`;
-                
+
                 const labelText = document.createElement('span');
                 labelText.innerText = p.lab;
                 labelText.style.cssText = `position:absolute; top:-20px; left:50%; transform:translateX(-50%) rotate(${-angle}deg); color:#888; font-size:11px; font-weight:bold;`;
-                
+
                 labelWrap.appendChild(labelText);
                 labelsContainer.appendChild(labelWrap);
             });
             gaugeArc.appendChild(labelsContainer);
         }
 
-        // Логіка кута: -180 (ліво) до 0 (право) згідно з вашим CSS
-        let degree = -180;
+        // Обчислюємо кут та статус
+        let degree = 0;
         let statusText = '';
         let statusClass = '';
 
         if (acwrValue < 0.8) {
-            degree = -180 + (acwrValue / 0.8) * 45;
+            degree = -180 + (acwrValue / 0.8) * 45;  // -180 до -135
             statusText = 'НЕДОТРЕНОВАНІСТЬ';
             statusClass = 'status-warning';
         } else if (acwrValue <= 1.3) {
-            degree = -135 + ((acwrValue - 0.8) / 0.5) * 90;
+            degree = -135 + ((acwrValue - 0.8) / 0.5) * 90; // -135 до -45
             statusText = 'ОПТИМАЛЬНА ФОРМА';
             statusClass = 'status-safe';
         } else {
-            degree = -45 + ((acwrValue - 1.3) / 0.7) * 45;
+            degree = -45 + ((acwrValue - 1.3) / 0.7) * 45; // -45 до 0
             statusText = 'РИЗИК ТРАВМИ';
             statusClass = 'status-danger';
         }
 
-        // Обмеження стрілки
-        const finalDegree = Math.min(0, Math.max(-180, degree));
-        
-        // Анімація стрілки та значення
-        needle.style.transform = `translateX(-50%) rotate(${finalDegree}deg)`;
+        // Обмеження кута
+        degree = Math.min(0, Math.max(-180, degree));
+
+        // Анімація стрілки
+        needle.style.transform = `translateX(-50%) rotate(${degree}deg)`;
         display.textContent = acwrValue.toFixed(2);
-        
-        // Колір цифри під стрілкою залежно від зони
         display.style.color = (acwrValue > 1.3) ? '#d9534f' : (acwrValue >= 0.8 ? '#5cb85c' : '#f0ad4e');
 
         if (statusBox) {
@@ -100,7 +97,7 @@
         }
     }
 
-    // --- 3. ГРАФІКИ (Стиль ProAtletCare) ---
+    // --- 3. ГРАФІКИ ---
     function renderCharts(acute, chronic) {
         const ctxD = document.getElementById('distanceChart');
         const ctxL = document.getElementById('loadChart');
@@ -114,7 +111,7 @@
                     datasets: [{
                         label: 'Дистанція (км)',
                         data: dailyLoadData.slice(-7).map(d => d.distance),
-                        borderColor: '#FFC72C', // Золото з вашого CSS
+                        borderColor: '#FFC72C',
                         backgroundColor: 'rgba(255, 199, 44, 0.1)',
                         fill: true, tension: 0.4, borderWidth: 3
                     }]
@@ -139,7 +136,7 @@
         }
     }
 
-    // --- 4. FIREBASE ТА РОЗРАХУНКИ ---
+    // --- 4. FIREBASE ---
     async function syncLoadFromFirebase(uid) {
         try {
             const snapshot = await db.collection(COLLECTION_NAME)
@@ -162,20 +159,24 @@
 
     function calculateMetrics() {
         if (dailyLoadData.length === 0) return { acute: 0, chronic: 0, acwr: 0 };
+
         const sorted = [...dailyLoadData].sort((a, b) => new Date(a.date) - new Date(b.date));
         const lastDate = new Date(sorted[sorted.length - 1].date);
 
         const getAvg = (days) => {
             const start = new Date(lastDate);
-            start.setDate(lastDate.getDate() - days);
-            const period = sorted.filter(d => new Date(d.date) > start);
-            const total = period.reduce((s, d) => s + (d.duration * (d.rpe || 0)), 0);
-            return total / days;
+            start.setDate(lastDate.getDate() - days + 1);
+            const period = sorted.filter(d => new Date(d.date) >= start);
+            if (period.length === 0) return 0;
+            const total = period.reduce((sum, d) => sum + (d.duration * (d.rpe || 0)), 0);
+            return total / period.length;
         };
 
         const acute = getAvg(7);
         const chronic = getAvg(28);
-        return { acute, chronic, acwr: chronic > 0 ? acute / chronic : 0 };
+        const acwr = chronic > 0 ? acute / chronic : 0;
+
+        return { acute, chronic, acwr };
     }
 
     async function handleFormSubmit(e) {
@@ -200,4 +201,5 @@
     function getDemoData() {
         return [{ date: new Date().toISOString().split('T')[0], duration: 60, rpe: 7, distance: 5 }];
     }
+
 })();
