@@ -6,26 +6,23 @@
     <title>Load Season | ProAtletCare</title>
     <link rel="stylesheet" href="style.css"> 
     <link rel="stylesheet" href="load-season.css">
-    <link rel="stylesheet" href="navigation-mobile.css">
 </head>
 <body>
-
     <header>
         <a href="index.html" class="logo-link">
             <img src="AK_logo.png" alt="Logo" class="logo">
         </a>
         <h1 class="project-title">ProAtletCare</h1>
-        <p class="tagline">Онлайн-тренінг та професійний супровід атлетів</p>
         <button class="menu-toggle" id="menu-toggle-button">☰</button>
     </header>
     
     <div class="content-wrapper">
         <nav class="sidebar" id="main-sidebar"> 
-            <a href="wellness.html">Wellness Control <img src="AK_logo.png" class="menu-icon"></a>
-            <a href="injury.html">Injury Story <img src="AK_logo.png" class="menu-icon"></a>
-            <a href="load-season.html" class="active">Load Season <img src="AK_logo.png" class="menu-icon"></a> 
-            <a href="weight-control.html">Weight Control <img src="AK_logo.png" class="menu-icon"></a>
-            <a href="velocity-control.html">Velocity Control <img src="AK_logo.png" class="menu-icon"></a>
+            <a href="wellness.html">Wellness Control</a>
+            <a href="injury.html">Injury Story</a>
+            <a href="load-season.html" class="active">Load Season</a> 
+            <a href="weight-control.html">Weight Control</a>
+            <a href="velocity-control.html">Velocity Control</a>
         </nav>
         
         <main class="main-content">
@@ -34,14 +31,11 @@
                     <h3>Нове тренування</h3>
                     <form id="load-form">
                         <label for="load-date">Дата:</label>
-                        <input type="date" id="load-date" name="date" required>
-                        
+                        <input type="date" id="load-date" required>
                         <label for="load-duration">Тривалість (хв):</label>
-                        <input type="number" id="load-duration" name="duration" min="1" value="60" required>
-                        
+                        <input type="number" id="load-duration" value="60" required>
                         <label for="load-distance">Дистанція (км):</label>
-                        <input type="number" id="load-distance" name="distance" min="0" step="0.1" value="0.0">
-
+                        <input type="number" id="load-distance" step="0.1" value="0.0">
                         <label>Інтенсивність (RPE):</label>
                         <div class="rpe-group">
                             <input type="radio" id="rpe10" name="rpe" value="10"><label for="rpe10" data-rpe="10"></label>
@@ -56,7 +50,6 @@
                             <input type="radio" id="rpe1" name="rpe" value="1"><label for="rpe1" data-rpe="1"></label>
                         </div>
                         <button type="submit" class="submit-button">Зберегти в хмару</button>
-                        <p id="form-status" style="text-align:center; margin-top:10px;"></p>
                     </form>
                 </div>
 
@@ -71,15 +64,14 @@
                                 </div>
                                 <div class="gauge-value-text">
                                     <span id="acwr-value">1.00</span>
-                                    <p class="acwr-label">ACWR</p>
+                                    <p class="acwr-label">INDEX ACWR</p>
                                 </div>
                             </div>
                         </div>
                         <div class="gauge-status-box">
-                            <p>Статус: <span id="acwr-status" class="status-safe">Завантаження...</span></p>
+                            <p>Статус: <span id="acwr-status">Завантаження...</span></p>
                         </div>
                     </div>
-                    
                     <div class="chart-card">
                         <canvas id="loadChart"></canvas>
                     </div>
@@ -91,7 +83,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyD1EP8iLSCVNZgkZKSSbMJa_4gS5VmqfKc",
@@ -105,6 +96,5 @@
         const db = firebase.firestore();
     </script>
     <script src="load-season.js"></script>
-    <script src="navigation-common.js"></script>
 </body>
 </html>
