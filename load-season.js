@@ -1,5 +1,5 @@
 (function() {
-    // ПЕРЕКОНАЙТЕСЯ, ЩО В ПРАВИЛАХ FIREBASE ВКАЗАНО: match /training_loads/{load}
+    // Назва колекції має суворо відповідати вашим Firebase Rules: training_loads
     const COLLECTION_NAME = 'training_loads';
     
     let dailyLoadData = [];
@@ -16,27 +16,28 @@
             const firebaseData = [];
             snapshot.forEach(doc => firebaseData.push(doc.data()));
             
-            // Якщо в базі порожньо, використовуємо ваші початкові дані
-            dailyLoadData = firebaseData.length > 0 ? firebaseData : getInitialDemoData();
+            // Якщо в базі порожньо, завантажуємо ваші початкові демо-дані
+            dailyLoadData = firebaseData.length > 0 ? firebaseData : getDemoData();
             
             refreshUI();
         } catch (e) {
-            console.error("Помилка синхронізації:", e);
-            dailyLoadData = getInitialDemoData();
+            console.error("Помилка синхронізації Load Season:", e);
+            dailyLoadData = getDemoData();
             refreshUI();
         }
     }
 
     function refreshUI() {
         const { acuteLoad, chronicLoad, acwr } = calculateACWR();
-        updateACWRGauge(acwr); // Виправляє помилку ReferenceError
+        // Тепер функція викликається всередині IIFE, помилки "not defined" не буде
+        updateACWRGauge(acwr); 
         if (typeof Chart !== 'undefined') {
             renderDistanceChart();
             renderLoadChart(acuteLoad, chronicLoad);
         }
     }
 
-    // --- ЛОГІКА ОБЧИСЛЕНЬ (ОРИГІНАЛЬНА) ---
+    // --- ЛОГІКА ОБЧИСЛЕНЬ (ВАША ОРИГІНАЛЬНА) ---
     function calculateSessionRPE(duration, rpe) {
         return duration * rpe;
     }
@@ -64,8 +65,7 @@
             const startDate = new Date(latestDate);
             startDate.setDate(latestDate.getDate() - days);
             const periodData = dataWithLoad.filter(item => new Date(item.date) > startDate);
-            const total = periodData.reduce((sum, item) => sum + item.load, 0);
-            return total / days;
+            return (periodData.reduce((sum, item) => sum + item.load, 0)) / days;
         };
 
         const acute = getLoadDays(7);
@@ -78,7 +78,7 @@
         };
     }
 
-    // --- ПРЕМІАЛЬНІ ГРАФІКИ ТА СПІДОМЕТР ---
+    // --- ПРЕМІАЛЬНИЙ ДИЗАЙН (ЛІНІЇ ТА СПІДОМЕТР) ---
     function updateACWRGauge(acwrValue) {
         const needle = document.getElementById('gauge-needle');
         const display = document.getElementById('acwr-value');
@@ -145,7 +145,7 @@
         const ctx = document.getElementById('loadChart');
         if (!ctx) return;
 
-        // ПОВЕРНУТО: Вигляд лініями
+        // ПОВЕРНУТО: Вигляд лініями (Acute vs Chronic)
         const demoLabels = ['4 тижні тому', '3 тижні тому', '2 тижні тому', 'Поточний'];
         const demoAcute = [500, 650, 800, acuteLoad];
         const demoChronic = [600, 620, 700, chronicLoad];
@@ -156,8 +156,22 @@
             data: {
                 labels: demoLabels,
                 datasets: [
-                    { label: 'Acute Load', data: demoAcute, borderColor: '#D9534F', tension: 0.3, fill: false, borderWidth: 3 },
-                    { label: 'Chronic Load', data: demoChronic, borderColor: '#4CAF50', tension: 0.3, fill: false, borderWidth: 3 }
+                    { 
+                        label: 'Acute Load', 
+                        data: demoAcute, 
+                        borderColor: '#D9534F', 
+                        borderWidth: 3, 
+                        tension: 0.3, 
+                        fill: false 
+                    },
+                    { 
+                        label: 'Chronic Load', 
+                        data: demoChronic, 
+                        borderColor: '#4CAF50', 
+                        borderWidth: 3, 
+                        tension: 0.3, 
+                        fill: false 
+                    }
                 ]
             },
             options: {
@@ -171,7 +185,7 @@
         });
     }
 
-    function getInitialDemoData() {
+    function getDemoData() {
         return [
             { date: '2025-11-24', duration: 60, rpe: 7, distance: 8.5 },
             { date: '2025-12-05', duration: 100, rpe: 9, distance: 14.0 },
@@ -179,7 +193,7 @@
         ];
     }
 
-    // --- ІНІЦІАЛІЗАЦІЯ ---
+    // --- ІНІЦІАЛІЗАЦІЯ ТА ОБРОБКА ФОРМИ ---
     document.addEventListener('DOMContentLoaded', () => {
         firebase.auth().onAuthStateChanged(async (user) => {
             if (user) {
@@ -206,10 +220,14 @@
                 };
 
                 try {
+                    // Використовуємо UID та дату як ID документа, щоб уникнути дублікатів за один день
                     await db.collection(COLLECTION_NAME).doc(`${user.uid}_${data.date}`).set(data);
-                    document.getElementById('form-status').textContent = "Успішно збережено!";
+                    document.getElementById('form-status').textContent = "Збережено успішно!";
                     await syncLoadFromFirebase(user.uid);
-                } catch (err) { alert("Помилка: " + err.message); }
+                } catch (err) { 
+                    console.error("Помилка запису:", err);
+                    alert("Помилка доступу: Перевірте Firebase Rules"); 
+                }
             });
         }
     });
