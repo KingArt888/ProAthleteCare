@@ -98,26 +98,50 @@
         return { acute, chronic, acwr };
     }
 
-    function renderCharts(acute, chronic) {
-        const ctxD = document.getElementById('distanceChart');
-        if (ctxD && dailyLoadData.length > 0) {
-            if (distanceChart) distanceChart.destroy();
-            distanceChart = new Chart(ctxD, {
-                type: 'line',
-                data: {
-                    labels: dailyLoadData.slice(-7).map(d => d.date.split('-').reverse().slice(0,2).join('.')),
-                    datasets: [{
-                        label: 'Км',
-                        data: dailyLoadData.slice(-7).map(d => d.distance),
-                        borderColor: '#FFD700',
-                        backgroundColor: 'rgba(255, 215, 0, 0.1)',
-                        fill: true
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
+   function renderCharts(acute, chronic) {
+    const ctx = document.getElementById('loadChart');
+    if (!ctx) return;
+
+    if (loadChart) loadChart.destroy();
+
+    loadChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Acute', 'Chronic'],
+            datasets: [{
+                label: 'Load',
+                data: [acute, chronic],
+                borderWidth: 3,
+                borderColor: '#FFD700',
+                tension: 0.3,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                annotation: {
+                    annotations: {
+                        safeZone: {
+                            type: 'box',
+                            yMin: chronic * 0.8,
+                            yMax: chronic * 1.3,
+                            backgroundColor: 'rgba(92,184,92,0.15)'
+                        },
+                        dangerZone: {
+                            type: 'box',
+                            yMin: chronic * 1.5,
+                            backgroundColor: 'rgba(217,83,79,0.15)'
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
         }
-    }
+    });
+}
 
     async function handleFormSubmit(e) {
         e.preventDefault();
