@@ -384,3 +384,31 @@ input[type="date"]:focus, input[type="number"]:focus {
         padding: 15px;
     }
 }
+/* ФІКС СКРОЛУ ДЛЯ МОБІЛОК */
+html, body {
+    overflow-x: hidden; /* Забороняємо горизонтальний скрол */
+    height: auto;
+}
+
+.content-wrapper {
+    display: flex;
+    min-height: 100vh;
+    overflow-y: visible; /* Дозволяємо вертикальний скрол */
+}
+
+.main-content {
+    flex: 1;
+    padding: 20px;
+    padding-top: 100px; /* Відступ, щоб хедер не перекривав назву */
+    overflow-y: visible;
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        display: block; /* На мобілках картки йдуть одна за одною */
+    }
+    .form-card, .stats-card, .chart-card {
+        margin-bottom: 20px;
+        width: 100%;
+    }
+}
