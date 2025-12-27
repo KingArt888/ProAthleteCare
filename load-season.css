@@ -304,16 +304,17 @@ input[type="date"]:focus, input[type="number"]:focus {
 
 .gauge-needle {
     position: absolute;
-    bottom: 9px; 
+    bottom: 9px; /* Відступ від центру півота */
     left: 50%;
     width: 3px; 
-    height: 140px; 
+    height: 120px; /* Трохи коротша, щоб не торкалася краю дуги */
     background-color: #FFD700; 
-    transform-origin: bottom center;
+    transform-origin: bottom center; /* Стрілка крутиться навколо своєї основи */
     transition: transform 1.5s ease-out; 
     border-radius: 3px;
     z-index: 9;
-    transform: translateX(-50%) rotate(0deg); 
+    /* Початкове положення - стрілка дивиться вліво (-90 градусів) */
+    transform: translateX(-50%) rotate(-90deg); 
 }
 
 .gauge-value-text {
