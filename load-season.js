@@ -3,11 +3,11 @@ let loadChart = null;
 let distanceChart = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Встановлюємо дату
+    // Встановлюємо дату
     const dateInput = document.getElementById('load-date');
     if (dateInput) dateInput.valueAsDate = new Date();
 
-    // 2. Підключаємося до Firebase (версія compat, яку ви вставили в HTML)
+    // Підключаємося до вашої бази Firebase
     db.collection("dailyLoad").orderBy("date", "asc")
     .onSnapshot((querySnapshot) => {
         dailyLoadData = [];
@@ -15,16 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
             dailyLoadData.push(doc.data());
         });
         updateDashboard(); 
-    }, (error) => {
-        console.error("Firebase Error:", error);
     });
 
-    // 3. Обробка форми
     const form = document.getElementById('load-form');
     if (form) form.addEventListener('submit', handleLoadFormSubmit);
 });
 
-// Функція оновлення всього екрану
 function updateDashboard() {
     if (dailyLoadData.length === 0) return;
 
@@ -33,14 +29,17 @@ function updateDashboard() {
     // Оновлюємо текст значення
     document.getElementById('acwr-value').textContent = acwr.toFixed(2);
 
-    // ВІШАЄМО ОБЕРТАННЯ НА ВАШУ СТРІЛКУ
-    rotateGauge(acwr);
+    // ВИПРАВЛЕНЕ ОБЕРТАННЯ: додано translateX(-50%)
+    const needle = document.getElementById('gauge-needle');
+    if (needle) {
+        let degrees = (acwr * 90) - 90; // Масштабування: 1.0 = 0deg
+        if (degrees < -95) degrees = -95;
+        if (degrees > 95) degrees = 95;
+        needle.style.transform = `translateX(-50%) rotate(${degrees}deg)`;
+    }
 
-    // Оновлюємо статус
     updateStatusText(acwr);
-
-    // Оновлюємо ваші графіки
-    renderCharts();
+    renderCharts(); // Ваші графіки
 }
 
 function calculateACWR() {
@@ -50,64 +49,17 @@ function calculateACWR() {
     return chronic > 0 ? (acute / chronic) : 1.0;
 }
 
-// ВИПРАВЛЕНА ФУНКЦІЯ СТРІЛКИ
-function rotateGauge(acwr) {
-    const needle = document.getElementById('gauge-needle');
-    if (!needle) return;
-
-    // 0.0 ACWR = -90deg (ліво)
-    // 1.0 ACWR = 0deg (центр)
-    // 2.0 ACWR = 90deg (право)
-    let degrees = (acwr * 90) - 90;
-
-    // Обмежувачі для безпеки
-    if (degrees < -95) degrees = -95;
-    if (degrees > 95) degrees = 95;
-
-    // Зберігаємо ваш translateX(-50%), щоб стрілка не злітала з осі
-    needle.style.transform = `translateX(-50%) rotate(${degrees}deg)`;
-}
-
 function updateStatusText(acwr) {
     const statusEl = document.getElementById('acwr-status');
     if (acwr < 0.8) {
         statusEl.textContent = "Underloading";
         statusEl.className = "status-warn";
     } else if (acwr <= 1.3) {
-        statusEl.textContent = "Safe Zone";
+        statusEl.textContent = "Safe Zone (Sweet Spot)";
         statusEl.className = "status-safe";
     } else {
         statusEl.textContent = "High Risk";
         statusEl.className = "status-danger";
     }
 }
-
-async function handleLoadFormSubmit(e) {
-    e.preventDefault();
-    const form = e.target;
-    const rpe = document.querySelector('input[name="rpe"]:checked')?.value;
-    
-    if (!rpe) {
-        alert("Оберіть RPE!");
-        return;
-    }
-
-    const duration = parseInt(form.elements['duration'].value);
-    const entry = {
-        date: form.elements['date'].value,
-        duration: duration,
-        distance: parseFloat(form.elements['distance'].value),
-        rpe: parseInt(rpe),
-        load: duration * parseInt(rpe)
-    };
-
-    await db.collection("dailyLoad").add(entry);
-    form.reset();
-    document.getElementById('load-date').valueAsDate = new Date();
-}
-
-// Рендеринг графіків (використовуємо ваш Chart.js)
-function renderCharts() {
-    // Тут ваш існуючий код рендерингу графіків (loadChart та distanceChart)
-    // ...
-}
+// ... решта ваших функцій збереження та графіків ...
