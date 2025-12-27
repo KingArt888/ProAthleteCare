@@ -1,14 +1,14 @@
 (function () {
 
-    const COLLECTION_NAME = 'load_season_reports';
+    const COLLECTION = 'load_season_reports';
 
-    let dailyLoadData = [];
-    let distanceChart = null;
     let loadChart = null;
+    let distanceChart = null;
+    let dailyData = [];
 
-    /* =========================
+    /* ===============================
        INIT
-    ========================= */
+    =============================== */
     document.addEventListener('DOMContentLoaded', () => {
 
         const dateInput = document.getElementById('load-date');
@@ -18,133 +18,118 @@
 
         firebase.auth().onAuthStateChanged(async (user) => {
             if (user) {
-                await syncLoadFromFirebase(user.uid);
+                await loadFromFirestore(user.uid);
             } else {
                 await firebase.auth().signInAnonymously();
             }
         });
 
-        const form = document.getElementById('load-form');
-        if (form) {
-            form.addEventListener('submit', handleFormSubmit);
-        }
+        document
+            .getElementById('load-form')
+            .addEventListener('submit', handleSubmit);
     });
 
-    /* =========================
+    /* ===============================
+       FIRESTORE LOAD
+    =============================== */
+    async function loadFromFirestore(uid) {
+        const snapshot = await db
+            .collection(COLLECTION)
+            .where('userId', '==', uid)
+            .orderBy('date', 'asc')
+            .get();
+
+        dailyData = [];
+        snapshot.forEach(doc => dailyData.push(doc.data()));
+
+        updateAll();
+    }
+
+    /* ===============================
+       UPDATE ALL UI
+    =============================== */
+    function updateAll() {
+
+        if (dailyData.length < 7) {
+            updateGauge(0.5);
+            renderDistanceChart();
+            return;
+        }
+
+        const acwrSeries = buildACWRSeries(dailyData);
+        const latestACWR = acwrSeries[acwrSeries.length - 1];
+
+        updateGauge(latestACWR);
+        renderACWRChart(acwrSeries);
+        renderDistanceChart();
+    }
+
+    /* ===============================
+       ACWR CALCULATION
+    =============================== */
+    function sessionLoad(d) {
+        return (d.duration || 0) * (d.rpe || 0);
+    }
+
+    function avgLoad(data, days, index) {
+        const slice = data.slice(Math.max(0, index - days + 1), index + 1);
+        const total = slice.reduce((s, d) => s + sessionLoad(d), 0);
+        return total / days;
+    }
+
+    function buildACWRSeries(data) {
+        return data.map((_, i) => {
+            const acute = avgLoad(data, 7, i);
+            const chronic = avgLoad(data, 28, i);
+            return chronic > 0 ? acute / chronic : 0.5;
+        });
+    }
+
+    /* ===============================
        ACWR GAUGE
-    ========================= */
-    function updateACWRGauge(acwr) {
+    =============================== */
+    function updateGauge(acwr) {
 
         const needle = document.querySelector('.gauge-needle');
         const valueEl = document.getElementById('acwr-value');
         const statusEl = document.getElementById('acwr-status');
 
-        if (!needle || !valueEl || !statusEl) return;
+        if (!needle) return;
 
         const MIN = 0.5;
         const MAX = 2.0;
 
         const clamped = Math.max(MIN, Math.min(MAX, acwr));
-        const degree = ((clamped - MIN) / (MAX - MIN)) * 180 - 90;
+        const deg = ((clamped - MIN) / (MAX - MIN)) * 180 - 90;
 
-        needle.style.transform = `translateX(-50%) rotate(${degree}deg)`;
+        needle.style.transform = `translateX(-50%) rotate(${deg}deg)`;
         valueEl.textContent = acwr.toFixed(2);
 
         if (acwr >= 0.8 && acwr <= 1.3) {
-            statusEl.textContent = 'ОПТИМАЛЬНА ЗОНА';
+            statusEl.textContent = 'Безпечна зона';
             statusEl.className = 'status-safe';
-            valueEl.style.color = '#5cb85c';
-        } 
-        else if ((acwr >= 0.6 && acwr < 0.8) || (acwr > 1.3 && acwr <= 1.5)) {
-            statusEl.textContent = 'ПОПЕРЕДЖЕННЯ';
+        } else if ((acwr >= 0.6 && acwr < 0.8) || (acwr > 1.3 && acwr <= 1.5)) {
+            statusEl.textContent = 'Зона ризику';
             statusEl.className = 'status-warning';
-            valueEl.style.color = '#f0ad4e';
-        } 
-        else {
-            statusEl.textContent = 'ВИСОКИЙ РИЗИК ТРАВМИ';
+        } else {
+            statusEl.textContent = 'Високий ризик травми';
             statusEl.className = 'status-danger';
-            valueEl.style.color = '#d9534f';
         }
     }
 
-    /* =========================
-       FIREBASE
-    ========================= */
-    async function syncLoadFromFirebase(uid) {
-        try {
-            const snapshot = await db
-                .collection(COLLECTION_NAME)
-                .where('userId', '==', uid)
-                .orderBy('date', 'asc')
-                .get();
-
-            dailyLoadData = [];
-            snapshot.forEach(doc => dailyLoadData.push(doc.data()));
-
-            if (dailyLoadData.length < 7) {
-                updateACWRGauge(0.5);
-                renderDistanceChart();
-                return;
-            }
-
-            const { acwr } = calculateMetrics(dailyLoadData);
-            updateACWRGauge(acwr);
-            renderACWRChart();
-            renderDistanceChart();
-
-        } catch (err) {
-            console.error(err);
-        }
-    }
-
-    /* =========================
-       METRICS
-    ========================= */
-    function calculateMetrics(data) {
-
-        const sorted = [...data].sort(
-            (a, b) => new Date(a.date) - new Date(b.date)
-        );
-
-        const lastDate = new Date(sorted[sorted.length - 1].date);
-
-        const getLoadAvg = (days) => {
-            const start = new Date(lastDate);
-            start.setDate(start.getDate() - days);
-
-            const period = sorted.filter(d => new Date(d.date) > start);
-            const total = period.reduce(
-                (sum, d) => sum + (d.duration * (d.rpe || 0)),
-                0
-            );
-            return total / days;
-        };
-
-        const acute = getLoadAvg(7);
-        const chronic = getLoadAvg(28);
-        const acwr = chronic > 0 ? acute / chronic : 0.5;
-
-        return { acute, chronic, acwr };
-    }
-
-    /* =========================
-       ACWR TREND CHART
-    ========================= */
-    function renderACWRChart() {
+    /* ===============================
+       ACWR CHART
+    =============================== */
+    function renderACWRChart(acwrSeries) {
 
         const ctx = document.getElementById('loadChart');
         if (!ctx) return;
 
         if (loadChart) loadChart.destroy();
 
-        const labels = dailyLoadData.slice(-14).map(d =>
+        const labels = dailyData.map(d =>
             d.date.split('-').reverse().slice(0, 2).join('.')
         );
-
-        const acwrValues = dailyLoadData.slice(-14).map((_, i, arr) => {
-            const slice = arr.slice(0, i + 1);
-            return calculateMetrics(slice).acwr;
-        });
 
         loadChart = new Chart(ctx, {
             type: 'line',
@@ -152,11 +137,9 @@
                 labels,
                 datasets: [{
                     label: 'ACWR',
-                    data: acwrValues,
-                    borderColor: '#FFD700',
+                    data: acwrSeries,
                     borderWidth: 3,
-                    tension: 0.35,
-                    fill: false
+                    tension: 0.35
                 }]
             },
             options: {
@@ -165,10 +148,7 @@
                     y: {
                         min: 0,
                         max: 2,
-                        title: {
-                            display: true,
-                            text: 'ACWR'
-                        }
+                        title: { display: true, text: 'ACWR' }
                     }
                 },
                 plugins: {
@@ -180,13 +160,13 @@
                                 yMax: 1.3,
                                 backgroundColor: 'rgba(92,184,92,0.15)'
                             },
-                            warningLow: {
+                            warnLow: {
                                 type: 'box',
                                 yMin: 0.6,
                                 yMax: 0.8,
                                 backgroundColor: 'rgba(240,173,78,0.15)'
                             },
-                            warningHigh: {
+                            warnHigh: {
                                 type: 'box',
                                 yMin: 1.3,
                                 yMax: 1.5,
@@ -204,29 +184,27 @@
         });
     }
 
-    /* =========================
+    /* ===============================
        DISTANCE CHART
-    ========================= */
+    =============================== */
     function renderDistanceChart() {
 
         const ctx = document.getElementById('distanceChart');
-        if (!ctx || dailyLoadData.length === 0) return;
+        if (!ctx || dailyData.length === 0) return;
 
         if (distanceChart) distanceChart.destroy();
 
         distanceChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: dailyLoadData.slice(-7).map(d =>
+                labels: dailyData.slice(-7).map(d =>
                     d.date.split('-').reverse().slice(0, 2).join('.')
                 ),
                 datasets: [{
                     label: 'Км',
-                    data: dailyLoadData.slice(-7).map(d => d.distance),
-                    borderColor: '#FFD700',
+                    data: dailyData.slice(-7).map(d => d.distance || 0),
                     borderWidth: 3,
-                    tension: 0.3,
-                    fill: false
+                    tension: 0.3
                 }]
             },
             options: {
@@ -238,11 +216,10 @@
         });
     }
 
-    /* =========================
+    /* ===============================
        FORM SUBMIT
-    ========================= */
-    async function handleFormSubmit(e) {
-
+    =============================== */
+    async function handleSubmit(e) {
         e.preventDefault();
 
         const user = firebase.auth().currentUser;
@@ -252,19 +229,26 @@
 
         const data = {
             userId: user.uid,
-            date: form.elements['date'].value,
-            duration: Number(form.elements['duration'].value),
-            distance: Number(form.elements['distance'].value),
+            date: form.elements.date.value,
+            duration: Number(form.elements.duration.value),
+            distance: Number(form.elements.distance.value),
             rpe: Number(form.querySelector('input[name="rpe"]:checked')?.value || 0),
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
         await db
-            .collection(COLLECTION_NAME)
+            .collection(COLLECTION)
             .doc(`${user.uid}_${data.date}`)
             .set(data);
 
-        await syncLoadFromFirebase(user.uid);
+        const status = document.getElementById('form-status');
+        if (status) {
+            status.textContent = '✔ Дані збережено';
+            status.className = 'status-box status-safe';
+            setTimeout(() => status.textContent = '', 3000);
+        }
+
+        await loadFromFirestore(user.uid);
     }
 
 })();
