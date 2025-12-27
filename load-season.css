@@ -227,51 +227,50 @@ input[type="date"]:focus, input[type="number"]:focus {
 }
 
 
-/* --- 5. СТИЛІ СПІДОМЕТРА ACWR (Без змін) --- */
+/* --- 5. СТИЛІ СПІДОМЕТРА ACWR (Виправлений блок) --- */
 
 .speedometer-widget {
     display: flex;
     flex-direction: column;
     align-items: center;
     margin-bottom: 30px;
-    padding: 0; 
-    border: none; 
+    padding: 0;
+    border: none;
     border-radius: 10px;
-    background-color: transparent; 
-    box-shadow: none; 
+    background-color: transparent;
+    box-shadow: none;
 }
 
 .gauge-display {
     position: relative;
-    width: 280px; 
-    height: 140px; 
-    overflow: hidden;
-    margin-bottom: 20px;
+    width: 280px;
+    height: 140px;
+    overflow: visible; /* щоб число було видно поза дугою */
+    margin-bottom: 40px; /* додатковий простір під ACWR */
 }
 
 .gauge-arc {
     position: absolute;
-    width: 280px; 
+    width: 280px;
     height: 280px;
     border-radius: 50%;
     top: 0;
     left: 0;
     background: transparent;
-    border: 20px solid #333; 
+    border: 20px solid #333;
     z-index: 5;
     clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%);
-    transform: rotate(270deg); 
+    transform: rotate(270deg);
 }
 
 .gauge-arc::before {
     content: '';
     position: absolute;
-    top: -20px; 
+    top: -20px;
     left: -20px;
-    width: 280px; 
+    width: 280px;
     height: 280px;
     border-radius: 50%;
-    
     background: conic-gradient(
         #d9534f 0% 15%,     
         #f0ad4e 15% 30%,    
@@ -279,13 +278,10 @@ input[type="date"]:focus, input[type="number"]:focus {
         #f0ad4e 65% 85%,    
         #d9534f 85% 100%    
     );
-    
     mask: radial-gradient(transparent 120px, black 120px, black 140px, transparent 140px);
     -webkit-mask: radial-gradient(transparent 120px, black 120px, black 140px, transparent 140px);
-    
     z-index: 6;
     clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%);
-    transform: rotate(0deg); 
 }
 
 .gauge-needle-pivot {
@@ -293,94 +289,84 @@ input[type="date"]:focus, input[type="number"]:focus {
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 18px; 
+    width: 18px;
     height: 18px;
-    background-color: #FFD700; 
+    background-color: #FFD700;
     border-radius: 50%;
     z-index: 10;
     box-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
-    border: 3px solid #1a1a1a; 
+    border: 3px solid #1a1a1a;
 }
 
 .gauge-needle {
     position: absolute;
-    bottom: 9px; 
+    bottom: 9px;
     left: 50%;
-    width: 3px; 
-    height: 140px; 
-    background-color: #FFD700; 
+    width: 3px;
+    height: 140px;
+    background-color: #FFD700;
     transform-origin: bottom center;
-    transition: transform 1.5s ease-out; 
+    transition: transform 1.5s ease-out;
     border-radius: 3px;
     z-index: 9;
-    transform: translateX(-50%) rotate(0deg); 
+    transform: translateX(-50%) rotate(0deg);
 }
 
-.gauge-value-text {
-    position: absolute;
-    bottom: -5px; 
-    left: 50%;
-    transform: translateX(-50%);
-    text-align: center;
-    z-index: 11;
+/* --- Виправлене розташування ACWR --- */
+#gauge-container {
+    position: relative;
+    width: 280px;
+    height: 180px; /* достатньо для цифри під стрілкою */
 }
 
 #acwr-value {
-    font-size: 3.2em; 
+    position: absolute;
+    bottom: -35px; /* під стрілкою */
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2.8em;
     font-weight: 700;
     color: #FFD700;
-    display: block;
-    text-shadow: 0 0 5px rgba(255, 215, 0, 0.4); 
+    text-align: center;
+    z-index: 11;
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.4);
 }
 
 .acwr-label {
-    margin-top: -10px;
+    position: absolute;
+    bottom: -60px;
+    left: 50%;
+    transform: translateX(-50%);
     font-size: 0.9em;
     color: #AAAAAA;
+    text-align: center;
 }
 
 .gauge-status-box {
+    position: absolute;
+    bottom: -90px; /* під цифрою */
+    left: 50%;
+    transform: translateX(-50%);
     text-align: center;
-    margin-top: 15px;
     font-size: 1.1em;
 }
 
-.status-safe {
-    color: #5cb85c; 
-    font-weight: bold;
-}
+.status-safe { color: #5cb85c; font-weight: bold; }
+.status-warning { color: #f0ad4e; font-weight: bold; }
+.status-danger { color: #d9534f; font-weight: bold; }
 
-.status-warning {
-    color: #f0ad4e; 
-    font-weight: bold;
-}
-
-.status-danger {
-    color: #d9534f; 
-    font-weight: bold;
-}
-
-/* --- 6. АДАПТИВНІСТЬ --- */
-
+/* --- АДАПТИВНІСТЬ --- */
 @media (max-width: 900px) {
-
-    .dashboard-container,
-    .info-column {
-        flex-direction: column;
-        gap: 20px;
-    }
-
-    .form-container,
-    .info-column,
-    .chart-card {
-        width: 100%;
-        min-width: unset;
-        max-width: 100%;
-    }
+    .gauge-display { width: 100%; height: 120px; }
+    #gauge-container { width: 100%; height: 160px; }
+    #acwr-value { font-size: 2.2em; bottom: -30px; }
+    .acwr-label { bottom: -50px; font-size: 0.8em; }
+    .gauge-status-box { bottom: -75px; font-size: 1em; }
 }
 
 @media (max-width: 600px) {
-    .main-content {
-        padding: 15px;
-    }
+    .gauge-display { height: 100px; }
+    #acwr-value { font-size: 2em; bottom: -25px; }
+    .acwr-label { bottom: -45px; font-size: 0.7em; }
+    .gauge-status-box { bottom: -65px; font-size: 0.9em; }
 }
