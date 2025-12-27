@@ -6,19 +6,20 @@
 
     // --- 1. ІНІЦІАЛІЗАЦІЯ ТА АВТО-ДАТА ---
     document.addEventListener('DOMContentLoaded', () => {
-        // Встановлюємо сьогоднішню дату
+        // Автоматично ставимо сьогоднішню дату
         const dateInput = document.getElementById('load-date') || document.querySelector('input[type="date"]');
         if (dateInput) {
             dateInput.value = new Date().toISOString().split('T')[0];
         }
 
-        // Авторизація та завантаження даних
+        // Чекаємо авторизацію, потім вантажимо дані
         firebase.auth().onAuthStateChanged(async (user) => {
             if (user) {
+                console.log("Авторизовано:", user.uid);
                 await syncLoadFromFirebase(user.uid);
             } else {
-                // Анонімний вхід для доступу згідно з вашими Rules
-                await firebase.auth().signInAnonymously().catch(e => console.error("Помилка входу:", e));
+                // Якщо не увійшов — входимо анонімно для доступу до БД
+                firebase.auth().signInAnonymously().catch(console.error);
             }
         });
 
@@ -26,37 +27,40 @@
         if (form) form.addEventListener('submit', handleFormSubmit);
     });
 
-    // --- 2. СПІДОМЕТР (Синхронізація з вашим CSS) ---
+    // --- 2. ПРЕМІАЛЬНИЙ СПІДОМЕТР (Фікс стрілки) ---
     function updateACWRGauge(acwrValue) {
-        const needle = document.querySelector('.gauge-needle'); // Клас з вашого CSS
+        const needle = document.querySelector('.gauge-needle'); // Використовуємо ваш клас з CSS
         const display = document.getElementById('acwr-value');
         const statusContainer = document.querySelector('.gauge-status-box');
 
         if (!needle || !display) return;
 
-        // Розрахунок кута для вашої шкали (від -90 до +90 градусів)
-        let degree = -90;
+        // ВАЖЛИВО: У вашому CSS 0 градусів — це горизонталь (праворуч)
+        // Нам треба, щоб стрілка ходила від -180 (ліво) до 0 (право)
+        let degree = -180; 
         let statusText = '';
         let statusClass = '';
 
         if (acwrValue < 0.8) {
-            degree = -90 + (acwrValue / 0.8) * 45; // Жовта зона (Underload)
+            degree = -180 + (acwrValue / 0.8) * 45; // Зона недотренованості
             statusText = 'НЕДОТРЕНОВАНІСТЬ';
-            statusClass = 'status-warning';
+            statusClass = 'status-warning'; // Клас з вашого CSS
         } else if (acwrValue <= 1.3) {
-            degree = -45 + ((acwrValue - 0.8) / 0.5) * 90; // Зелена зона (Optimal)
+            degree = -135 + ((acwrValue - 0.8) / 0.5) * 90; // Зелена зона (Оптимально)
             statusText = 'ОПТИМАЛЬНА ФОРМА';
-            statusClass = 'status-safe';
+            statusClass = 'status-safe'; // Клас з вашого CSS
         } else {
-            degree = 45 + ((acwrValue - 1.3) / 0.7) * 45; // Червона зона (Danger)
+            degree = -45 + ((acwrValue - 1.3) / 0.7) * 45; // Зона ризику
             statusText = 'РИЗИК ТРАВМИ';
-            statusClass = 'status-danger';
+            statusClass = 'status-danger'; // Клас з вашого CSS
         }
 
-        const finalDegree = Math.min(90, Math.max(-90, degree));
+        // Обмежуємо стрілку, щоб не вилітала за межі (від -180 до 0)
+        const finalDegree = Math.min(0, Math.max(-180, degree));
         
-        // Плавна анімація стрілки
+        // Плавна анімація як у спорткарі (використовуємо transform: rotate)
         needle.style.transform = `translateX(-50%) rotate(${finalDegree}deg)`;
+        
         display.textContent = acwrValue.toFixed(2);
         
         if (statusContainer) {
@@ -69,7 +73,6 @@
         const ctxD = document.getElementById('distanceChart');
         const ctxL = document.getElementById('loadChart');
 
-        // Графік дистанції
         if (ctxD) {
             if (distanceChart) distanceChart.destroy();
             distanceChart = new Chart(ctxD, {
@@ -79,7 +82,7 @@
                     datasets: [{
                         label: 'Дистанція (км)',
                         data: dailyLoadData.slice(-7).map(d => d.distance),
-                        borderColor: '#FFC72C', // Колір з вашого активного меню
+                        borderColor: '#FFC72C', // Золотий колір з вашого CSS
                         backgroundColor: 'rgba(255, 199, 44, 0.1)',
                         fill: true, tension: 0.4, borderWidth: 3
                     }]
@@ -88,7 +91,6 @@
             });
         }
 
-        // Графік Acute/Chronic Load
         if (ctxL) {
             if (loadChart) loadChart.destroy();
             loadChart = new Chart(ctxL, {
@@ -105,7 +107,7 @@
         }
     }
 
-    // --- 4. РОЗРАХУНКИ ТА FIREBASE ---
+    // --- 4. FIREBASE ТА РОЗРАХУНКИ ---
     async function syncLoadFromFirebase(uid) {
         try {
             const snapshot = await db.collection(COLLECTION_NAME)
